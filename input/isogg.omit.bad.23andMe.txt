@@ -1,0 +1,4 @@
+M288            B1                         2649694 G->T     M288    # many T carriers who were clearly B2
+P117            M3                        14819693 G->T     P117    # lots of people have this allele
+P80             H1b1a                      6739899 G->C     P80     # P80 and P266 often both derived, regardless of H1b1 status 
+P266            H1b1b                      6739738 A->T     P266    # P80 and P266 often both derived, regardless of H1b1 status
