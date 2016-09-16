@@ -91,7 +91,7 @@ class Config(object):
     thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % fileRoot
 
     # output | phylogenetic info
-    phyloOutputFNtps = {
+    phyloOutputFNtpDictDict = {
         'withOutdirAndIsoggDate': {
             'alignedPrimaryTreeFN': '%s/y.tree.primary.aligned.%s.nwk',
             'treeFN': '%s/y.tree.%s.nwk',
@@ -264,11 +264,11 @@ class Config(object):
         '''set log and output file names.
             open those to which we will be writing in real time'''
 
-        for tpattr, tp in Config.phyloOutputFNtps['withOutdirAndIsoggDate'].iteritems():
-            setattr(self, tpattr, tp % (self.phyloOutDir, self.isoggDate))
+        for fn, tp in Config.phyloOutputFNtpDictDict['withOutdirAndIsoggDate'].iteritems():
+            setattr(self, fn, tp % (self.phyloOutDir, self.isoggDate))
 
-        for tpattr, tp in Config.phyloOutputFNtps['withOutdir'].iteritems():
-            setattr(self, tpattr, tp % self.phyloOutDir)
+        for fn, tp in Config.phyloOutputFNtpDictDict['withOutdir'].iteritems():
+            setattr(self, fn, tp % self.phyloOutDir)
 
         if self.args.singleSampleID:
             self.outFNlabel = '%s%s.' % (self.outFNlabel, self.args.singleSampleID)
