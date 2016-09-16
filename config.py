@@ -5,6 +5,7 @@
 # Defines the Config class, which includes command-line arguments.
 #----------------------------------------------------------------------
 import argparse
+import os
 import sys
 from collections import namedtuple, defaultdict
 
@@ -67,42 +68,50 @@ class Config(object):
     
     #----------------------------------------------------------------------
     # file names
-    outDir                 = 'output'   # project-specific files -> self.outDir
-    
+    fileRoot               = os.path.dirname(os.path.realpath(__file__))
+    inDir                  = os.path.join(fileRoot, 'input')
+    outDir                 = os.path.join(fileRoot, 'output')   # project-specific files -> self.outDir
+
     # input | phylogenetic data
-    primaryTreeFN          =  'input/y.tree.primary.%s.nwk' % isoggDate
-    isoggFN                =  'input/isogg.%s.txt' % isoggDate
-    isoggCorrectionsFNlist = ['input/isogg.correct.coordinate.txt',
-                              'input/isogg.correct.polarize.txt']
-    isoggOmitFNlist        = ['input/isogg.omit.bad.txt',
-                              'input/isogg.omit.bad.23andMe.txt',
-                              'input/isogg.omit.branch.conflict.txt']
-    isoggMultiAllelicFN    =  'input/isogg.multiallelic.txt'
-    pagesFN                =  'product/23andMe.content.pages.txt'
-    
+    primaryTreeFN          =  '%s/y.tree.primary.%s.nwk'   % (inDir, isoggDate)
+    isoggFN                =  '%s/isogg.%s.txt'            % (inDir, isoggDate)
+    isoggCorrectionsFNlist = ['%s/isogg.correct.coordinate.txt'      % inDir,
+                              '%s/isogg.correct.polarize.txt'        % inDir]
+    isoggOmitFNlist        = ['%s/isogg.omit.bad.txt'                % inDir,
+                              '%s/isogg.omit.bad.23andMe.txt'        % inDir,
+                              '%s/isogg.omit.branch.conflict.txt'    % inDir]
+    isoggMultiAllelicFN    =  '%s/isogg.multiallelic.txt'            % inDir
+    pagesFN                =  '%s/product/23andMe.content.pages.txt' % fileRoot
+
     # input | platform
-    platformPosFNtp        = 'platform/output/v%d.sites.txt'
-    
+    platformPosFNtp        = '%s/platform/output/v%%d.sites.txt' % fileRoot
+
     # input | test data
-    thousandYdataFNtp      = '1000Y/process/output/%s'
-    thousandYhgFN          = '1000Y/haplogroups/4.haplogroups.called.txt'
+    thousandYdataFNtp      = '%s/1000Y/process/output/%%s' % fileRoot
+    thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % fileRoot
 
     # output | phylogenetic info
-    alignedPrimaryTreeFN   = '%s/y.tree.primary.aligned.%s.nwk'      % (outDir, isoggDate)
-    treeFN                 = '%s/y.tree.%s.nwk'                      % (outDir, isoggDate)
-    alignedTreeFN          = '%s/y.tree.aligned.%s.nwk'              % (outDir, isoggDate)
-    platformTreeFNtp       = '%s/y.tree.platform.%%d.%s.nwk'         % (outDir, isoggDate)
-    bfTreeFN               = '%s/y.tree.bf.traversal.%s.txt'         % (outDir, isoggDate)
-    dfTreeFN               = '%s/y.tree.df.traversal.%s.txt'         % (outDir, isoggDate)
-    treeTableFN            = '%s/y.tree.table.%s.txt'                % (outDir, isoggDate)
-    bfPrimaryTreeFN        = '%s/y.tree.primary.bf.traversal.%s.txt' % (outDir, isoggDate)
-    dfPrimaryTreeFN        = '%s/y.tree.primary.df.traversal.%s.txt' % (outDir, isoggDate)
-    cleanedIsoggFN         = '%s/isogg.snps.cleaned.%s.txt'          % (outDir, isoggDate)
-    uniqueIsoggFN          = '%s/isogg.snps.unique.%s.txt'           % (outDir, isoggDate)
-    droppedIsoggFN         = '%s/isogg.snps.dropped.%s.txt'          % (outDir, isoggDate)
-    multiAllelicFoundFN    = '%s/multiallelic.pos'                   %  outDir
-    pageMappingsFN         = '%s/23andMe.content.page.mappings.txt'  %  outDir
-    
+    phyloOutputFNtpDictDict = {
+        'withOutdirAndIsoggDate': {
+            'alignedPrimaryTreeFN': '%s/y.tree.primary.aligned.%s.nwk',
+            'treeFN': '%s/y.tree.%s.nwk',
+            'alignedTreeFN': '%s/y.tree.aligned.%s.nwk',
+            'platformTreeFNtp': '%s/y.tree.platform.%%d.%s.nwk',
+            'bfTreeFN': '%s/y.tree.bf.traversal.%s.txt',
+            'dfTreeFN': '%s/y.tree.df.traversal.%s.txt',
+            'treeTableFN': '%s/y.tree.table.%s.txt',
+            'bfPrimaryTreeFN': '%s/y.tree.primary.bf.traversal.%s.txt',
+            'dfPrimaryTreeFN': '%s/y.tree.primary.df.traversal.%s.txt',
+            'cleanedIsoggFN': '%s/isogg.snps.cleaned.%s.txt',
+            'uniqueIsoggFN': '%s/isogg.snps.unique.%s.txt',
+            'droppedIsoggFN': '%s/isogg.snps.dropped.%s.txt',
+        },
+        'withOutdir': {
+            'multiAllelicFoundFN': '%s/multiallelic.pos',
+            'pageMappingsFN': '%s/23andMe.content.page.mappings.txt',
+        }
+    }
+
     # output | haplogroup calls, log, optional files, 23andMe auxiliary files
     logFNtp                = '%s/log.%stxt'
     haplogroupCallsFNtp    = '%s/haplogroups.%stxt'
@@ -117,9 +126,9 @@ class Config(object):
     noAblocksFNtp          = '%s/ignored.noAblocks.%sresid.txt'
     noGenotypesFNtp        = '%s/ignored.noGenotypes.%sresid.txt'
 
-    def __init__(self, description):
+    def __init__(self, description, outDir=None):
         self.args = setCommandLineArgs(description)
-        self.setDefaultAndDerivedParams()
+        self.setDefaultAndDerivedParams(outDir)
         self.setParamsBasedOnInputType()
         self.setParamsBasedOnRunType()
         self.makeOutputDirectories()
@@ -131,13 +140,13 @@ class Config(object):
             self.set23andMeArgs()
             self.get23andMeDatasets()
 
-    def setDefaultAndDerivedParams(self):
+    def setDefaultAndDerivedParams(self, outDir):
         'set default and derived parameter values'
-        
-        self.outDir            = Config.outDir
+        self.outDir            = outDir if outDir is not None else Config.outDir
+        self.phyloOutDir       = self.outDir
         self.vcfStartCol       = Config.vcfStartCol
         self.numCharsToCompare = Config.numCharsToCompareDefault
-        
+
         # zero or one of these four will be set to True
         self.runFromAblocks        = False
         self.runFromSampleMajorTxt = False
@@ -254,12 +263,18 @@ class Config(object):
     def setOutputFileNamesAndOpenSome(self):
         '''set log and output file names.
             open those to which we will be writing in real time'''
-        
+
+        for fn, tp in Config.phyloOutputFNtpDictDict['withOutdirAndIsoggDate'].iteritems():
+            setattr(self, fn, tp % (self.phyloOutDir, self.isoggDate))
+
+        for fn, tp in Config.phyloOutputFNtpDictDict['withOutdir'].iteritems():
+            setattr(self, fn, tp % self.phyloOutDir)
+
         if self.args.singleSampleID:
             self.outFNlabel = '%s%s.' % (self.outFNlabel, self.args.singleSampleID)
         self.haplogroupCallsFN = self.constructFileName(Config.haplogroupCallsFNtp)
         self.logFN             = self.constructFileName(Config.logFNtp)
-        
+
         if self.args.writeAncDerCounts:
             self.countsAncDerFN = self.constructFileName(Config.countsAncDerFNtp)
         if self.args.writeHaplogroupPaths:
