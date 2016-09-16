@@ -5,6 +5,7 @@
 # Defines the Config class, which includes command-line arguments.
 #----------------------------------------------------------------------
 import argparse
+import os
 import sys
 from collections import namedtuple, defaultdict
 
@@ -67,25 +68,27 @@ class Config(object):
     
     #----------------------------------------------------------------------
     # file names
-    outDir                 = 'output'   # project-specific files -> self.outDir
-    
+    fileRoot               = os.path.dirname(os.path.realpath(__file__))
+    inDir                  = os.path.join(fileRoot, 'input')
+    outDir                 = os.path.join(fileRoot, 'output')   # project-specific files -> self.outDir
+
     # input | phylogenetic data
-    primaryTreeFN          =  'input/y.tree.primary.%s.nwk' % isoggDate
-    isoggFN                =  'input/isogg.%s.txt' % isoggDate
-    isoggCorrectionsFNlist = ['input/isogg.correct.coordinate.txt',
-                              'input/isogg.correct.polarize.txt']
-    isoggOmitFNlist        = ['input/isogg.omit.bad.txt',
-                              'input/isogg.omit.bad.23andMe.txt',
-                              'input/isogg.omit.branch.conflict.txt']
-    isoggMultiAllelicFN    =  'input/isogg.multiallelic.txt'
-    pagesFN                =  'product/23andMe.content.pages.txt'
-    
+    primaryTreeFN          =  '%s/y.tree.primary.%s.nwk'   % (inDir, isoggDate)
+    isoggFN                =  '%s/isogg.%s.txt'            % (inDir, isoggDate)
+    isoggCorrectionsFNlist = ['%s/isogg.correct.coordinate.txt'      % inDir,
+                              '%s/isogg.correct.polarize.txt'        % inDir]
+    isoggOmitFNlist        = ['%s/isogg.omit.bad.txt'                % inDir,
+                              '%s/isogg.omit.bad.23andMe.txt'        % inDir,
+                              '%s/isogg.omit.branch.conflict.txt'    % inDir]
+    isoggMultiAllelicFN    =  '%s/isogg.multiallelic.txt'            % inDir
+    pagesFN                =  '%s/product/23andMe.content.pages.txt' % fileRoot
+
     # input | platform
-    platformPosFNtp        = 'platform/output/v%d.sites.txt'
-    
+    platformPosFNtp        = '%s/platform/output/v%%d.sites.txt' % fileRoot
+
     # input | test data
-    thousandYdataFNtp      = '1000Y/process/output/%s'
-    thousandYhgFN          = '1000Y/haplogroups/4.haplogroups.called.txt'
+    thousandYdataFNtp      = '%s/1000Y/process/output/%%s' % fileRoot
+    thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % fileRoot
 
     # output | phylogenetic info
     alignedPrimaryTreeFN   = '%s/y.tree.primary.aligned.%s.nwk'      % (outDir, isoggDate)
