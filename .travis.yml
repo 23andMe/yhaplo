@@ -1,0 +1,13 @@
+sudo: false
+language: python
+install:
+- pip install tox
+script: tox
+# deploy:
+#   provider: pypi
+#   distributions: sdist
+#   user: <tbd>
+#   on:
+#     tags: true
+#   password:
+#     secure: <tbd>
