@@ -1,5 +1,6 @@
 # Project-specific directories and files
 data
+output
 
 # Eclipse project files
 .project
