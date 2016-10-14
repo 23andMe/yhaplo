@@ -1,0 +1,233 @@
+YHAPLO LICENSE
+
+Copyright (c) 2016, 23ANDME, INC. All rights reserved.  
+
+Redistribution and use in source and binary forms are permitted, provided that the 
+above copyright notice and the License Agreement (LICENSE.txt, which is distributed 
+with the source code) are duplicated in all such forms and that any documentation, 
+advertising materials, and other materials related to such distribution and use 
+acknowledge that the yHaplo™ Software was developed by 23andMe, Inc. The name of 
+23andMe, Inc. may not be used to endorse or promote products derived from this 
+software without specific prior written permission. THIS SOFTWARE IS PROVIDED "AS IS" 
+AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, 
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+
+NON-EXCLUSIVE LICENSE AGREEMENT
+
+This Agreement (the "License Agreement") is made and is effective as of the date when 
+Licensee (as defined below) exercises the Licensed Rights with respect to the Licensed 
+Materials (as both terms are defined below). By exercising the Licensed Rights, Licensee 
+accepts and agrees to be bound by the terms and conditions of this License Agreement. 
+Licensee is granted the Licensed Rights in consideration of Licensee's acceptance of 
+these terms and conditions. The Licensed Rights in the Licensed Materials are granted 
+by 23ndMe, Inc. Delaware corporation having a principal place of business at 899 West 
+Evelyn Avenue, Mountain View, CA 94041 ("23andMe") subject to the terms of this 
+License Agreement.
+
+IF YOU ARE EXERCISING THE LICENSED RIGHTS FOR NON-COMMERCIAL RESEARCH PURPOSES AND ON 
+BEHALF OF (i) AN ACADEMIC INSTITUTION, (ii) A NOT-FOR-PROFIT INSTITUTION, OR (iii) 
+YOURSELF, AS AN INDIVIDUAL, AND YOU AGREE TO BE BOUND BY THE TERMS OF THIS LICENSE 
+AGREEMENT, YOU MAY DOWNLOAD OR OTHERWISE USE THE LICENSED MATERIALS AS SET FORTH IN THIS 
+LICENSE AGREEMENT. OTHERWISE, 23ANDME DOES NOT GRANT YOU A LICENSE TO THE LICENSED 
+MATERIALS.
+
+1.  Definitions. In addition to the definitions appearing elsewhere in this 
+    Agreement, when used in this Agreement (or its exhibits) the following terms shall 
+    have the following meanings:
+
+    a.  "Derivative Work(s)" shall mean any revision, enhancement, modification, 
+        translation, abridgement, condensation, or expansion created by Licensee for 
+        internal purposes that is based upon the Licensed Materials or a portion 
+        thereof that would be a copyright infringement if prepared without the 
+        authorization of 23andMe or used for redistribution of the Licensed Materials 
+        outside Licensee's Institution.
+
+    b.  "Institution" means an academic or not-for-profit institution performing bona-
+        fide non-commercial research on the field of biotechnology.
+
+    c.  "Licensed Materials" means the yHaplo™ Software, including the associated 
+        White Paper, Manual, and any additional documentation.
+
+    d.  "Licensed Rights" means the non-exclusive rights to download, use, access, 
+        copy or modify the Licensed Materials for non-commercial research purposes 
+        and subject to the terms and conditions of this License.
+
+    e.  "Licensee" means (i) the Institution exercising the Licensed Rights in the  
+        Licensed Materials under this License. For the sake of clarity, the Agreement 
+        applies to the Institution and the individual(s) employed by, affiliated with, or 
+        enrolled at, an Institution, who exercise(s) the Licensed Rights on behalf of 
+        such Institution; or (ii) an individual exercising the Licensed Rights in the 
+        Licensed Materials on behalf of himself or herself exclusively for Non-Commercial 
+        Research.
+
+    f.  "Licensor" means 23andMe, Inc.
+
+    g.  "Non-Commercial Research" means bona-fide research on the field of 
+        biotechnology (i) primarily intended to generate new knowledge and 
+        understanding using scientific methods; (ii) conducted to publish the research 
+        findings and share the derived data in the scientific community; (iii) conducted 
+        in accordance with applicable laws, regulations and ethical requirements; and 
+        (iv) not intended for, or directed towards, commercial advantage or monetary 
+        compensation. 
+
+2.  Scope of Licensed Rights.
+
+    a.  License grant. Subject to the terms and conditions of this Agreement, 
+        23andMe hereby grants Licensee a worldwide, royalty-free, non-sublicensable, 
+        non-exclusive, irrevocable license to exercise the Licensed Rights in the 
+        Licensed Materials to:
+
+        (i)   Use and reproduce the Licensed Materials, in whole or in part, for 
+              internal Non-Commercial Research purposes only; and
+        (ii)  produce, reproduce, and create Derivative Works for internal 
+              Non-Commercial Research purposes only.
+
+    b.  License Term. The term of the License under this Agreement is specified in 
+        Section 6(a).
+
+    c.  Downstream recipients.
+
+        (i)   Additional offer from 23andMe; Derivative Works. If Licensee modifies 
+              the Licensed Materials, every recipient of the Licensed Materials, as 
+              modified per Licensee's contributions automatically receives an offer from 
+              23andMe to exercise the Licensed Rights in the Licensed Materials under the 
+              conditions of the license that Licensee applies to their contributions to 
+              the Licensed Materials ("Derivative Work License"), provided that any 
+              Derivative Work License must be solely used internally, for Non-Commercial 
+              Research purposes only and must be substantially similar to the Licensed 
+              Rights granted under this Agreement.
+        (ii)  No downstream restrictions. Licensee may not offer or impose any 
+              additional or different terms or conditions on, or apply any technological 
+              measures to, the Licensed Materials (when shared internally) if doing so 
+              restricts exercise of the Licensed Rights by a recipient of the Licensed 
+              Material.
+
+    d.  No endorsement. Nothing in this License constitutes or may be construed as 
+        permission to assert or imply that Licensee is, or that Licensee's use of the 
+        Licensed Materials is, connected with, or sponsored, endorsed, or granted 
+        official status by, 23andMe or others designated to receive attribution as 
+        provided in Section 3(a)(i)(A).
+
+    e.  Other rights.
+
+        (i)   Moral rights, such as the right of integrity, are not licensed under this 
+              License, nor are publicity, privacy, and/or other similar personality 
+              rights; however, to the extent possible, 23andMe waives and/or agrees not 
+              to assert any such rights held by 23andMe to the limited extent necessary 
+              to allow Licensee to exercise the Licensed Rights, but not otherwise.
+        (ii)  Patent and trademark rights are not licensed under this License.
+        (iii) 23andMe expressly reserves any right to collect royalties and/or exercise 
+              any legal or equitable remedy available to it when the Licensed Materials 
+              are used other than for Non-Commercial Research purposes or otherwise 
+              beyond the scope of rights granted under this License Agreement.
+
+3.  License Conditions. Licensee's exercise of the Licensed Rights is expressly 
+    made subject to the following conditions.
+
+    a. Attribution.
+
+        (i)   Licensee may share the Licensed Materials internally (including in 
+              modified form), provided that Licensee must:
+              A. Retain the following if it is supplied by 23andMe with the Licensed 
+                 Material:
+                 a. Identification of 23andMe as creator of the Licensed Materials in 
+                    the manner requested by 23andMe;
+                 b. A copyright notice;
+                 c. A notice that refers to the file where this License Agreement is 
+                    made available or a link to this License Agreement;
+                 d. A notice that refers to the disclaimer of warranties;
+                 e. A URI or hyperlink to the Licensed Materials to the extent 
+                    reasonably practicable;
+              B. Indicate if Licensee modified the Licensed Material and retain an 
+                 indication of any previous modifications; and
+              C. Indicate the Licensed Materials are licensed under this Agreement, and 
+                 include the text of, or the URI or hyperlink to, this License Agreement.
+        (ii)  Licensee may satisfy the conditions in this Section 3(a) in any reasonable 
+              manner based on the medium, means, and context in which Licensee shares 
+              the Licensed Material. For example, it may be reasonable to satisfy the 
+              conditions by providing a URI or hyperlink to a resource that includes the 
+              required information.
+        (iii) If requested by 23andMe, Licensee must remove any of the information 
+              required by Section 3(a) to the extent reasonably practicable.
+              b. No Redistribution or Sharing. In addition to the conditions in Section 
+              3(a) if Licensee modifies the Licensed Materials, such modifications may 
+              only be used for internal purposes and not for distribution. The Licensed 
+              Materials may not be used for redistribution purposes and any individual or 
+              institution interested in obtaining Licensed Rights in the Licensed 
+              Materials should be directed to 23andMe. 
+
+4.  DISCLAIMER OF WARRANTIES AND LIMITATION OF LIABILITY.
+
+    a.  UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY 23ANDME, TO THE 
+        EXTENT POSSIBLE, 23ANDME OFFERS THE LICENSED MATERIALS AS-IS AND 
+        AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY 
+        KIND CONCERNING THE LICENSED MATERIALS, WHETHER EXPRESS, IMPLIED, 
+        STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION, 
+        WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR 
+        PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS, 
+        ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT 
+        KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT 
+        ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO 
+        LICENSEE.
+
+    b.  TO THE EXTENT POSSIBLE, IN NO EVENT WILL 23ANDME BE LIABLE TO 
+        LICENSEE OR TO ANY THIRD PARTY ON ANY LEGAL THEORY (INCLUDING, 
+        WITHOUT LIMITATION, NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, 
+        SPECIAL, INDIRECT, INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, 
+        OR OTHER LOSSES, COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS 
+        LICENSE AGREEMENT OR USE OF THE LICENSED MATERIALS, EVEN IF 
+        23ANDME HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, 
+        EXPENSES, OR DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT 
+        ALLOWED IN FULL OR IN PART, THIS LIMITATION MAY NOT APPLY TO 
+        LICENSEE.
+
+    c.  The disclaimer of warranties and limitation of liability provided above shall be 
+        interpreted in a manner that, to the extent possible, most closely 
+        approximates an absolute disclaimer and waiver of all liability.
+
+5.  Term and Termination.
+
+    a.  The License Rights to the Licensed Materials will apply for the term of the 
+        copyrights licensed under the Agreement. However, if Licensee fails to comply 
+        with this License, then Licensee's rights under this License Agreement 
+        terminate automatically.
+
+    b.  Where Licensee's right to use the Licensed Material has terminated under 
+        Section 5(a), it may be reinstated: (i) Automatically as of the date the 
+        violation is cured, provided it is cured within fifteen (15) days of Licensee's 
+        discovery of the violation; or (ii) Upon express reinstatement by 23andMe. For 
+        clarity, this Section 5 does not affect any right 23andMe may have to seek any 
+        remedies available at law or equity for Licensee's violations of this License 
+        Agreement.
+
+    c.  23andMe reserves the right to (i) offer the Licensed Materials under separate 
+        terms or conditions or (ii) stop distributing the Licensed Materials at any time; 
+        however, doing so will not terminate the License Rights granted herein.
+
+    d.  Sections 1, 4, 5, 6, and 7 survive termination of this License Agreement.
+
+6.  Other Terms and Conditions. By exercising the Licensed Rights, Licensee 
+    understands and agrees that this License Agreement (and any dispute, controversy, 
+    proceedings or claim of whatever nature arising out of this Agreement or its 
+    formation) shall be construed, interpreted and governed by the laws of the State of 
+    California and shall be subject to the exclusive jurisdiction of the California 
+    Courts. 23andMe shall not be bound by any additional or different terms or conditions 
+    communicated by Licensee unless expressly agreed in a writing executed by an 
+    authorized officer. Nothing in this Agreement shall operate to transfer to Licensee 
+    any intellectual property rights relating to the Licensed Materials. Any 
+    arrangements, understandings, or agreements regarding the Licensed Material not 
+    stated herein are separate from and independent of the terms and conditions of this 
+    License Agreement.
+
+7.  Interpretation. To the extent possible, if any provision of this License is 
+    deemed unenforceable, it shall be automatically reformed to the minimum extent 
+    necessary to make it enforceable. If the provision cannot be reformed, it shall be 
+    severed from this License without affecting the enforceability of the remaining terms 
+    and conditions. No term or condition of this License will be waived and no failure to 
+    comply consented to unless expressly agreed to by 23andMe. Nothing in this License 
+    constitutes or may be interpreted as a limitation upon, or waiver of, any privileges 
+    and immunities that apply to 23andMe or Licensee, including from the legal processes 
+    of any jurisdiction or authority.
+
+End of License Agreement
