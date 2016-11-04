@@ -5,7 +5,7 @@
 # Defines the Path class.
 #----------------------------------------------------------------------
 from collections import deque
-from node import Node
+from snp import SNP
 
 class Path(object):
     '''
@@ -22,8 +22,10 @@ class Path(object):
         self.initPushThroughVars()
         
     def initPushThroughVars(self):
-        '''initializes variables that track progress subsequent to pushing through 
-            a branch with 1 ancestral and 0 derived alleles'''
+        '''
+        initializes variables that track progress subsequent to pushing through 
+        a branch with 1 ancestral and 0 derived alleles
+        '''
         
         self.nodeWhenPushedThrough = None
         self.mostDerivedSNPWhenPushedThrough = None
@@ -97,8 +99,10 @@ class Path(object):
                     and self.numAncestral < other.numAncestral)
 
     def fork(self, nodeList):
-        '''returns a deque of paths, each of which is identical to self
-            but with a new current node'''
+        '''
+        returns a deque of paths, each of which is identical to self
+        but with a new current node
+        '''
         
         pathDeque = deque()
         for node in nodeList:
@@ -109,9 +113,11 @@ class Path(object):
         return pathDeque
 
     def revertIfPushedThroughTooFar(self):
-        '''if the path has pushed through a branch with 1 ancestral and 0 derived
-            and, after doing so, it has encountered just one derived allele and a nonzero
-            number of ancestral alleles, revert the path to its state before pushing through'''
+        '''
+        if the path has pushed through a branch with 1 ancestral and 0 derived
+        and, after doing so, it has encountered just one derived allele and a nonzero
+        number of ancestral alleles, revert the path to its state before pushing through
+        '''
         
         if self.hasPushedThrough \
                 and self.numAncSincePushThrough  > 0 \
@@ -123,15 +129,17 @@ class Path(object):
             self.initPushThroughVars()
     
     def updateWithBranchAssessment(self, ancSNPlist, derSNPlist):
-        '''extends derived SNP list, sets most derived SNP, and adds number of 
-            ancestral alleles seen. also, manages tracking of whether or not path 
-            has pushed through an (anc,der)==(1,0) branch'''
+        '''
+        extends derived SNP list, sets most derived SNP, and adds number of 
+        ancestral alleles seen. also, manages tracking of whether or not path 
+        has pushed through an (anc,der)==(1,0) branch
+        '''
             
         numAncestral, numDerived = len(ancSNPlist), len(derSNPlist)
         self.numAncestral += numAncestral
         self.derSNPlist.extend(derSNPlist)
         if derSNPlist:
-            self.mostDerivedSNP = Node.mostHighlyRankedSNPonList(derSNPlist)
+            self.mostDerivedSNP = SNP.mostHighlyRankedMarkerOnList(derSNPlist)
         
         if self.hasPushedThrough:
             self.updatePushThroughVars(numAncestral, numDerived)

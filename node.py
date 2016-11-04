@@ -4,10 +4,12 @@
 #
 # Defines the Node class.
 #----------------------------------------------------------------------
-import sys
 from collections import deque
 from operator import attrgetter
+
+import utils
 from page import Page
+from snp import SNP
 
 class Node(object):
     '''
@@ -24,6 +26,7 @@ class Node(object):
     config    = None
     args      = None
     errAndLog = None
+    pageList  = list()
     pageDict  = dict()
 
     def __init__(self, parent, tree=None):
@@ -37,14 +40,20 @@ class Node(object):
             if self.depth > Node.tree.maxDepth:
                 Node.tree.maxDepth = self.depth
 
-        self.label = ''           # see setLabel
-        self.haplogroup = ''      # see setLabel
-        self.hgShort = ''         # see setHgShort
-        self.branchLength = None  # see setBranchLength
-        self.DFSrank = 0          # see setDFSrank
-        self.snpList = list()     # see addSNP
-        self.childList = list()   # see addChild, bifurcate, serialSplit
-        self.page = None          # see setLabel, addSNP
+        self.haplogroup = '' # see setLabel  | ycc haplogroup name          e.g., R1b1c
+        self.label      = '' # see setLabel  | ycc including alt names      e.g., P/K2b2
+        self.hgTrunc    = '' # see setLabel  | truncated haplogroup         e.g., R1b1c -> R
+        self.hgSNP      = '' # see prioritySortSNPlistAndSetHgSNP |         e.g., R-V88
+        self.childList         = list()  # see addChild, bifurcate, serialSplit
+        self.snpList           = list()  # see addSNP
+        self.droppedMarkerList = list()  # see addDroppedMarker
+        self.page              = None    # see addSNP
+        self.branchLength      = None    # see setBranchLength
+        self.DFSrank           = 0       # see setDFSrank
+
+        if Node.args.writeContentMappings and self.isRoot():
+            self.page = Node.pageDict[Node.config.rootHaplogroup]
+            self.page.setNode(self)
         
     def __str__(self):
         'string representation: indicates depth for traversal output'
@@ -52,15 +61,19 @@ class Node(object):
         dotList = list('.' * (self.depth))
         for i in xrange(0, len(dotList), 5):
             dotList[i] = '|'
-        return '%s%s %s' % (''.join(dotList), self.label, self.strHgShortWithSNP())
-    
-    def strHgShortWithSNP(self):
-        'string representation: haplogroup short form with SNP. e.g., R1b-V88'
+        return '%s%s %s' % (''.join(dotList), self.label, self.hgSNP)
+
+    @property
+    def mostHighlyRankedSNP(self):
+        'the most highly ranked SNP'
         
-        if self.snpList:
-            return '%s-%s' % (self.hgShort, self.mostHighlyRankedSNP.label)
-        else:
-            return ''
+        return SNP.mostHighlyRankedMarkerOnList(self.snpList)
+    
+    @property
+    def mostHighlyRankedDroppedMarker(self):
+        'the most highly ranked dropped marker'
+        
+        return SNP.mostHighlyRankedMarkerOnList(self.droppedMarkerList)
     
     def strSNPlist(self):
         'string representation: label and list of snps'
@@ -68,30 +81,19 @@ class Node(object):
         snpString = ' '.join(snp.label for snp in self.snpList)
         return '%-25s %s' % (self.label, snpString)
     
-    def strTreeTable(self):
-        'string representation: line for tree table'
+    def strTreeTableRow(self):
+        'string representation: one row of tree table'
         
-        label = self.label.split('/')[0]    # re-split to enable "Root"
-
-        hgShortWithSNP = self.strHgShortWithSNP()
-        if not hgShortWithSNP:              # for branches without SNPs
-            hgShortWithSNP = '.'
+        yccLabel = self.haplogroup
         
         if self.isRoot():
-            parentDFSrank, parentLabel = '.', '.'
+            parentDFSrank = parentHgSNP = 'root'
         else:
             parentDFSrank = str(self.parent.DFSrank)
-            parentLabel = self.parent.label.split('/')[0]
+            parentHgSNP   = self.parent.hgSNP
             
-        return '%-5d %-25s %-20s %-6s %-25s' % \
-            (self.DFSrank, label, hgShortWithSNP, parentDFSrank, parentLabel)
+        return '\t'.join([str(self.DFSrank), yccLabel, self.hgSNP, parentDFSrank, parentHgSNP])
         
-    @property
-    def mostHighlyRankedSNP(self):
-        'the most highly ranked SNP'
-        
-        return Node.mostHighlyRankedSNPonList(self.snpList)
-    
     # static methods, including class variable setters
     #----------------------------------------------------------------------
     @staticmethod
@@ -107,58 +109,53 @@ class Node(object):
 
     @staticmethod
     def buildPageDict():
-        'builds a dictionary of 23andMe content pages'
+        '''
+        builds a dictionary of 23andMe content pages. pagesFN comes from these two gdocs:
+        - https://docs.google.com/spreadsheets/d/1mf86slweZEKUd5hzG2GmKGTGIpHuDipJz2u221y2zVE/edit?ts=568eb997#gid=0
+        - https://docs.google.com/spreadsheets/d/1oo0sRmYFNeWikuOxcb_1obOoO35wQccmOzyGRmqDMtc/edit?ts=578578d0#gid=362797346
+        '''
         
-        with open(Node.config.pagesFN) as pagesFile:
+        utils.checkFileExistence(Node.config.pagesFN, 'Content pages')
+        with open(Node.config.pagesFN, 'r') as pagesFile:
+            pagesFile.readline()    # header
             for line in pagesFile:
-                haplogroup, hgSNP = line.strip().split()
-                page = Page(haplogroup, hgSNP)
-                Node.pageDict[haplogroup] = page
-                if page.snpLabel:
-                    Node.pageDict[page.snpLabel] = page
+                yccOld, snpName = line.strip().split()
+                page = Page(yccOld, snpName)
+                Node.pageList.append(page)
+                
+                if yccOld == Node.config.rootHaplogroup:
+                    Node.pageDict[Node.config.rootHaplogroup] = page
+                elif snpName != '.':
+                    Node.pageDict[snpName] = page
 
     @staticmethod
-    def mostHighlyRankedSNPonList(snpList):
-        '''returns the most highly ranked SNP on a list. 
-            the purpose of this method is to centralize the knowledge that SNP lists 
-            are now ranked in priority order rather than in reverse-priority order'''   
+    def truncateHaplogroupLabel(haplogroup):
+        'returns first 2-5 characters of specified haplogroups and first letter of others'
         
-        if snpList:
-            return snpList[0]
-        else:
-            return None
-            
+        for numChars in xrange(Node.config.multiCharHgTruncMaxLen, 1, -1):
+            if haplogroup[:numChars] in Node.config.multiCharHgTruncSet:
+                return haplogroup[:numChars]
+        
+        return haplogroup[0]
+
     # setters, mutaters
     #----------------------------------------------------------------------
     def setLabel(self, label):
-        'sets label, haplogroup, and hgShort'
+        'sets label, haplogroup, and hgTrunc'
         
         self.label = label
         labelList = label.split('/')
         
         if self.isRoot():
-            self.haplogroup = self.config.rootHaplogroup
+            self.haplogroup = self.hgTrunc = self.config.rootHaplogroup
             Node.tree.hg2nodeDict[self.haplogroup] = self
         else:
             self.haplogroup = labelList[0]
-            self.setHgShort()
+            self.hgTrunc    = Node.truncateHaplogroupLabel(self.haplogroup)
         
         for key in labelList:
             Node.tree.hg2nodeDict[key] = self
             
-        if self.haplogroup in Node.pageDict:
-            self.page = Node.pageDict[self.haplogroup]
-
-    def setHgShort(self):
-        'returns first 3-5 characters of specified haplogroups and first 2 of others'
-        
-        for numChars in xrange(5, 2, -1):
-            if self.haplogroup[:numChars] in Node.config.mutiCharHgShortFormSet:
-                self.hgShort = self.haplogroup[:numChars]
-                break
-        if not self.hgShort:
-            self.hgShort = self.haplogroup[:2]
-
     def setBranchLength(self, branchLength):
         'sets the branch length'
         
@@ -174,21 +171,47 @@ class Node(object):
         
         self.snpList.append(snp)
         if snp.label in Node.pageDict:
-            page = Node.pageDict[snp.label]
-            if self.page and self.page is not page:
-                sys.exit('ERROR. Inconsistent pages assigned to node: %s\n' % self.label + \
-                         'Page 1: %s\n' % self.page + \
-                         'Page 2: %s\n' % page)
-            self.page = page
+            self.page = Node.pageDict[snp.label]
+            self.page.setNode(self)
+    
+    def addDroppedMarker(self, droppedMarker):
+        'appends a dropped marker to the list'
         
-    def sortSNPlist(self):
-        'sorts snps by priority ranking'
+        self.droppedMarkerList.append(droppedMarker)
     
-        self.snpList = sorted(self.snpList, 
-                              key=attrgetter('labelLettersRank', 
-                                             'labelLetters', 
-                                             'labelNumber'))
-    
+    def prioritySortSNPlistAndSetHgSNP(self):
+        '''
+        first, sorts snp list (or dropped marker list) by priority ranking.
+        then, sets reresentative-SNP-based label: self.hgSNP
+        the standard form incudes the truncated haplogroup label 
+        and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
+        '''
+        
+        # root: no markers
+        if self.isRoot():
+            self.hgSNP = self.haplogroup
+            
+        # normal case
+        elif self.snpList:
+            self.snpList = SNP.prioritySortMarkerList(self.snpList)
+            self.hgSNP = self.mostHighlyRankedSNP.hgSNP
+            
+        # backup: use discared marker name
+        elif self.droppedMarkerList:
+            self.droppedMarkerList = SNP.prioritySortMarkerList(self.droppedMarkerList)
+            markerName = self.mostHighlyRankedDroppedMarker.name
+            self.hgSNP = '%s-%s' % (self.hgTrunc, markerName)
+            
+        # no markers to use
+        else:
+            if self.parent.hgSNP:
+                symbol = '*' if self.isLeaf() else '+'
+                self.hgSNP = self.parent.hgSNP + symbol
+            else:
+                Node.errAndLog('WARNING. Attempted to set star label, ' + \
+                               'but parent.hgSNP not set yet: %s\n' % self.haplogroup)
+                self.hgSNP = self.haplogroup
+        
     # queries
     #----------------------------------------------------------------------
     def isRoot(self):
@@ -367,6 +390,7 @@ class Node(object):
     def buildNewickStringRecursive(self, alignTips=False, platformVersion=None):
         'recursively builds Newick string for the subtree rooted at this node'
         
+        # TODO 2.3 hgSNP: incorporate into tree output
         if not self.isLeaf():
             childStringList = list()
             for child in self.childList[::-1]:

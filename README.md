@@ -1,71 +1,69 @@
-# Y-Chromosome Haplogroup Calling
+# yHaplo: Identifying Y-Chromosome Haplogroups
 
 David Poznik  
-23andMe
-May, 2016
+23andMe  
+October, 2016
 
 --------------------------------------------------------------------------------
-## Software overview
+## Overview
 
-This software identifies the Y-chromosome haplogroup of each male in a sample of 
-one to millions. Sequence data will yield the most highly resolved classifications, 
-but the algorithm also works well with array-based genotype data, provided a reasonable 
-number of phylogenetically informative sites have been assayed. 
+yHaplo identifies the Y-chromosome haplogroup of each male in a sample of 
+one to millions. It does not rely on any particular genotyping modality or platform. 
+Although full sequences yield the most granular haplogroup classifications, genotyping 
+arrays can yield reliable calls, provided a reasonable number of phylogenetically 
+informative variants has been assayed. 
 
-The 2-step process is to:
+Briefly, haplogroup calling involves two steps. The program first builds an internal 
+representation of the Y-chromosome phylogeny by reading its primary structure from 
+(Newick-formatted) text and then importing phylogenetically informative SNPs from the 
+[ISOGG database](http://isogg.org/tree/ISOGG_YDNA_SNP_Index.html), storing each SNP
+within a specific node and growing the tree as necessary. It then traverses the tree
+for each individual, identifying for each the path of derived alleles leading to 
+a haplogroup designation.
 
-1. Build internal representation of the Y-chromosome phylogeny.
-   a. Read primary structure from text file (Newick format).
-   b. Import phylogenetically informative SNPs from the 
-      [ISOGG database](http://isogg.org/tree/ISOGG_YDNA_SNP_Index.html),
-      storing them within the nodes and growing the tree as necessary.
-2. Call haplogroup of each sample.
-   a. Build genotype dictionary.
-   b. Traverse tree to identify path of derived alleles 
-      leading to haplogroup designation.
+yHaplo is available for non-commercial use pursuant to the terms of the non-exclusive 
+license agreement, `LICENSE.txt`. To learn more about the algorithm, please see the 
+[white paper](https://api.23andme.com/res/pdf/23-13_paternal_haplogroups_yHaplo.pdf), 
+and to learn more about the software, please see `yHaplo.manual.pdf`. 
 
 
 --------------------------------------------------------------------------------
-## Input and options
+## Input
 
 ### Phylogenetic data
 
-input/
+`input/`
 
-* y.tree.primary.<DATE>.nwk  : primary structure of the Y-chromosome tree
-* isogg.<DATE>.txt           : phylogenetically informative SNPs
-* isogg.correct.*.txt        : corrections to ISOGG data
-* isogg.omit.*.txt           : SNPs to drop due to inconsistencies observed in test data
-* isogg.multiallelic.txt     : physical coordinates of multiallelic sites to be excluded
+* `y.tree.primary.DATE.nwk`   : primary structure of the Y-chromosome tree
+* `isogg.DATE.txt`            : phylogenetically informative SNPs
+* `isogg.correct.*.txt`       : corrections to ISOGG data
+* `isogg.omit.*.txt`          : SNPs to drop due to inconsistencies observed in test data
+* `isogg.multiallelic.txt`    : physical coordinates of multiallelic sites to be excluded
+* `representative.SNPs.*.txt` : SNPs deemed representative of a corresponding haplogroup
 
 
 ### Supported genotype formats
 
-* .genos.txt    : sample-major genotypes  
+* `.genos.txt`    : sample-major genotypes  
     * row 1: physical coordinates  
-    * column 1: sample IDs
+    * column 1: individual IDs
     * cell (i, j): genotype for individual i at position j, encoded as a single character from the set { A, C, G, T, . }, with "." representing an unobserved value
-* .resid.txt    : file with 23andMe research IDs in the first column
-* .vcf, .vcf.gz : snp-major VCF file
-* .vcf4         : snp-major pseudo-VCF. differences include:
+* `.resid.txt`    : file with 23andMe research IDs in the first column
+* `.vcf`, `.vcf.gz` : snp-major VCF file
+* `.vcf4`         : snp-major pseudo-VCF. differences include:
     * no "#" in header row
     * fewer header columns
     * GT values recorded as { A, C, G, T, . } rather than { 0, 1, . }
 
-### Command-line options
-
-Please issue the following command to view the full list of command-line options: `callHaplogroups.py -h`
-
 
 --------------------------------------------------------------------------------
-## Code overview
+## Code
 
-### Main engine
+### Driver script
 
-`callHaplogroups.py` : builds tree and calls haplogroups for individuals. 
-                          this script's numerous options are described below.
+`callHaplogroups.py` : for an overiew of command-line options, issue the following command: `callHaplogroups.py -h`
 
-### Classes
+### Main classes
 
 * `Tree`         : knows root, depth, haplogroup-to-node mappings, etc.;
                      parses a Newick file to build primary tree;
@@ -91,10 +89,3 @@ Please issue the following command to view the full list of command-line options
 
 * `convert2genos.py` : converts data to .genos.txt format
 * `plotTree.py`       : plots a newick tree
-
-
---------------------------------------------------------------------------------
-## Output directories
-
-* converted/   : output of convert2genos.py
-* output/      : output of callHaplogroups.py

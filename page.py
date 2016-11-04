@@ -10,13 +10,23 @@
 class Page(object):
     'A simple container for a 23andMe content page'
 
-    def __init__(self, haplogroup, hgSNP):
-        self.haplogroup = haplogroup
-        self.hgSNP = hgSNP
-        if hgSNP.find('-') > 0:
-            self.snpLabel = hgSNP.split('-')[-1]
-        else:
-            self.snpLabel = None
+    stringTp = '%-10s %s'
+    
+    def __init__(self, yccOld, snpName):
+        self.yccOld  = yccOld
+        self.snpName = snpName
+        self.node    = None
 
     def __str__(self):
-        return '%-15s %s' % (self.haplogroup, self.hgSNP)
+        if not self.node:
+            return Page.stringTp % ('.', '.')
+        elif self.node.isRoot():
+            return Page.stringTp % (self.node.haplogroup, self.node.haplogroup)
+        else:
+            return Page.stringTp % (self.node.hgSNP, self.node.haplogroup)
+
+    def strFull(self):
+        return '%-10s %-10s %s' % (self.yccOld, self.snpName, str(self))
+
+    def setNode(self, node):
+        self.node = node

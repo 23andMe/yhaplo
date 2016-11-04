@@ -8,15 +8,16 @@
 #----------------------------------------------------------------------
 import re
 import sys
+from operator import attrgetter
 
 import utils
 
 class SNP(object):
     '''
     A snp knows its:
-        - names
-        - haplogroup
-        - physical info: position, ancestral, derived
+    - names
+    - haplogroup
+    - physical info: position, ancestral, derived
     '''
     
     tree      = None
@@ -28,11 +29,10 @@ class SNP(object):
         if SNP.tree is None:
             sys.exit('ERROR. Before instantiating, must call SNP.setClassVariables(tree).')
 
-        self.label = name
-        self.labelLettersRank, self.labelLetters, self.labelNumber = \
-            SNP.parseLabel(self.label, SNP.config.snpLabelLettersRankDict)
+        self.setLabel(name)
         self.nameList = [name]
-        
+        self.isRepresentative = name in SNP.tree.representativeSNPnameSet
+
         self.haplogroup = haplogroup
         self.position   = position
         self.ancestral  = ancestral
@@ -42,6 +42,14 @@ class SNP(object):
         self.node = SNP.tree.findOrCreateNode(haplogroup)
         self.node.addSNP(self)
         
+    def setLabel(self, label):
+        'sets the label and associated ivars'
+        
+        self.label = label
+        self.labelLettersRank, self.labelLetters, self.labelNumber = \
+            SNP.parseLabel(label, SNP.config.snpLabelLettersRankDict)
+        self.labelCleaned = SNP.cleanLabel(label)
+
     def __str__(self):
         'medium-length string representation'
         
@@ -58,6 +66,18 @@ class SNP(object):
         
         return '%s:%s' % (self.node.label, self.label)
         
+    @property
+    def DFSrank(self):
+        'returns depth-first search rank'
+        
+        return self.node.DFSrank
+    
+    @property
+    def hgSNP(self):
+        'string representation: truncated haplogroup label with SNP label. e.g., R-V88'
+        
+        return '%s-%s' % (self.node.hgTrunc, self.labelCleaned)
+    
     def isDerived(self, geno):
         return geno == self.derived
     
@@ -67,59 +87,52 @@ class SNP(object):
     def isOnPlatform(self, platformVersion):
         return self.position in PlatformSNP.platformPosSetDict[platformVersion]
         
-    def addName(self, name):
-        'add name to list, possibly setting label'
-        
-        self.nameList.append(name)
-        labelLettersRank, labelLetters, labelNumber = \
-            SNP.parseLabel(name, SNP.config.snpLabelLettersRankDict)
-        if (labelLettersRank < self.labelLettersRank) or \
-                (labelLetters == self.labelLetters and \
-                 labelNumber < self.labelNumber):
-            self.label = name
-            self.labelLettersRank = labelLettersRank
-            self.labelLetters = labelLetters
-            self.labelNumber = labelNumber
-            
-    def getDFSrank(self):
-        'returns depth-first search rank'
-        
-        return self.node.DFSrank
-    
-    def getHgSNP(self):
-        'string representation with shortened haplogroup'
-        
-        return '%s-%s' % (self.node.hgShort, self.getTrimmedLabel())
-    
-    def getTrimmedLabel(self):
-        'returns label with superfluous prefixes trimmed'
-        
-        trimmedLabel = self.label
-        for superfluousSNPprefix in SNP.config.superfluousSNPprefixList:
-            if trimmedLabel[:len(superfluousSNPprefix)] == superfluousSNPprefix:
-                trimmedLabel = trimmedLabel[len(superfluousSNPprefix):]
-            
-        return trimmedLabel
-    
     def backTracePath(self):
         'returns the backtrace path (node list) for the corresponding node'
         
         return self.node.backTracePath()
 
+    def addName(self, name):
+        'add name to list, possibly setting label'
+        
+        labelLettersRank, labelLetters, labelNumber = \
+            SNP.parseLabel(name, SNP.config.snpLabelLettersRankDict)
+        if (labelLettersRank < self.labelLettersRank) or \
+                (labelLetters == self.labelLetters and labelNumber < self.labelNumber):
+            self.setLabel(name)
+
+        self.nameList.append(name)
+        if name in SNP.tree.representativeSNPnameSet:
+            self.isRepresentative = True
+
+    @staticmethod
+    def cleanLabel(label):
+        'removes superfluous text and hyphens from a SNP label'
+        
+        for superfluousSNPtext in SNP.config.superfluousSNPtextList:
+            label = label.replace(superfluousSNPtext, '')
+        
+        label = label.replace('-', '_').replace('^', '')
+        label = label.decode('utf-8').replace(u'\u2264', '<=').encode('utf-8')
+        
+        return label
+    
     @staticmethod
     def parseLabel(name, snpLabelLettersRankDict):
-        '''returns the priority rank of a snp name 
-            and a decomposition of the name into letters and a number'''
+        '''
+        returns the priority rank of a snp name 
+        and a decomposition of the name into letters and a number
+        '''
         
-        match = re.search(r'([a-zA-Z]*)([0-9]*)', name)
-        letters, number = match.group(1), match.group(2)
-        number = int(number) if len(number) > 0 else 0
-        if letters in snpLabelLettersRankDict:
-            labelLettersRank = snpLabelLettersRankDict[letters]
+        match = re.search(r'([a-zA-Z-]*)([0-9]*)', name)
+        labelLetters, labelNumber = match.group(1), match.group(2)
+        labelNumber = int(labelNumber) if len(labelNumber) > 0 else 0
+        if labelLetters in snpLabelLettersRankDict:
+            labelLettersRank = snpLabelLettersRankDict[labelLetters]
         else:
             labelLettersRank = len(snpLabelLettersRankDict)  # max value
         
-        return labelLettersRank, letters, number
+        return labelLettersRank, labelLetters, labelNumber
         
     @staticmethod
     def setClassVariables(tree):
@@ -134,6 +147,33 @@ class SNP(object):
             PlatformSNP.buildPlatformPosSetDict()
         if SNP.config.runFromAblocks:
             PlatformSNP.buildPlatformSNPlistDict()
+    
+    @staticmethod
+    def prioritySortMarkerList(markerList):
+        '''
+        sorts a list of markers by priority ranking, with preference given to 
+        those deemed representative for the corresponding haplogroup
+        '''
+        
+        markerList = sorted(markerList, 
+            key=attrgetter('labelLettersRank', 'labelLetters', 'labelNumber'))
+        markerList = sorted(markerList,
+            key=attrgetter('isRepresentative'), reverse=True)
+
+        return markerList
+    
+    @staticmethod
+    def mostHighlyRankedMarkerOnList(markerList):
+        '''
+        returns the most highly ranked marker on a list. 
+        the purpose of this method is to record the fact that marker lists are  
+        sorted with highest priority first
+        '''   
+        
+        if markerList:
+            return markerList[0]
+        else:
+            return None
 
 #--------------------------------------------------------------------------
 
@@ -170,6 +210,8 @@ class PlatformSNP(object):
     @staticmethod
     def getGenotypeFromAblock(ablock, ablockIndex):
         '''
+        gets genotype from ablock
+        
         input:  ablock      = a numpy array of { 0, ..., 15 }
                 ablockIndex
         output: genotype
@@ -206,3 +248,32 @@ class PlatformSNP(object):
                 platformSNPlist.append(PlatformSNP(position))
                             
             PlatformSNP.platformSNPlistDict[platformVersion] = platformSNPlist
+
+#--------------------------------------------------------------------------
+
+class DroppedMarker(object):
+    '''
+    a marker not used for classification but potentially useful for node labeling
+    examples: non-SNPs, multiallelic SNPs, and SNPs not meeting ISOGG quality guidelines
+    '''
+    
+    def __init__(self, name, haplogroup):
+        self.name = SNP.cleanLabel(name)
+        self.haplogroup = haplogroup
+        
+    def addToNode(self):
+        'adds this dropped marker to the corresponding node, if it exists'
+        
+        if self.haplogroup in SNP.tree.hg2nodeDict:
+            self.setSortVariables()
+            SNP.tree.hg2nodeDict[self.haplogroup].addDroppedMarker(self)
+            return True
+        else:
+            return False
+
+    def setSortVariables(self):
+        'set variables used for priority sorting'
+        
+        self.labelLettersRank, self.labelLetters, self.labelNumber = \
+            SNP.parseLabel(self.name, SNP.config.snpLabelLettersRankDict)
+        self.isRepresentative = self.name in SNP.tree.representativeSNPnameSet

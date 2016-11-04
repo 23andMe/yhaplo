@@ -1,10 +1,11 @@
 # David Poznik
 # 2016.01.05
 # utils.py
-# 
+#
 # Defines utility functions and non-application-specific global constants.
 #----------------------------------------------------------------------
 import csv
+import errno
 import gzip
 import logging
 import os
@@ -25,23 +26,28 @@ type2fmtDict = { bool: '%i', int: '%i', str: '%s', float: '%f' }
 
 def basenameNoEnding(fn, ending):
     'returns the basename of a file and removes the supplied ending'
-    
+
     return os.path.basename(fn)[:(1 - len(ending))]
-    
-def checkFileExistence(fn):
+
+def checkFileExistence(fn, fileDescription=None):
     'exits if file does not exist'
-    
+
+    if fileDescription:
+        message = '%s file not found' % fileDescription
+    else:
+        message = 'File not found'
+        
     if not os.path.isfile(fn):
-        sys.exit('\nERROR. File not found: %s' % fn)
+        sys.exit('\nERROR. %s: %s\n' % (message, fn))
 
 def compressWhitespace(myString):
     'replaces whitespace with a single space'
-    
+
     return re.sub(r'\s+', ' ', myString)
 
 def getCSVreader(inFN, delimiter='\t'):
     'opens a (possibly gzipped) file and creates a csv reader'
-    
+
     extension = os.path.splitext(inFN)[1]
     if extension == '.gz':
         try: inFile = gzip.GzipFile(inFN, 'r')
@@ -51,42 +57,47 @@ def getCSVreader(inFN, delimiter='\t'):
         try: inFile = open(inFN, 'r')
         except IOError:
             sys.exit('\nERROR. Could not open: %s\n' % inFN)
-            
+
     return inFile, csv.reader(inFile, delimiter=delimiter)
 
 def mkdirP(dirName):
     'makes a directory'
-    
-    cmd = 'mkdir -p %s' % dirName
-    runCMD(cmd)
+
+    try:
+        os.makedirs(dirName)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(dirName):
+            pass
+        else:
+            raise
 
 def object2fmt(x):
     'returns a printf style format string appropriate to the object'
-    
+
     return type2fmtDict[type(x)]
 
 def printAndLogger(message):
     'output a message to stdout and to the logger'
-    
+
     print message
     logging.info(message)
 
 def printIterable(myIterable):
     'cycles through an iterable, printing each item'
-    
+
     for item in myIterable:
         print item
 
 def readPositionsSet(inFN, column = 0, logFunction = None):
     'reads positions from the specified column of a file and constructs a set'
-    
+
     positionsSet = set()
-    checkFileExistence(inFN)
+    checkFileExistence(inFN, 'SNP positions')
     with open(inFN, 'r') as inFile:
         for line in inFile:
             pos = int(line.strip().split()[column])
             positionsSet.add(pos)
-            
+
     message = '%5d unique positions read: %s\n' % (len(positionsSet), inFN)
     if logFunction:
         logFunction(message)
@@ -96,11 +107,11 @@ def readPositionsSet(inFN, column = 0, logFunction = None):
 
 def runCMD(cmd):
     'spawns an external process'
-    
+
     if subprocess.Popen(cmd, shell=True).wait():
         sys.exit('\n'*3 + '!'*20 + '\nthe following command FAILED:\n' + cmd)
 
 def unimplementedMessage(methodName):
     'emits message and exits'
-    
+
     sys.exit('\n\n! Unimplemented method: %s\nExiting.\n' % methodName)
