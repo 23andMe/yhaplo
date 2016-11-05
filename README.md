@@ -39,7 +39,7 @@ and to learn more about the software, please see `yHaplo.manual.pdf`.
 * `isogg.correct.*.txt`       : corrections to ISOGG data
 * `isogg.omit.*.txt`          : SNPs to drop due to inconsistencies observed in test data
 * `isogg.multiallelic.txt`    : physical coordinates of multiallelic sites to be excluded
-* `representative.SNPs.*.txt` : SNPs deemed representative of a corresponding haplogroup
+* `representative.SNPs.*.txt` : SNPs deemed representative of corresponding haplogroups
 
 
 ### Supported genotype formats
