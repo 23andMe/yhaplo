@@ -23,7 +23,7 @@ a haplogroup designation.
 
 yHaplo is available for non-commercial use pursuant to the terms of the non-exclusive 
 license agreement, `LICENSE.txt`. To learn more about the algorithm, please see the 
-[white paper](https://api.23andme.com/res/pdf/23-13_paternal_haplogroups_yHaplo.pdf), 
+[white paper](https://permalinks.23andme.com/pdf/23-13_paternal_haplogroups_yHaplo.pdf), 
 and to learn more about the software, please see `yHaplo.manual.pdf`. 
 
 
