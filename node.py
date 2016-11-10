@@ -374,23 +374,24 @@ class Node(object):
     #----------------------------------------------------------------------
     def writeNewick(self, newickFN, alignTips=False, platformVersion=None):
         'write Newick string for the subtree rooted at this node'
-        
-        treeString = '%s;\n' % self.buildNewickStringRecursive(alignTips, platformVersion)
-        with open(newickFN, 'w') as outFile:
-            outFile.write(treeString)
+
+        if not Node.config.suppressOutputAndLog:
+            with open(newickFN, 'w') as outFile:
+                outFile.write('%s;\n' % \
+                              self.buildNewickStringRecursive(alignTips, platformVersion))
             
-        if alignTips:
-            treeDescriptor = 'aligned '
-        elif platformVersion:
-            treeDescriptor = 'platform v%d ' % platformVersion
-        else:
-            treeDescriptor = ''
-        Node.errAndLog('Wrote %stree:\n    %s\n\n' % (treeDescriptor, newickFN))
+            if alignTips:
+                treeDescriptor = 'aligned '
+            elif platformVersion:
+                treeDescriptor = 'platform v%d ' % platformVersion
+            else:
+                treeDescriptor = ''
+            Node.errAndLog('Wrote %stree:\n    %s\n\n' % (treeDescriptor, newickFN))
 
     def buildNewickStringRecursive(self, alignTips=False, platformVersion=None):
         'recursively builds Newick string for the subtree rooted at this node'
         
-        # TODO 2.3 hgSNP: incorporate into tree output
+        # TODO hgSNP: tree output
         if not self.isLeaf():
             childStringList = list()
             for child in self.childList[::-1]:

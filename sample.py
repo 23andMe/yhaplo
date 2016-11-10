@@ -125,7 +125,7 @@ class Sample(object):
     def strForCounts(self):
         'string representation for anc/der counts output'
         
-        # TODO 2.1 hgSNP: incorporate into strForCounts
+        # TODO hgSNP: strForCounts
         leftPart  = '%-8s %s' % (self.ID, self.haplogroup)
         rightPart = '%s %s'   % (self.hgSNPobs, self.hgSNP)
         if Sample.config.compareToPrevCalls:
@@ -147,7 +147,7 @@ class Sample(object):
     def strHaplogroupPath(self):
         'constructs a string representation with haplogroup path'
 
-        # TODO 2.2 hgSNP: incorporate into strHaplogroupPath
+        # TODO hgSNP: strHaplogroupPath
         if self.mostDerivedSNP:
             haplogroupList = list()
             for snp in self.derSNPlist:
@@ -483,7 +483,10 @@ class Sample(object):
 
         Sample.errAndLog('%sOutput\n\n' % utils.DASHES)
         
-        Sample.writeHaplogroups()               # uses str(sample)
+        if Sample.config.suppressOutputAndLog:
+            Sample.errAndLog('None (suppressed).\n\n')
+        else:
+            Sample.writeHaplogroups()           # uses str(sample)
 
         if Sample.args.writeAncDerCounts:
             Sample.writeAncDerCounts()          # uses sample.strForCounts()
@@ -575,17 +578,17 @@ class Sample(object):
         '''
         
         if ancestral:
-            outFN = Sample.config.ancSNPsFN
+            snpFN = Sample.config.ancSNPsFN
             typeOfSNPs = 'ancestral SNPs encountered in search'
         else:
-            outFN = Sample.config.derSNPsFN
+            snpFN = Sample.config.derSNPsFN
             typeOfSNPs = 'derived SNPs on path'
     
-        with open(outFN, 'w') as outFile: 
+        with open(snpFN, 'w') as snpFile: 
             for sample in Sample.sampleList:
-                outFile.write('%s\n' % sample.strSNPs(ancestral))
+                snpFile.write('%s\n' % sample.strSNPs(ancestral))
 
-        Sample.errAndLog('Wrote lists of %s:\n    %s\n\n' % (typeOfSNPs, outFN))
+        Sample.errAndLog('Wrote lists of %s:\n    %s\n\n' % (typeOfSNPs, snpFN))
         
     @staticmethod
     def writeSNPsDetail(ancestral=False):
@@ -594,24 +597,24 @@ class Sample(object):
         derived SNP on path or about each ancestral SNP encountered in search
         '''
         
-        # TODO 2.4 hgSNP: incorporate into writeSNPsDetail
+        # TODO hgSNP: writeSNPsDetail
         if ancestral:
-            outFN = Sample.config.ancSNPsDetailFN
+            snpDetailFN = Sample.config.ancSNPsDetailFN
             typeOfSNPs = 'ancestral SNP encountered in search'
         else:
-            outFN = Sample.config.derSNPsDetailFN
+            snpDetailFN = Sample.config.derSNPsDetailFN
             typeOfSNPs = 'derived SNP on path'
 
-        with open(outFN, 'w') as outFile: 
+        with open(snpDetailFN, 'w') as snpDetailFile: 
             for sample in Sample.sampleList:
-                outFile.write('%s\n' % sample.strCompressed())
+                snpDetailFile.write('%s\n' % sample.strCompressed())
                 snpList = sample.ancSNPlist if ancestral else sample.derSNPlist
                 for snp in snpList:
-                    outFile.write('%-8s %s\n' % (sample.ID, snp))
-                outFile.write('\n')
+                    snpDetailFile.write('%-8s %s\n' % (sample.ID, snp))
+                snpDetailFile.write('\n')
                                                   
         Sample.errAndLog('Wrote detailed information about each %s:\n' % typeOfSNPs + \
-                         '    %s\n\n' % outFN)
+                         '    %s\n\n' % snpDetailFN)
 
 
 #--------------------------------------------------------------------------
@@ -642,16 +645,18 @@ class Customer(Sample):
         try:
             ablock = Sample.config.ablockDS.load_block(self.ID)
         except:
-            Customer.noAblocksFile.write('%d\n' % self.ID)
             Customer.numNoAblock += 1
+            if Customer.noAblocksFile:
+                Customer.noAblocksFile.write('%d\n' % self.ID)
             return False
         
         if self.readAblockGenotypes(ablock):
             self.callHaplogroup()
             return True
         else:
-            Customer.noGenotypesFile.write('%d\n' % self.ID)
             Customer.numNoGenotypes += 1
+            if Customer.noGenotypesFile:
+                Customer.noGenotypesFile.write('%d\n' % self.ID)
             return False
         
     def readAblockGenotypes(self, ablock):
@@ -707,8 +712,9 @@ class Customer(Sample):
     def openAuxiliaryOutputFiles():
         'open auxiliary output files'
         
-        Customer.noAblocksFile   = open(Sample.config.noAblocksFN,   'w')
-        Customer.noGenotypesFile = open(Sample.config.noGenotypesFN, 'w')
+        if not Sample.config.suppressOutputAndLog:
+            Customer.noAblocksFile   = open(Sample.config.noAblocksFN,   'w')
+            Customer.noGenotypesFile = open(Sample.config.noGenotypesFN, 'w')
 
     @staticmethod
     def generateResidList():
@@ -793,12 +799,15 @@ class Customer(Sample):
     @staticmethod
     def closeAuxiliaryFilesAndReportCounts():
         'close auxiliary files and report counts'
+        
+        utils.closeFiles([Customer.noAblocksFile, Customer.noGenotypesFile])
 
-        for File in [Customer.noAblocksFile, Customer.noGenotypesFile]:
-            File.close()
-
-        Sample.errAndLog('\n' + \
-            '    %8d resid(s) ignored | could not load ablock:\n' % Customer.numNoAblock + \
-            '             %s\n'   % Sample.config.noAblocksFN + \
-            '    %8d resid(s) ignored | no genotypes:\n' % Customer.numNoGenotypes + \
-            '             %s\n\n' % Sample.config.noGenotypesFN)
+        messageA = '\n    %8d resid(s) ignored | could not load ablock:\n' % Customer.numNoAblock
+        messageB = '             %s\n'   % Sample.config.noAblocksFN
+        messageC = '    %8d resid(s) ignored | no genotypes:\n' % Customer.numNoGenotypes
+        messageD = '             %s\n\n' % Sample.config.noGenotypesFN
+        
+        if Sample.config.suppressOutputAndLog:
+            Sample.errAndLog(messageA + messageC + '\n')
+        else:
+            Sample.errAndLog(messageA + messageB + messageC + messageD)

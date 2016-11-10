@@ -40,6 +40,13 @@ def checkFileExistence(fn, fileDescription=None):
     if not os.path.isfile(fn):
         sys.exit('\nERROR. %s: %s\n' % (message, fn))
 
+def closeFiles(fileList):
+    'closes files from list, ignoring any that are set to None'
+    
+    for File in fileList:
+        if File:
+            File.close()
+
 def compressWhitespace(myString):
     'replaces whitespace with a single space'
 

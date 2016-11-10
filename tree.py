@@ -131,7 +131,8 @@ class Tree(object):
         'writes the best 23andMe content page for each node'
         
         with open(self.config.pageUpdatesFN, 'w') as pageUpdatesFile:
-            pageUpdatesFile.write('%-10s %-10s %-10s %s\n' % ('yccOld', 'SNP', 'hgSNP', 'ycc'))
+            pageUpdatesFile.write('%-10s %-10s %-10s %s\n' % \
+                                  ('yccOld', 'SNP', 'hgSNP', 'ycc'))
             for page in Node.pageList:
                 pageUpdatesFile.write('%s\n' % page.strFull())
             
@@ -173,11 +174,12 @@ class Tree(object):
     def writeNewick(self):
         'write tree as is and with aligned terminal branch lengths'
 
-        self.errAndLog('%sWriting trees...\n\n' % utils.DASHES)
-        self.root.writeNewick(self.config.treeFN)
-        self.root.writeNewick(self.config.alignedTreeFN, alignTips=True)
-        if self.args.writePlatformTrees:
-            self.writePlatformTrees()
+        if not self.config.suppressOutputAndLog:
+            self.errAndLog('%sWriting trees...\n\n' % utils.DASHES)
+            self.root.writeNewick(self.config.treeFN)
+            self.root.writeNewick(self.config.alignedTreeFN, alignTips=True)
+            if self.args.writePlatformTrees:
+                self.writePlatformTrees()
     
     def writePlatformTrees(self):
         'write trees whose branch lengths are numbers of platform sites'
@@ -296,6 +298,7 @@ class Tree(object):
         hasLengths = ':' in treeDeque  # determine whether tree has lengths
         root = self.addChildSubtreeFromNewickDeque(None, treeDeque, hasLengths)
         root.writeNewick(self.config.alignedPrimaryTreeFN, alignTips=True)
+        
         return root
     
     def addChildSubtreeFromNewickDeque(self, parent, treeDeque, hasLengths):
@@ -363,36 +366,14 @@ class Tree(object):
     # import SNPs and assign to branches
     #----------------------------------------------------------------------
     def importIsoggSnps(self):
-        '''
-        import ISOGG SNPs.
-        
-        Steps:
-        1. set up SNP class variables.
-        2. read ISOGG corrections and omissions.
-        3. set up file handles for table parsing.
-        4. call ISOGG table parser.
-        5. close files.
-        6. post-processing.
-        '''
+        'import ISOGG SNPs'
         
         SNP.setClassVariables(self)
-        
         self.readRepresentativeSNPnameSet()
         self.readIsoggMultiAllelicPosSet()
         self.readIsoggOmitSet()
         self.readIsoggCorrectionsDict()
-        
-        utils.checkFileExistence(self.config.isoggFN, 'Isogg')
-        isoggInFile      = open(self.config.isoggFN, 'r')
-        isoggReader      = csv.reader(isoggInFile, delimiter='\t')
-        isoggOutFile     = open(self.config.cleanedIsoggFN, 'w')
-        isoggDropOutFile = open(self.config.droppedIsoggFN, 'w')
-        
-        self.parseIsoggTable(isoggReader, isoggOutFile, isoggDropOutFile)
-    
-        for File in [isoggInFile, isoggOutFile, isoggDropOutFile]:
-            File.close()
-            
+        self.parseIsoggTable()
         self.setDepthFirstNodeList()
         self.sortSNPlistsAndSetRepresentatives()
         self.writeIsoggCounts()
@@ -428,7 +409,7 @@ class Tree(object):
         
         self.representativeSNPnameSet = set1 | set2
         self.errAndLog( 
-            'Read representative SNPs\n' + \
+            '%sRead representative SNPs\n' % utils.DASHES + \
             '%6d haplogroups in: %s\n' % (countsDicts['lines'], isoggRepSNPfn) + \
             '%6d haplogroups with at least one ISOGG-designated representative SNP\n' % \
                 countsDicts['haplogroups'] + \
@@ -476,11 +457,25 @@ class Tree(object):
                             self.isoggCorrectionDict[alias] = \
                                 (haplogroup, position, mutation)
     
-    def parseIsoggTable(self, isoggReader, isoggOutFile, isoggDropOutFile):
+    def parseIsoggTable(self):
         'parses ISOGG table' 
         
+        # input reader
+        utils.checkFileExistence(self.config.isoggFN, 'Isogg')
+        isoggInFile = open(self.config.isoggFN, 'r')
+        isoggReader = csv.reader(isoggInFile, delimiter='\t')
+        isoggReader.next() # ignore header
+        
+        # output file handles
+        if self.config.suppressOutputAndLog:
+            isoggOutFile     = None
+            isoggDropOutFile = None
+        else:
+            isoggOutFile     = open(self.config.cleanedIsoggFN, 'w')
+            isoggDropOutFile = open(self.config.droppedIsoggFN, 'w')
+        
         droppedMarkerList = list()
-        isoggReader.next()              # ignore header
+        
         for lineList in isoggReader:
             self.isoggCountsDict['read'] += 1
 
@@ -503,8 +498,9 @@ class Tree(object):
                 self.checkIsoggRecord(name, haplogroup, position, mutation)
             if recordIsBad:
                 self.isoggCountsDict['dropped'] += 1
-                isoggDropOutFile.write('%-10s %-25s %8s %s\n' % \
-                    (name, haplogroup, position, mutation))
+                if isoggDropOutFile:
+                    isoggDropOutFile.write('%-10s %-25s %8s %s\n' % \
+                        (name, haplogroup, position, mutation))
                 if markerIsOkToRepresentNode:
                     droppedMarkerList.append(DroppedMarker(name, haplogroup))
                 continue
@@ -512,10 +508,13 @@ class Tree(object):
             # process retained SNPs
             self.isoggCountsDict['retained'] += 1
             position = int(position)
-            isoggOutFile.write('%-10s %-25s %8d %s\n' % (name, haplogroup, position, mutation))
+            if isoggOutFile:
+                isoggOutFile.write('%-10s %-25s %8d %s\n' % \
+                                   (name, haplogroup, position, mutation))
             self.constructSNP(name, haplogroup, position, mutation)
         
         self.addDroppedMarkersToNodes(droppedMarkerList)
+        utils.closeFiles([isoggInFile, isoggOutFile, isoggDropOutFile])
 
     def constructSNP(self, name, haplogroup, position, mutation):
         '''
@@ -577,46 +576,45 @@ class Tree(object):
         numAltNames = countsDict['retained'] - countsDict['unique']
         
         logTextList = [\
-            '%sRead ISOGG SNP data:\n    %s\n' % \
-                (utils.DASHES, config.isoggFN),
-            '%5d SNPs read' % \
-                countsDict['read'],
-            '%5d corrected based on:\n              %s\n' % \
-                (self.numSNPsCorrected, ('\n'+' '*14).join(config.isoggCorrectionsFNlist)),
-            '%5d SNPs dropped and written:\n              %s' % \
-                (countsDict['dropped'], config.droppedIsoggFN),
-            '      %5d flagged as not meeting quality guidelines' % \
-                        countsDict['qc'],
-            '      %5d tree location approximate' % \
-                        countsDict['approxLoc'],
-            '      %5d removed, flagged as provisional, or otherwise problematic' % \
-                        countsDict['provisional'],
-            '      %5d non-SNPs' % \
-                        countsDict['nonSNP'],
-            '      %5d excluded due to multiallelic positions based on:\n                    %s' % \
-                        (countsDict['multiallelic'], config.isoggMultiAllelicFN),
-            '      %5d duplicated names' % \
-                        countsDict['duplicatedNames'],
-            '      %5d explicitly excluded based on:\n                    %s' % \
-                        (countsDict['omitted'], ('\n'+' '*20).join(config.isoggOmitFNlist)),
-            '%5d bad lines\n' % \
-                countsDict['badLines'],
-            '%5d SNPs retained and written:\n              %s' % \
-                (countsDict['retained'], config.cleanedIsoggFN),
-            '%5d alternative names\n' % \
-                numAltNames,
-            '%5d unique SNPs added to the tree and written:\n              %s\n\n' % \
-                (countsDict['unique'], self.config.uniqueIsoggFN)]
-        self.errAndLog(('\n' + ' '*8).join(logTextList))
+            '%sRead ISOGG SNP data:\n    %s\n' % (utils.DASHES, config.isoggFN),
+            '  %5d SNPs read'                          % countsDict['read'],
+            '  %5d corrected '                         % self.numSNPsCorrected +
+            'based on:\n            %s\n' % ('\n'+' '*12).join(config.isoggCorrectionsFNlist),
+            '- %5d SNPs dropped'                       % countsDict['dropped'],
+            '        %5d flagged as not meeting quality guidelines' % countsDict['qc'],
+            '        %5d tree location approximate'    % countsDict['approxLoc'],
+            '        %5d removed, flagged as provisional, or otherwise problematic' % \
+                                                         countsDict['provisional'],
+            '        %5d non-SNPs'                     % countsDict['nonSNP'],
+            '        %5d excluded as multiallelic '    % countsDict['multiallelic'] +
+            'based on:\n                  %s'          % config.isoggMultiAllelicFN,
+            '        %5d duplicated names'             % countsDict['duplicatedNames'],
+            '        %5d explicitly excluded '         % countsDict['omitted'] +
+            'based on:\n                  %s' % ('\n'+' '*18).join(config.isoggOmitFNlist),
+            '- %5d bad lines'                          % countsDict['badLines'],
+            '= %5d SNPs retained\n'                    % countsDict['retained'],
+            '- %5d alternative names'                  % numAltNames,
+            '= %5d unique SNPs added to the tree\n'    % countsDict['unique'],
+        ]
+        
+        if not config.suppressOutputAndLog:
+            logTextList.extend([\
+                'Wrote summary tables',
+                '    dropped:  %s'   % config.droppedIsoggFN,
+                '    retained: %s'   % config.cleanedIsoggFN,
+                '    unique:   %s\n' % config.uniqueIsoggFN,
+            ])
+        
+        self.errAndLog(('\n' + ' '*4).join(logTextList) + '\n')
 
     def writeUniqueSNPtable(self):
         'sort unique snp list by phylogeny and position; write to file'
-        uniqueIsoggFN = self.config.uniqueIsoggFN
         
-        self.snpList = sorted(self.snpList, key = attrgetter('DFSrank', 'position'))
-        with open(uniqueIsoggFN, 'w') as uniqueIsoggFile:
-            for snp in self.snpList:
-                uniqueIsoggFile.write('%s\n' % snp.strWithAllNames())
+        if not self.config.suppressOutputAndLog:
+            self.snpList = sorted(self.snpList, key = attrgetter('DFSrank', 'position'))
+            with open(self.config.uniqueIsoggFN, 'w') as uniqueIsoggFile:
+                for snp in self.snpList:
+                    uniqueIsoggFile.write('%s\n' % snp.strWithAllNames())
     
     def checkIsoggRecord(self, name, haplogroup, position, mutation):
         '''
@@ -673,13 +671,16 @@ class Tree(object):
         return False, True
 
     def checkMultiAllelics(self):
+        'checks for mutliallelic variants and writes list to file'
+        
         if len(self.multiAllelicNewPosSet) > 0:
-            numMulti = len(self.multiAllelicNewPosSet)
-            with open(self.config.multiAllelicFoundFN, 'w') as outFile:
-                for position in sorted(list(self.multiAllelicNewPosSet)):
-                    outFile.write('%8d\n'% position)
+            if not self.config.suppressOutputAndLog:
+                with open(self.config.multiAllelicFoundFN, 'w') as outFile:
+                    for position in sorted(list(self.multiAllelicNewPosSet)):
+                        outFile.write('%8d\n'% position)
+                    
             self.errAndLog('%s*** Dectected %d multiallelic positions. ***\n\n' % \
-                                (utils.DASHES, numMulti) + \
+                                (utils.DASHES, len(self.multiAllelicNewPosSet)) + \
                            'Please do the following and then re-run:\n' + \
                            '    cat %s >> %s\n\n' % \
                                 (self.config.multiAllelicFoundFN, 
