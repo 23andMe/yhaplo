@@ -92,7 +92,9 @@ class Tree(object):
         if self.args.writeTreeTable:
             self.writeTreeTable()
         if self.args.mrcaHaplogroupList:
-            self.printMRCA(self.args.mrcaHaplogroupList)
+            self.queryMRCA()
+        if self.args.querySNPname:
+            self.querySNPpath()
 
     def writeBreadthFirst(self):
         'writes bread-first traversal in pipe/dot format'
@@ -111,7 +113,7 @@ class Tree(object):
               else self.config.dfTreeFN
         with open(dfTreeFN, 'w') as dfTreeFile:
             for node in self.depthFirstNodeList:
-                dfTreeFile.write('%s\n' % node)
+                dfTreeFile.write('%s\n' % node.strDotPipeDepth())
                 
         self.errAndLog('Wrote depth-first tree traveral:\n    %s\n\n' % dfTreeFN)
        
@@ -154,8 +156,10 @@ class Tree(object):
             'Wrote %4d mappings:\n    %s\n\n' % \
                 (len(self.depthFirstNodeList), self.config.pageMappingsFN))
 
-    def printMRCA(self, mrcaHaplogroupList):
-        'prints to stdout MRCA of two haplogroups'
+    def queryMRCA(self):
+        'writes MRCA of two haplogroups'
+        
+        mrcaHaplogroupList = self.args.mrcaHaplogroupList
         
         if type(mrcaHaplogroupList) != list or len(mrcaHaplogroupList) != 2:
             sys.exit('ERROR. mrca expects a list of 2 haplogroups: %s\n' % \
@@ -164,10 +168,24 @@ class Tree(object):
         node1 = self.hg2nodeDict[haplogroup1]
         node2 = self.hg2nodeDict[haplogroup2]
         mrca = node1.mrca(node2)
-        self.errAndLog('%sMRCA Query\n\n' % (utils.DASHES) + \
-                       'Haplogroup 1: %s\n' % (node1.haplogroup) + \
-                       'Haplogroup 2: %s\n' % (node2.haplogroup) + \
-                       'MRCA: %s\n\n' % (mrca.haplogroup))
+        self.errAndLog('%sMRCA Query\n\n' % utils.DASHES + \
+                       'Haplogroup 1: %s\n' % node1.haplogroup + \
+                       'Haplogroup 2: %s\n' % node2.haplogroup + \
+                       'MRCA: %s\n\n' % mrca.haplogroup)
+        
+    def querySNPpath(self):
+        'lists phylogenetic path for a query SNP'
+        
+        self.errAndLog('%sSNP Query: %s\n\n' % (utils.DASHES, self.args.querySNPname))
+        snp = self.snpDict.get(self.args.querySNPname, None)
+        
+        if snp:
+            for node in snp.backTracePath():
+                self.errAndLog('%s\n' % node.strSimple())
+        else:
+            self.errAndLog('Not found.\n')
+
+        self.errAndLog('\n')
         
     # write newick files
     #----------------------------------------------------------------------

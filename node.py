@@ -56,31 +56,27 @@ class Node(object):
             self.page.setNode(self)
         
     def __str__(self):
-        'string representation: indicates depth for traversal output'
-        
-        dotList = list('.' * (self.depth))
-        for i in xrange(0, len(dotList), 5):
-            dotList[i] = '|'
-        return '%s%s %s' % (''.join(dotList), self.label, self.hgSNP)
-
-    @property
-    def mostHighlyRankedSNP(self):
-        'the most highly ranked SNP'
-        
-        return SNP.mostHighlyRankedMarkerOnList(self.snpList)
+        return self.strSimple()
     
-    @property
-    def mostHighlyRankedDroppedMarker(self):
-        'the most highly ranked dropped marker'
+    def strSimple(self):
+        'string representation: label and representative SNP'
         
-        return SNP.mostHighlyRankedMarkerOnList(self.droppedMarkerList)
+        return '%-25s %s' % (self.label, self.hgSNP)
     
     def strSNPlist(self):
         'string representation: label and list of snps'
         
         snpString = ' '.join(snp.label for snp in self.snpList)
         return '%-25s %s' % (self.label, snpString)
-    
+        
+    def strDotPipeDepth(self):
+        'string representation: indicates depth with a series of dots and pipes'
+        
+        dotList = list('.' * (self.depth))
+        for i in xrange(0, len(dotList), 5):
+            dotList[i] = '|'
+        return '%s%s %s' % (''.join(dotList), self.label, self.hgSNP)
+
     def strTreeTableRow(self):
         'string representation: one row of tree table'
         
@@ -93,6 +89,19 @@ class Node(object):
             parentHgSNP   = self.parent.hgSNP
             
         return '\t'.join([str(self.DFSrank), yccLabel, self.hgSNP, parentDFSrank, parentHgSNP])
+
+    @property
+    def mostHighlyRankedSNP(self):
+        'the most highly ranked SNP'
+        
+        return SNP.mostHighlyRankedMarkerOnList(self.snpList)
+    
+    @property
+    def mostHighlyRankedDroppedMarker(self):
+        'the most highly ranked dropped marker'
+        
+        return SNP.mostHighlyRankedMarkerOnList(self.droppedMarkerList)
+
         
     # static methods, including class variable setters
     #----------------------------------------------------------------------
@@ -333,11 +342,11 @@ class Node(object):
     def writeBreadthFirstTraversal(self, bfTreeFile):
         'writes breadth-first traversal'
         
-        bfTreeFile.write('%s\n' % self)
+        bfTreeFile.write('%s\n' % self.strDotPipeDepth())
         nodeDeque = deque(self.childList)
         while nodeDeque:
             node = nodeDeque.popleft()
-            bfTreeFile.write('%s\n' % node)
+            bfTreeFile.write('%s\n' % node.strDotPipeDepth())
             nodeDeque.extend(node.childList)
         
     def getDepthFirstNodeList(self):

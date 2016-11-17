@@ -525,9 +525,11 @@ class Config(object):
             dest='writeTreeTable', action='store_true', default=False, 
             help='write depth-first (pre-order) traversal table')
         group.add_argument('-m', '--mrca', type=str, nargs=2, 
-            dest='mrcaHaplogroupList', 
-            metavar=('haplogroup1', 'haplogroup2'),
+            dest='mrcaHaplogroupList', metavar=('haplogroup1', 'haplogroup2'),
             help='output mrca of two haplogroups')
+        group.add_argument('-sq', '--snpQuery', type=str,
+            dest='querySNPname', metavar='snpName', default = None,
+            help='list phylogenetic path for a query SNP')
         group.add_argument('-cm', '--contentMapping', 
             dest='writeContentMappings', action='store_true', default=False, 
             help='23andMe: map each node the most recent ancestor with an info page')
