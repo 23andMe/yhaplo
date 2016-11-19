@@ -125,7 +125,6 @@ class Sample(object):
     def strForCounts(self):
         'string representation for anc/der counts output'
         
-        # TODO hgSNP: strForCounts
         leftPart  = '%-8s %s' % (self.ID, self.haplogroup)
         rightPart = '%s %s'   % (self.hgSNPobs, self.hgSNP)
         if Sample.config.compareToPrevCalls:
@@ -147,7 +146,6 @@ class Sample(object):
     def strHaplogroupPath(self):
         'constructs a string representation with haplogroup path'
 
-        # TODO hgSNP: strHaplogroupPath
         if self.mostDerivedSNP:
             haplogroupList = list()
             for snp in self.derSNPlist:
@@ -597,7 +595,6 @@ class Sample(object):
         derived SNP on path or about each ancestral SNP encountered in search
         '''
         
-        # TODO hgSNP: writeSNPsDetail
         if ancestral:
             snpDetailFN = Sample.config.ancSNPsDetailFN
             typeOfSNPs = 'ancestral SNP encountered in search'

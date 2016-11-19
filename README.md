@@ -87,5 +87,5 @@ and to learn more about the software, please see `yHaplo.manual.pdf`.
 
 ### Auxiliary scripts
 
-* `convert2genos.py` : converts data to .genos.txt format
+* `convert2genos.py` : converts data to `.genos.txt` format
 * `plotTree.py`       : plots a newick tree

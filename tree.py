@@ -194,8 +194,11 @@ class Tree(object):
 
         if not self.config.suppressOutputAndLog:
             self.errAndLog('%sWriting trees...\n\n' % utils.DASHES)
-            self.root.writeNewick(self.config.treeFN)
-            self.root.writeNewick(self.config.alignedTreeFN, alignTips=True)
+            self.root.writeNewick(self.config.yccTreeFN)
+            self.root.writeNewick(self.config.hgsnpTreeFN, useHgSNPlabel=True)
+            self.root.writeNewick(self.config.alignedYccTreeFN, alignTips=True)
+            self.root.writeNewick(self.config.alignedHgsnpTreeFN, 
+                                  useHgSNPlabel=True, alignTips=True)
             if self.args.writePlatformTrees:
                 self.writePlatformTrees()
     
@@ -203,8 +206,10 @@ class Tree(object):
         'write trees whose branch lengths are numbers of platform sites'
         
         for platformVersion in xrange(1, self.config.maxPlatformVersionPlusOne):
-            newickFN = self.config.platformTreeFNtp % platformVersion
-            self.root.writeNewick(newickFN, platformVersion = platformVersion)
+            self.root.writeNewick(self.config.platformYccTreeFNtp % platformVersion, 
+                                  platformVersion=platformVersion)
+            self.root.writeNewick(self.config.platformHgsnpTreeFNtp % platformVersion, 
+                                  useHgSNPlabel=True, platformVersion=platformVersion)
 
     # query
     #----------------------------------------------------------------------

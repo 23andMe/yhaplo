@@ -28,6 +28,7 @@ class Node(object):
     errAndLog = None
     pageList  = list()
     pageDict  = dict()
+    hgSNPset  = set()
 
     def __init__(self, parent, tree=None):
         self.parent = parent
@@ -216,10 +217,23 @@ class Node(object):
             if self.parent.hgSNP:
                 symbol = '*' if self.isLeaf() else '+'
                 self.hgSNP = self.parent.hgSNP + symbol
+                
+                # uniquify if necessary
+                if self.hgSNP in Node.hgSNPset:
+                    i = 1
+                    hgSNPuniqe = '%s%d' % (self.hgSNP, i)
+                    while hgSNPuniqe in Node.hgSNPset:
+                        i += 1 
+                        hgSNPuniqe = '%s%d' % (self.hgSNP, i)
+                    
+                    self.hgSNP = hgSNPuniqe
+                    print self.hgSNP
             else:
                 Node.errAndLog('WARNING. Attempted to set star label, ' + \
                                'but parent.hgSNP not set yet: %s\n' % self.haplogroup)
                 self.hgSNP = self.haplogroup
+                
+        Node.hgSNPset.add(self.hgSNP)
         
     # queries
     #----------------------------------------------------------------------
@@ -381,13 +395,15 @@ class Node(object):
 
     # writing tree to file in Newick format
     #----------------------------------------------------------------------
-    def writeNewick(self, newickFN, alignTips=False, platformVersion=None):
+    def writeNewick(self, newickFN, 
+                    useHgSNPlabel=False, alignTips=False, platformVersion=None):
         'write Newick string for the subtree rooted at this node'
 
         if not Node.config.suppressOutputAndLog:
             with open(newickFN, 'w') as outFile:
                 outFile.write('%s;\n' % \
-                              self.buildNewickStringRecursive(alignTips, platformVersion))
+                    self.buildNewickStringRecursive(useHgSNPlabel, 
+                                                    alignTips, platformVersion))
             
             if alignTips:
                 treeDescriptor = 'aligned '
@@ -395,30 +411,39 @@ class Node(object):
                 treeDescriptor = 'platform v%d ' % platformVersion
             else:
                 treeDescriptor = ''
-            Node.errAndLog('Wrote %stree:\n    %s\n\n' % (treeDescriptor, newickFN))
+                
+            if useHgSNPlabel:
+                labelType = 'representative-SNP'
+            else:
+                labelType = 'YCC'
+                
+            Node.errAndLog('Wrote %stree with %s labels:\n    %s\n\n' % \
+                           (treeDescriptor, labelType, newickFN))
 
-    def buildNewickStringRecursive(self, alignTips=False, platformVersion=None):
+    def buildNewickStringRecursive(self, 
+            useHgSNPlabel=False, alignTips=False, platformVersion=None):
         'recursively builds Newick string for the subtree rooted at this node'
         
-        # TODO hgSNP: tree output
         if not self.isLeaf():
             childStringList = list()
             for child in self.childList[::-1]:
-                childString = child.buildNewickStringRecursive(alignTips, platformVersion)
+                childString = child.buildNewickStringRecursive(useHgSNPlabel, 
+                                                               alignTips, platformVersion)
                 childStringList.append(childString)
             treeStringPart1 = '(%s)' % ','.join(childStringList)
         else:
             treeStringPart1 = ''
 
+        branchLabel = self.hgSNP if useHgSNPlabel else self.label
         branchLength = self.getBranchLength(alignTips, platformVersion)
         if alignTips:
-            label = '%s:%d' % (self.label, branchLength)
+            branchString = '%s:%d' % (branchLabel, branchLength)
         elif branchLength is None or (self.isLeaf() and branchLength == 0):
-            label = self.label
+            branchString = branchLabel
         elif branchLength > 0:
-            label = '%s|%d:%d' % (self.label, branchLength, branchLength)
+            branchString = '%s|%d:%d' % (branchLabel, branchLength, branchLength)
         else:
-            label = ':0.5'
+            branchString = ':0.5'
         
-        treeString = '%s%s' % (treeStringPart1, label)
+        treeString = '%s%s' % (treeStringPart1, branchString)
         return treeString
