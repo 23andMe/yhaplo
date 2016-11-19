@@ -7,8 +7,9 @@ October, 2016
 --------------------------------------------------------------------------------
 ## Overview
 
-yHaplo identifies the Y-chromosome haplogroup of each male in a sample of 
-one to millions. It does not rely on any particular genotyping modality or platform. 
+yHaplo identifies the Y-chromosome haplogroup of each male in a sample of one to 
+millions. It does not rely on any particular genotyping modality or platform, and it is 
+robust to missing data, genotype errors, mutation recurrence, and other complications. 
 Although full sequences yield the most granular haplogroup classifications, genotyping 
 arrays can yield reliable calls, provided a reasonable number of phylogenetically 
 informative variants has been assayed. 
@@ -22,10 +23,13 @@ for each individual, identifying for each the path of derived alleles leading to
 a haplogroup designation.
 
 yHaplo is available for non-commercial use pursuant to the terms of the non-exclusive 
-license agreement, `LICENSE.txt`. To learn more about the algorithm, please see the 
-[white paper](https://permalinks.23andme.com/pdf/23-13_paternal_haplogroups_yHaplo.pdf), 
-and to learn more about the software, please see `yHaplo.manual.pdf`. 
+license agreement, `LICENSE.txt`. To learn more about the algorithm, please see our 
+bioRxiv [pre-print](http://biorxiv.org/content/early/2016/11/19/088716):
 
+    Poznik GD. 2016. Identifying Y-chromosome haplogroups in arbitrarily large samples 
+    of sequenced or genotyped men. bioRxiv doi: 10.1101/088716
+
+To learn more about the software, please see `yHaplo.manual.pdf`. 
 
 --------------------------------------------------------------------------------
 ## Input
