@@ -227,7 +227,6 @@ class Node(object):
                         hgSNPuniqe = '%s%d' % (self.hgSNP, i)
                     
                     self.hgSNP = hgSNPuniqe
-                    print self.hgSNP
             else:
                 Node.errAndLog('WARNING. Attempted to set star label, ' + \
                                'but parent.hgSNP not set yet: %s\n' % self.haplogroup)

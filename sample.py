@@ -724,7 +724,12 @@ class Customer(Sample):
         
         residList = list()
 
-        if Sample.args.singleSampleID:
+        if Sample.config.residList:
+            residList = Sample.config.residList
+            Sample.errAndLog('Research ID list supplied.\n' + \
+                             '    %8d resids (%d unique)\n\n' % \
+                                        (len(residList), len(set(residList))))
+        elif Sample.args.singleSampleID:
             resid = Customer.generateResid(Sample.args.singleSampleID)
             residList = [resid]
             Sample.errAndLog('Will call haplogroup for:\n    %d\n\n' % resid)

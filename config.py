@@ -144,9 +144,11 @@ class Config(object):
     noAblocksFNtp          = '%s/ignored.noAblocks.%sresid.txt'
     noGenotypesFNtp        = '%s/ignored.noGenotypes.%sresid.txt'
 
-    def __init__(self, outDir=None, useDefaultCmdLineArgs=False, suppressOutputAndLog=False):
+    def __init__(self, outDir=None, residList=None,
+                 useDefaultCmdLineArgs=False, suppressOutputAndLog=False):
+        self.residList             = residList
         self.useDefaultCmdLineArgs = useDefaultCmdLineArgs
-        self.suppressOutputAndLog = suppressOutputAndLog
+        self.suppressOutputAndLog  = suppressOutputAndLog
         
         self.setCommandLineArgs()
         self.setDefaultAndDerivedParams(outDir)
@@ -215,6 +217,9 @@ class Config(object):
         elif self.args.ablocks:
             self.runFromAblocks = True
             self.outFNlabel = '23andMe.all.'
+        elif self.residList:
+            self.runFromAblocks = True
+            self.outFNlabel = '23andMe.residList.'
         else:
             self.outFNlabel = ''
             
