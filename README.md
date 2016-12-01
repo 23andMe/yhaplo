@@ -16,10 +16,10 @@ informative variants has been assayed.
 
 Briefly, haplogroup calling involves two steps. The program first builds an internal 
 representation of the Y-chromosome phylogeny by reading its primary structure from 
-(Newick-formatted) text and then importing phylogenetically informative SNPs from the 
-[ISOGG database](http://isogg.org/tree/ISOGG_YDNA_SNP_Index.html), storing each SNP
-within a specific node and growing the tree as necessary. It then traverses the tree
-for each individual, identifying for each the path of derived alleles leading to 
+(Newick-formatted) text and importing phylogenetically informative SNPs from the 
+[ISOGG database](http://isogg.org/tree/ISOGG_YDNA_SNP_Index.html), affiliating each 
+SNP with the appropriate node and growing the tree as necessary. It then traverses the 
+tree for each individual, identifying for each the path of derived alleles leading to 
 a haplogroup designation.
 
 yHaplo is available for non-commercial use pursuant to the terms of the non-exclusive 
@@ -29,7 +29,10 @@ bioRxiv [pre-print](http://biorxiv.org/content/early/2016/11/19/088716):
     Poznik GD. 2016. Identifying Y-chromosome haplogroups in arbitrarily large samples 
     of sequenced or genotyped men. bioRxiv doi: 10.1101/088716
 
-To learn more about the software, please see `yHaplo.manual.pdf`. 
+And, to learn more about the software, please see the manual, `yHaplo.manual.pdf`. 
+
+Please note that yHaplo does not check for sex status; it assumes all samples are male.
+
 
 --------------------------------------------------------------------------------
 ## Input

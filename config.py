@@ -144,8 +144,11 @@ class Config(object):
     noAblocksFNtp          = '%s/ignored.noAblocks.%sresid.txt'
     noGenotypesFNtp        = '%s/ignored.noGenotypes.%sresid.txt'
 
-    def __init__(self, outDir=None, residList=None,
-                 useDefaultCmdLineArgs=False, suppressOutputAndLog=False):
+    def __init__(self, 
+                 useDefaultCmdLineArgs=False, 
+                 suppressOutputAndLog=False,
+                 outDir=None, 
+                 residList=None):
         self.residList             = residList
         self.useDefaultCmdLineArgs = useDefaultCmdLineArgs
         self.suppressOutputAndLog  = suppressOutputAndLog
