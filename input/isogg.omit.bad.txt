@@ -27,6 +27,7 @@ M5365           Q1b1                      23881461 C->A     M5365,PF2412,Z17266
 M1217           Q1b1b                     15684681 A->T     FGC4507,M1217
 Y1228           Q1b2                      17304960 G->A     Y1228
 Page65.2        R1a1                       2657176 C->T     Page65.2,PF6234,SRY1532.2,SRY10831.2
+M1994           R1b1a2a1a1c3               2819993 G->A     M1994                # true coordinate is 2810003, but shows up in R1a, N, etc.
 CTS1789         R1b1a2a1a2b1c1b6          14068815 C->G     CTS1789
 Z10776          R1b1a2a1a2c1c1b1a1b4a     16871170 T->G     A804,FGC21699,Z10776
 S5490           R1b1a2a1a2b1c2a1           9147177 T->C     S5490
