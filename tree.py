@@ -37,6 +37,7 @@ class Tree(object):
         self.snpList                       = list()
         self.snpPosSet                     = set()
         self.snpNameSet                    = set()
+        self.preferredSNPnameSet           = set()
         self.representativeSNPnameSet      = set()
         self.multiAllelicOldPosSet         = set()
         self.multiAllelicNewPosSet         = set()
@@ -176,12 +177,15 @@ class Tree(object):
     def querySNPpath(self):
         'lists phylogenetic path for a query SNP'
         
-        self.errAndLog('%sSNP Query: %s\n\n' % (utils.DASHES, self.args.querySNPname))
-        snp = self.snpDict.get(self.args.querySNPname, None)
+        queryName = self.args.querySNPname
+        self.errAndLog('%sSNP Query: %s\n\n' % (utils.DASHES, queryName))
+        snp = self.snpDict.get(queryName, None)
         
         if snp:
             for node in snp.backTracePath():
                 self.errAndLog('%s\n' % node.strSimple())
+            if snp.label != queryName:
+                self.errAndLog('\nNote: %s is an alias of %s.\n' % (queryName, snp.label))
         else:
             self.errAndLog('Not found.\n')
 
@@ -392,6 +396,7 @@ class Tree(object):
         'import ISOGG SNPs'
         
         SNP.setClassVariables(self)
+        self.readPreferredSNPnameSet()
         self.readRepresentativeSNPnameSet()
         self.readIsoggMultiAllelicPosSet()
         self.readIsoggOmitSet()
@@ -403,6 +408,22 @@ class Tree(object):
         self.writeUniqueSNPtable()
         self.writeNewick()
         self.checkMultiAllelics()
+    
+    def readPreferredSNPnameSet(self):
+        '''reads a set of widely known SNP names. presence on this list is 
+            the primary selection criterion for SNP labels'''
+        
+        preferredSNPnamesFN = self.config.preferredSNPnamesFN
+        
+        utils.checkFileExistence(preferredSNPnamesFN, 'Preferred SNP names')
+        with open(preferredSNPnamesFN, 'r') as preferredSNPnamesFile:
+            for line in preferredSNPnamesFile:
+                self.preferredSNPnameSet.add(line.strip())
+                
+        self.errAndLog( 
+            '%sRead preferred SNP names\n' % utils.DASHES + \
+            '%6d SNP names: %s\n\n' % \
+                (len(self.preferredSNPnameSet), preferredSNPnamesFN))
     
     def readRepresentativeSNPnameSet(self):
         'reads the names of SNPs deemed representative for their respective lineages'
@@ -432,7 +453,7 @@ class Tree(object):
         
         self.representativeSNPnameSet = set1 | set2
         self.errAndLog( 
-            '%sRead representative SNPs\n' % utils.DASHES + \
+            'Read representative SNPs\n' + \
             '%6d haplogroups in: %s\n' % (countsDicts['lines'], isoggRepSNPfn) + \
             '%6d haplogroups with at least one ISOGG-designated representative SNP\n' % \
                 countsDicts['haplogroups'] + \

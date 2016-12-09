@@ -38,7 +38,7 @@ class Config(object):
     allelesString              = 'A C G T D I'             # space of possible alleles
     multiCharHgTruncString     = 'A00 A0-T A0 A1 A1a A1b A1b1 ' \
                                  'BT CT DE CF GHIJK HIJK IJK IJ LT NO'
-    snpLabelLettersRankString  = 'M P V L CTS AF B F Page PF Z SK'  # for prioritization
+    snpLabelLettersRankString  = 'M P V L CTS AF B F Page U PF Z SK'  # for prioritization
     superfluousSNPtextList     = ['IMS-', '-null']         # stripped out of snp names
     ttamHgCallReplacementDict  = { 'BT': 'B' }             # prevents artifactual calls
     callingProgressEarlySet    = { 100, 500, 1000, 5000 }  # for progress messages
@@ -95,6 +95,7 @@ class Config(object):
     isoggMultiAllelicFN    =  '%s/isogg.multiallelic.txt'                 % inDir
     isoggRepSNPfn          =  '%s/representative.SNPs.isogg.2015tree.txt' % inDir
     otherRepSNPfn          =  '%s/representative.SNPs.additional.txt'     % inDir
+    preferredSNPnamesFN    =  '%s/preferred.snpNames.txt'                 % inDir
     pagesFN                =  '%s/23andMe.content.pages.txt'              % inDir
 
     # input | platform

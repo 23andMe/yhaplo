@@ -93,17 +93,33 @@ class SNP(object):
         return self.node.backTracePath()
 
     def addName(self, name):
-        'add name to list, possibly setting label'
+        'adds name to list and updates label if appropriate'
         
-        labelLettersRank, labelLetters, labelNumber = \
-            SNP.parseLabel(name, SNP.config.snpLabelLettersRankDict)
-        if (labelLettersRank < self.labelLettersRank) or \
-                (labelLetters == self.labelLetters and labelNumber < self.labelNumber):
-            self.setLabel(name)
-
         self.nameList.append(name)
         if name in SNP.tree.representativeSNPnameSet:
             self.isRepresentative = True
+
+        if SNP.isApreferredName(self.label):
+            if SNP.isApreferredName(name):
+                SNP.errAndLog('WARNING. Two preferred names for one SNP: ' + \
+                              '%s, %s\n' % (name, self.label))
+        elif SNP.isApreferredName(name):
+            self.setLabel(name)
+        else:
+            labelLettersRank, labelLetters, labelNumber = \
+                SNP.parseLabel(name, SNP.config.snpLabelLettersRankDict)
+            if (labelLettersRank < self.labelLettersRank) or \
+                (labelLetters == self.labelLetters and \
+                 labelNumber < self.labelNumber):
+                self.setLabel(name)
+
+    @staticmethod
+    def isApreferredName(name):
+        '''checks wither a SNP name is in the set of preferred names,
+            with or without an extension (e.g., '.1') if present'''
+        
+        return name in SNP.tree.preferredSNPnameSet \
+            or name.split('.')[0] in SNP.tree.preferredSNPnameSet
 
     @staticmethod
     def cleanLabel(label):
