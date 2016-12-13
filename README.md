@@ -48,7 +48,7 @@ Please note the following caveats before running yHaplo:
 If, for a given sample, yHaplo observes no derived alleles at ISOGG SNPs, it will call 
 the sample haplogroup "A," since all human Y-chromosome lineages are technically 
 sublineages of A. Before concluding that your sample belongs to paragroup A (which 
-includes haplogroups A00, A0, A1a, and A1b1), run with the `-as` option and check the 
+includes haplogroups A00, A0, A1a, and A1b1), run with the `-as` option, and check the 
 auxiliary output for ancestral alleles at haplogroup-BT SNPs. If you don't see any, 
 your data set probably violates one or more of the assumptions listed above.
 
