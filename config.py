@@ -22,90 +22,89 @@ class Config(object):
     'container for parameters, constants, filenames, and command-line arguments'
 
     # parameters and constants
-    isoggDate       = '2016.01.04'  # date ISOGG website scraped to isoggFN
-    rootHaplogroup           = 'A'  # haplogroup to associate with root node
-    ancStopThresh            =   2  # BFS stopping condition parameter
-    derCollapseThresh        =   2  # BFS collapsing parameter
-    maxPlatformVersion       =   4  # highest 23andMe chip version
-    chromosomeInteger        =  24  # for 23andMe SNP metadata
-    missingGenotype          = '.'  # for text input
-    missingHaplogroup        = '.'  # for output
-    vcfStartCol              =   9  # first data column in .vcf
-    vcf4startCol             =   7  # first data column in ".vcf4"
-    numCharsToCompareDefault =   3  # for matchFlag in Sample.__str__
+    #--------------------------------------------------------------------
+    isoggDate = '2016.01.04'        # date ISOGG website scraped to isoggFN
+    rootHaplogroup = 'A'            # haplogroup to associate with root node
+    ancStopThresh = 2               # BFS stopping condition parameter
+    derCollapseThresh = 2           # BFS collapsing parameter
+    missingGenotype = '.'           # for text input
+    missingHaplogroup = '.'         # for output
+    vcfStartCol = 9                 # first data column in .vcf
+    vcf4startCol = 7                # first data column in ".vcf4"
+    numCharsToCompareDefault = 3    # for matchFlag in Sample.__str__
     
-    newickSemanticTokenString  = '(),:;'                   # used in regex
-    allelesString              = 'A C G T D I'             # space of possible alleles
-    multiCharHgTruncString     = 'A00 A0-T A0 A1 A1a A1b A1b1 ' \
-                                 'BT CT DE CF GHIJK HIJK IJK IJ LT NO'
-    snpLabelLettersRankString  = 'M P V L CTS AF B F Page U PF Z SK'  # for prioritization
-    superfluousSNPtextList     = ['IMS-', '-null']         # stripped out of snp names
-    ttamHgCallReplacementDict  = { 'BT': 'B' }             # prevents artifactual calls
-    callingProgressEarlySet    = { 100, 500, 1000, 5000 }  # for progress messages
-    callingProgressInterval    = 10000                     #     (23andMe only)
+    newickSemanticTokenString = '(),:;'                             # used in regex
+    allelesString = 'A C G T D I'                                   # space of possible alleles
+    snpLabelLettersRankString = 'M P V L CTS AF B F Page U PF Z SK' # for prioritization
+    superfluousSNPtextList = ['IMS-', '-null']                      # stripped out of snp names
+    multiCharHgTruncString = 'A00 A0-T A0 A1 A1a A1b A1b1 BT CT DE CF GHIJK HIJK IJK IJ LT NO'
    
     # derived constants
-    maxPlatformVersionPlusOne = maxPlatformVersion + 1
-    newickSemanticTokenSet    = set(newickSemanticTokenString)
-    multiCharHgTruncSet       = set(multiCharHgTruncString.split())
-    multiCharHgTruncMaxLen    = max([len(elem) for elem in multiCharHgTruncSet])
-    superfluousSNPtextList    = set(superfluousSNPtextList)
-
+    newickSemanticTokenSet = set(newickSemanticTokenString)
+    multiCharHgTruncSet = set(multiCharHgTruncString.split())
+    multiCharHgTruncMaxLen = max([len(elem) for elem in multiCharHgTruncSet])
+    superfluousSNPtextList = set(superfluousSNPtextList)
     alleleSet = set(allelesString.split())
-    homozygousGenotypeSet = set()
-    for allele in alleleSet:
-        homozygousGenotypeSet.add('%s%s' % (allele, allele))
+    homozygousGenotypeSet = {'%s%s' % (allele, allele) for allele in alleleSet}
+    snpLabelLettersRankDict = {letters: rank 
+                               for rank, letters in enumerate(snpLabelLettersRankString.split())}
 
-    snpLabelLettersRankDict = dict()
-    for rank, letters in enumerate(snpLabelLettersRankString.split()):
-        snpLabelLettersRankDict[letters] = rank
-
-    # 23andMe dataset and feature names. Col = Column = Feature
-    customerMetaDSname   = 'Metadata.customer'
-    snpMetaDSname        = 'master_v4'
-    ablockDSname         = 'genotype.customer.ablock'
-    platformMasterDSname = 'genotype.platform:MASTER'
+    # 23andMe-specific parameters and constants
+    #--------------------------------------------------------------------
+    ttamHgCallReplacementDict = { 'BT': 'B' }               # prevents artifactual calls
+    callingProgressEarlySet = { 100, 500, 1000, 5000 }      # for progress messages
+    callingProgressInterval = 10000                         # for progress messages
     
-    platformVerColList   = ['is_v%d' % platformVersion \
-                            for platformVersion in xrange(1, maxPlatformVersionPlusOne)]
-    customerMetaColList  = ['resid', 'y_haplogroup'] + platformVerColList
-    customerSexColList   = ['sex', 'sex_x', 'sex_y']
-    snpMetaColList       = ['platform:chrom', 'platform:pos']
+    # SNPs
+    maxPlatformVersion = 5                                  # most recent chip version
+    chromosomeInteger = 24
+    snpMetaDSname = 'Metadata.master_v%d' % maxPlatformVersion
+    snpMetaColList = ['platform:chrom', 'platform:pos']     # features to draw from SNP metadata
+    maxPlatformVersionPlusOne = maxPlatformVersion + 1
     
-    # structs
-    CustomerTuple = namedtuple('CustomerTuple', customerMetaColList)
+    # genotypes
+    ablockDSnameDefault = 'genotype.customer.ablock'
+    
+    # samples
+    customerMetaDSname = 'Metadata.customer'                    # for when using ablockDSnameDefault
+    customerIDcol             = 'resid'
+    customerPlatformColList   = ['is_v%d' % platformVersion \
+                                 for platformVersion in xrange(1, maxPlatformVersionPlusOne)]
+    customerSexColList        = ['sex', 'sex_x', 'sex_y']       # for --allMaleCustomers option
+    customerPrevHaplogroupCol = 'y_haplogroup'                  # for --compareToMetadata option
+    customerMetaColList = [customerIDcol] + customerPlatformColList   # for whenever metadata used
+    CustomerTuple = namedtuple('CustomerTuple', customerMetaColList + [customerPrevHaplogroupCol])
 
-
+    # filenames
     #----------------------------------------------------------------------
-    # files
-    
     # directories
-    fileRoot      = os.path.dirname(os.path.realpath(__file__))
-    inDir         = os.path.join(fileRoot, 'input')
+    softwareDir = os.path.dirname(os.path.realpath(__file__))
+    inDir = os.path.join(softwareDir, 'input')
     defaultOutDir = 'output'
 
-    # input | phylogenetic data
-    primaryTreeFN          =  '%s/y.tree.primary.%s.nwk'                  % (inDir, isoggDate)
-    isoggFN                =  '%s/isogg.%s.txt'                           % (inDir, isoggDate)
-    isoggCorrectionsFNlist = ['%s/isogg.correct.coordinate.txt'           % inDir,
-                              '%s/isogg.correct.polarize.txt'             % inDir]
-    isoggOmitFNlist        = ['%s/isogg.omit.bad.txt'                     % inDir,
-                              '%s/isogg.omit.bad.23andMe.txt'             % inDir,
-                              '%s/isogg.omit.branch.conflict.txt'         % inDir]
-    isoggMultiAllelicFN    =  '%s/isogg.multiallelic.txt'                 % inDir
-    isoggRepSNPfn          =  '%s/representative.SNPs.isogg.2015tree.txt' % inDir
-    otherRepSNPfn          =  '%s/representative.SNPs.additional.txt'     % inDir
-    preferredSNPnamesFN    =  '%s/preferred.snpNames.txt'                 % inDir
-    pagesFN                =  '%s/23andMe.content.pages.txt'              % inDir
+    # input: phylogenetic data
+    primaryTreeFN          =  '%s/y.tree.primary.%s.nwk'                     % (inDir, isoggDate)
+    isoggFN                =  '%s/isogg.%s.txt'                              % (inDir, isoggDate)
+    isoggCorrectionsFNlist = ['%s/isogg.correct.coordinate.txt'              % inDir,
+                              '%s/isogg.correct.polarize.txt'                % inDir]
+    isoggOmitFNlist        = ['%s/isogg.omit.bad.txt'                        % inDir,
+                              '%s/isogg.omit.bad.23andMe.txt'                % inDir,
+                              '%s/isogg.omit.branch.conflict.txt'            % inDir,
+                              '%s/isogg.omit.branch.conflict.23andMe.v5.txt' % inDir]
+    isoggMultiAllelicFN    =  '%s/isogg.multiallelic.txt'                    % inDir
+    isoggRepSNPfn          =  '%s/representative.SNPs.isogg.2015tree.txt'    % inDir
+    otherRepSNPfn          =  '%s/representative.SNPs.additional.txt'        % inDir
+    preferredSNPnamesFN    =  '%s/preferred.snpNames.txt'                    % inDir
+    pagesFN                =  '%s/23andMe.content.pages.txt'                 % inDir
 
-    # input | platform
-    platformPosFNtp        = '%s/platform/output/v%%d.sites.txt' % fileRoot
+    # input: platform
+    platformPosFNtp        = '%s/platform/output/v%%d.sites.txt' % softwareDir
 
-    # input | test data
-    thousandYdataFNtp      = '%s/1000Y/process/output/%%s' % fileRoot
-    thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % fileRoot
+    # input: test data
+    thousandYdataFNtp      = '%s/1000Y/process/output/%%s' % softwareDir
+    thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % softwareDir
 
-    # output | phylogenetic info
+    # output: phylogenetic info
     phyloOutputFNtpDictDict = {
         'withOutdirAndIsoggDate': {
             'alignedPrimaryTreeFN':  '%s/y.tree.primary.aligned.ycc.%s.nwk',
@@ -131,7 +130,7 @@ class Config(object):
         }
     }
 
-    # output | haplogroup calls, log, optional files, 23andMe auxiliary files
+    # output: haplogroup calls, log, optional files, 23andMe auxiliary files
     logFNtp                = '%s/log.%stxt'
     haplogroupCallsFNtp    = '%s/haplogroups.%stxt'
     haplogroupRealTimeFNtp = '%s/haplogroups.realTime.%stxt'
@@ -150,12 +149,13 @@ class Config(object):
                  suppressOutputAndLog=False,
                  outDir=None, 
                  residList=None):
-        self.residList             = residList
+        self.residList = residList
         self.useDefaultCmdLineArgs = useDefaultCmdLineArgs
-        self.suppressOutputAndLog  = suppressOutputAndLog
+        self.suppressOutputAndLog = suppressOutputAndLog
         
         self.setCommandLineArgs()
-        self.setDefaultAndDerivedParams(outDir)
+        self.setParamsGeneral(outDir)
+        self.validateParams()
         self.setParamsBasedOnInputType()
         self.setParamsBasedOnRunType()
         self.makeOutputDirectories()
@@ -167,15 +167,15 @@ class Config(object):
         self.openLogAndWelcome()
         
         if self.runFromAblocks:
-            self.set23andMeArgs()
+            self.setParams23andMe()
             self.get23andMeDatasets()
         
         if self.suppressOutputAndLog:
             self.overrideOutputGeneratingArgs()
     
     #----------------------------------------------------------------------
-    def setDefaultAndDerivedParams(self, outDir):
-        'set default and derived parameter values'
+    def setParamsGeneral(self, outDir):
+        'set general parameters'
         
         # output directories
         if outDir is not None:
@@ -186,13 +186,13 @@ class Config(object):
             self.outDir = Config.defaultOutDir
         self.phyloOutDir = self.outDir
         
-        # run type: zero or one of these four will be set to True
-        self.runFromAblocks        = False
+        # run type: zero or one of these four will be set to True by downstream methods
+        self.runFromAblocks = False
         self.runFromSampleMajorTxt = False
-        self.runFromVCF            = False
-        self.runFromVCF4           = False
+        self.runFromVCF = False
+        self.runFromVCF4 = False
 
-        # derived parameters
+        # derived 1000Y testing parameters
         self.test1000Y = self.args.test1000Yall or \
                          self.args.test1000YplatformVersion or \
                          self.args.test1000Ysubset or \
@@ -201,50 +201,62 @@ class Config(object):
                                         self.args.test1000Yvcf4
                                         
         # other parameters
-        self.vcfStartCol        = Config.vcfStartCol
-        self.numCharsToCompare  = Config.numCharsToCompareDefault
-        self.prevCalledHgFN     = self.args.prevCalledHgFN
+        self.vcfStartCol = Config.vcfStartCol
+        self.numCharsToCompare = Config.numCharsToCompareDefault
+        self.prevCalledHgFN = self.args.prevCalledHgFN
         self.compareToPrevCalls = self.prevCalledHgFN is not None \
                                   or self.test1000Y \
                                   or self.args.compareToMetadata
         
     #----------------------------------------------------------------------
+    def validateParams(self):
+        'ensure consistency of run options'
+        
+        # preclude specification of both a data option and a test option
+        if self.test1000Y:
+            if self.args.dataFN:
+                sys.exit('ERROR. Do not specify a 1000Y test option and a specific data file.\n')
+            if self.args.allMaleCustomers:
+                sys.exit('ERROR. Do not specify a 1000Y test option to run on all male 23andMe customers.\n')
+            if self.args.primaryOnly:
+                sys.exit('ERROR. Do not specify a 1000Y test option if not importing ISOGG SNPs.\n')
+        elif self.test1000YformatSpecified:
+            sys.exit('ERROR. Only specify a 1000Y data format when running on 1000Y data.\n')
+        
+        # require a resid list input file when ablock dataset specified
+        if self.args.ablockDSname:
+            if not self.args.dataFN or not self.args.dataFN.endswith('.resid.txt'):
+                sys.exit('ERROR. Provide a resid list (-i) when specifying a non-default ablock dataset name.')
+            if self.args.compareToMetadata:
+                sys.exit('ERROR. Will not check metadata when using non-default ablock dataset.\n')
+                
+    #----------------------------------------------------------------------
     def setParamsBasedOnInputType(self):
-        'set arguments based on input type'
+        'set parameters based on input type'
         
         if self.test1000Y:
-            self.set1000Yargs()
-        elif self.test1000YformatSpecified:
-            sys.exit('ERROR. only specify test-data format when running on test data.')
-        elif self.args.dataFN:
+            self.setParams1000Y()
+        elif self.args.dataFN:          # any type of input file, including resid list
             self.parseDataFN()
-        elif self.args.ablocks:
+        elif self.args.allMaleCustomers:
             self.runFromAblocks = True
             self.outFNlabel = '23andMe.all.'
-        elif self.residList:
+        elif self.residList:            # residList specified at config instantiation
             self.runFromAblocks = True
-            self.outFNlabel = '23andMe.residList.'
+            self.outFNlabel = 'residList.'
         else:
             self.outFNlabel = ''
             
-    def set1000Yargs(self):
-        'set arguments for 1000Y testing'
+    def setParams1000Y(self):
+        'set parameters for 1000Y testing'
 
-        # args consistency checks        
-        if self.args.dataFN:
-            sys.stderr.write('WARNING. Ignoring explicitly specified data file.\n')
-        if self.args.ablocks:
-            sys.stderr.write('WARNING. Ignoring option to run on 23andMe ablocks.\n')
-        if self.args.primaryOnly:
-            sys.exit('ERROR. Specify --primaryOnly XOR genotype data.\n')
-
-        # parameter values that always hold for 1000Y
+        # parameters
         self.outDir = self.outDir + '.1000Y'
         self.args.alternativeRoot = 'A0-T'
         if not self.prevCalledHgFN:
             self.prevCalledHgFN = Config.thousandYhgFN
 
-        # output-file labels
+        # output-file label
         if self.args.test1000Yall:
             self.outFNlabel = '1000Y.all.'
         elif self.args.test1000Ysubset:
@@ -257,8 +269,8 @@ class Config(object):
                          (self.args.singleSampleID, self.args.test1000YoneID))
         elif self.args.test1000YplatformVersion:
             self.outFNlabel = '1000Y.all.v%d.' % self.args.test1000YplatformVersion
-        
-        # file name for input genotypes
+
+        # input file name
         if self.args.test1000Yvcf:
             self.runFromVCF = True
             dataFNlabel = self.outFNlabel + 'vcf.gz'
@@ -268,7 +280,6 @@ class Config(object):
         else:
             self.runFromSampleMajorTxt = True
             dataFNlabel = self.outFNlabel + 'genos.txt'
-             
         self.args.dataFN = Config.thousandYdataFNtp % dataFNlabel
         
     def parseDataFN(self):
@@ -277,7 +288,8 @@ class Config(object):
         dataFN = self.args.dataFN
         if dataFN.endswith('.resid.txt'):
             self.runFromAblocks = True
-            self.outFNlabel = '23andMe.%s' % utils.basenameNoEnding(dataFN, '.resid.txt')
+            residFNlabel = utils.basenameNoEnding(dataFN, '.resid.txt')
+            self.outFNlabel = residFNlabel
         elif dataFN.endswith('.genos.txt'):
             self.runFromSampleMajorTxt = True
             self.outFNlabel = utils.basenameNoEnding(dataFN, '.genos.txt')
@@ -297,9 +309,10 @@ class Config(object):
     def setParamsBasedOnRunType(self):
         'set parameters based on run type'
         
-        if self.runFromAblocks:
+        if self.runFromAblocks and self.args.ablockDSname is None:
             self.outDir = self.outDir + '.23andMe'
-        elif self.runFromVCF4:
+        
+        if self.runFromVCF4:
             self.vcfStartCol = Config.vcf4startCol
 
     #----------------------------------------------------------------------
@@ -326,7 +339,7 @@ class Config(object):
         if self.args.singleSampleID:
             self.outFNlabel = '%s%s.' % (self.outFNlabel, self.args.singleSampleID)
         self.haplogroupCallsFN = self.constructOutFileName(Config.haplogroupCallsFNtp)
-        self.logFN             = self.constructOutFileName(Config.logFNtp)
+        self.logFN = self.constructOutFileName(Config.logFNtp)
 
         if self.args.writeAncDerCounts:
             self.countsAncDerFN = self.constructOutFileName(Config.countsAncDerFNtp)
@@ -379,65 +392,81 @@ class Config(object):
         if not self.suppressOutputAndLog:
             self.errAndLog('      Log:     %s\n' % self.logFN)
         self.errAndLog('%s' % utils.DASHES)
+        
+        self.emitWarnings()
 
     def errAndLog(self, message):
         'output a message to stderr and write to the log file'
         
-        message = message.replace(Config.fileRoot + '/', '')
+        message = message.replace(Config.softwareDir + '/', '')
         sys.stderr.write(message)
         if self.logFile:
             self.logFile.write(message)
+        
+    def emitWarnings(self):
+        'emit warnings for deprecated optoins, etc.'
+        
+        if self.args.compareToMetadata:
+            self.errAndLog('\nWARNING. Deprecated option: -mdh, --compareToMetadata.\n' + 
+                           'The old algorithm will soon be retired.\n\n')
 
     #----------------------------------------------------------------------
-    def set23andMeArgs(self):
+    def setParams23andMe(self):
         'set arguments for 23andMe data'
         
-        self.numCharsToCompare = 1
-        self.noAblocksFN   = self.constructOutFileName(Config.noAblocksFNtp)
+        self.ablockDSname = self.args.ablockDSname if self.args.ablockDSname else Config.ablockDSnameDefault
+        self.noAblocksFN = self.constructOutFileName(Config.noAblocksFNtp)
         self.noGenotypesFN = self.constructOutFileName(Config.noGenotypesFNtp)
         self.args.writeContentMappings = True
+        self.numCharsToCompare = 1
 
     def get23andMeDatasets(self):
-        'get 3 datasets: snp metadata, customer metadata, genotypes (ablocks)'
+        'get 3 datasets: snp metadata, customer metadata (if needed), genotypes'
 
+        # imports
+        self.errAndLog('\n%sAccessing 23andMe data...\n\n' % utils.DASHES)
         try:
             from rtk23.config import init_rtk23
-            from rtk23.dataset import dataset_factory
+            from rtk23.dataset import dataset_factory, UnknownDatasetException
             from rtk23.lib.coregen import VALUE_TO_CALL as ablockCodeToGenotypeDict
-            from clib23 import metadata as snpMetadata
         except ImportError:
-            self.exit('ERROR. Cannot import 23andMe packages: rtk23 or clib23')
+            sys.exit('ERROR. Cannot import from rtk23.')
+        self.ablockCodeToGenotypeDict = ablockCodeToGenotypeDict
 
-        self.errAndLog('\n%sAccessing 23andMe data...\n\n' % utils.DASHES + \
-                       '    Initializing rtk23 ... ')
+        # initialization
+        self.errAndLog('    Initializing rtk23 ... ')
         init_rtk23()
         self.errAndLog('Done.\n')
 
+        # SNP metadata
         self.errAndLog('    SNPs: inferring ablock indexes ... ')
-        self.setPos2ablockIndexListDict(snpMetadata)
+        self.snpMetaDS = dataset_factory.get_dataset(Config.snpMetaDSname)
+        self.setPos2ablockIndexListDict()
         self.errAndLog('Done.\n')
 
-        self.errAndLog('    Customers: getting metadata...\n')
-        self.customerMetaDS = dataset_factory.get_dataset(Config.customerMetaDSname)
+        # customer metadata
+        if not self.args.ablockDSname:
+            self.errAndLog('    Customers: getting metadata...\n')
+            self.customerMetaDS = dataset_factory.get_dataset(Config.customerMetaDSname)
 
+        # genotypes
         self.errAndLog('    Genotypes: getting ablock dataset...\n')
-        self.ablockDS = dataset_factory.get_dataset(Config.ablockDSname)
-        self.ablockCodeToGenotypeDict = ablockCodeToGenotypeDict
+        try:
+            self.ablockDS = dataset_factory.get_dataset(self.ablockDSname)
+        except UnknownDatasetException:
+            sys.exit('\nERROR. Unknown ablock dataset: %s' % self.ablockDSname)
 
-    def setPos2ablockIndexListDict(self, snpMetadata):
+    def setPos2ablockIndexListDict(self):
         '''
         builds a dictionary with:
         key:   physical coordinate
         value: list of ablock indexes
         '''
         
-        snpMetaDS = snpMetadata.PythonMetaDataFactory().get_dataset(Config.snpMetaDSname)
-        snpMetaColList   = Config.snpMetaColList
-        snpMetaArrayDict = snpMetaDS.load(snpMetaColList)
-        
+        snpMetaArrayDict = self.snpMetaDS.load(Config.snpMetaColList)
         self.pos2ablockIndexListDict = defaultdict(list)
         for ablockIndex, (chromosome, position) in \
-                enumerate(zip(*[snpMetaArrayDict[column] for column in snpMetaColList])):
+                enumerate(zip(*[snpMetaArrayDict[column] for column in Config.snpMetaColList])):
             if chromosome == Config.chromosomeInteger:
                 self.pos2ablockIndexListDict[position].append(ablockIndex)
                 
@@ -471,8 +500,7 @@ class Config(object):
         if self.args.haplogroupToListGenotypesFor:
             self.hgGenosFile.close()
             self.errAndLog('Wrote genotypes at SNPs associated haplogroup %s:\n' \
-                           '    %s\n\n' % (self.args.haplogroupToListGenotypesFor, 
-                                           self.hgGenosFN))
+                '    %s\n\n' % (self.args.haplogroupToListGenotypesFor, self.hgGenosFN))
         
         if self.logFile:
             self.logFile.close()
@@ -494,10 +522,11 @@ class Config(object):
                  '                           row 1: coordinates, col 1: sample IDs\n'
                  '    .vcf, .vcf.gz, .vcf4 : snp-major text data\n'
                  'The file format inferred from its name.')
-        group.add_argument('-a', '--ablocks', 
-            dest='ablocks', action='store_true', default=False,
-            help='run on 23andMe ablocks\n'
-                 '* the 2 data options above are mutually exclusive *\n\n')
+        group.add_argument('-a', '--allMaleCustomers', 
+            dest='allMaleCustomers', action='store_true', default=False,
+            help='run on all male 23andMe customers (or one when used with -s)\n'
+                 '\n* the 2 data options above are mutually exclusive\n'
+                 '  and preclude any of the 4 test options below.\n\n\n')
         
         # test data
         group = parser.add_mutually_exclusive_group()
@@ -513,7 +542,7 @@ class Config(object):
         group.add_argument('-tv', '--test1000YplatformSites', type=int, 
             dest='test1000YplatformVersion', metavar='version',
             help='1000Y testing: 23andMe sites, all samples\n'
-                 '* the 4 test-data options above are mutually exclusive *\n\n')
+                 '\n* the 4 test-data options above are mutually exclusive\n\n\n')
         
         # test data format
         group = parser.add_mutually_exclusive_group()
@@ -523,8 +552,10 @@ class Config(object):
         group.add_argument('-tvcf4', '--test1000Yvcf4', 
             dest='test1000Yvcf4', action='store_true', default=False,
             help='1000Y testing: use .vcf4 file rather than .genos.txt\n'
-                 '* the 2 test-data format options above are mutually exclusive *\n')
+                 '\n* the 2 test-data format options above are mutually exclusive\n'
+                 '  and require one of the 4 1000Y test options above.\n\n')
     
+        # tree traversal
         groupDescription = 'traverse tree'
         group = parser.add_argument_group('trees', groupDescription)
         group.add_argument('-b', '--breadthFirst', 
@@ -540,15 +571,16 @@ class Config(object):
             dest='mrcaHaplogroupList', metavar=('haplogroup1', 'haplogroup2'),
             help='output mrca of two haplogroups')
         group.add_argument('-sq', '--snpQuery', type=str,
-            dest='querySNPname', metavar='snpName', default = None,
+            dest='querySNPname', metavar='snpName', default=None,
             help='list phylogenetic path for a query SNP')
         group.add_argument('-cm', '--contentMapping', 
             dest='writeContentMappings', action='store_true', default=False, 
-            help='23andMe: map each node the most recent ancestor with an info page')
+            help='23andMe: map each node to the most recent ancestor with an info page')
         group.add_argument('-pt', '--platformTrees', 
             dest='writePlatformTrees', action='store_true', default=False, 
             help='23andMe: write trees whose branch lengths are numbers of platform sites\n')
         
+        # axiliary output
         groupDescription = 'write to files details of haplogroup calling for each sample\n' \
             '    + end       : written after all haplogroups have been called and samples sorted\n' \
             '    + real time : written as haplogroups are called'
@@ -583,6 +615,7 @@ class Config(object):
             help='real time: genotypes at SNPs associated with this haplogroup,\n'
                  '           if the corresponding node is visited')
         
+        # restrictions
         groupDescription = 'restrict input or traversal'
         group = parser.add_argument_group('restrictions', groupDescription)
         group.add_argument('-po', '--primaryOnly', 
@@ -595,7 +628,9 @@ class Config(object):
             dest='singleSampleID', metavar='ID', 
             help='restrict to a single sample (resid for 23andMe data)\n')
         
+        # comparisons to previously called haplogroups
         groupDescription = 'previously called haplogroups'
+        group = parser.add_argument_group('comparisons', groupDescription)
         group.add_argument('-mdh', '--compareToMetadata',  
             dest='compareToMetadata', action='store_true', default=False, 
             help='23andMe: compare to previous calls')
@@ -604,15 +639,18 @@ class Config(object):
             help='import previously called haplogroups:\n' + \
                  'ID in first column, Haplogroup in last\n')
     
+        # other options
         groupDescription = 'other options'
         group = parser.add_argument_group('other', groupDescription)
+        group.add_argument('-ab', '--ablockDSname', type=str,
+            dest='ablockDSname', metavar='dsName', default=None,
+            help='23andMe: specify non-default ablock dataset name')
         group.add_argument('-fn', '--fileNamesOnly', 
             action='store_true', default=False,
             help='print file names to stdout and exit\n\n')
         group.add_argument('-o', '--outDir', type=str,
             dest='outDir', metavar='dirName', default=None,
             help='set output directory')
-    
     
         if self.useDefaultCmdLineArgs:
             self.args = parser.parse_args([])

@@ -29,9 +29,8 @@ bioRxiv [pre-print](http://biorxiv.org/content/early/2016/11/19/088716):
     Poznik GD. 2016. Identifying Y-chromosome haplogroups in arbitrarily large samples 
     of sequenced or genotyped men. bioRxiv doi: 10.1101/088716
 
-And, to learn more about the software, please see the manual, `yHaplo.manual.pdf`. 
-
-Please note that yHaplo does not check for sex status; it assumes all samples are male.
+To learn more about the software, please see the manual, `yHaplo.manual.pdf`. 
+And, for an overiew of command-line options, issue the following command: `callHaplogroups.py -h`
 
 
 --------------------------------------------------------------------------------
@@ -49,7 +48,7 @@ If, for a given sample, yHaplo observes no derived alleles at ISOGG SNPs, it wil
 the sample haplogroup "A," since all human Y-chromosome lineages are technically 
 sublineages of A. Before concluding that your sample belongs to paragroup A (which 
 includes haplogroups A00, A0, A1a, and A1b1), run with the `-as` option, and check the 
-auxiliary output for ancestral alleles at haplogroup-BT SNPs. If you don't see any, 
+auxiliary output for ancestral alleles at haplogroup-BT SNPs. If you do not see any, 
 your data set probably violates one or more of the assumptions listed above.
 
 
@@ -60,11 +59,14 @@ your data set probably violates one or more of the assumptions listed above.
 
 `input/`
 
-* `y.tree.primary.DATE.nwk`   : primary structure of the Y-chromosome tree
-* `isogg.DATE.txt`            : phylogenetically informative SNPs
-* `isogg.correct.*.txt`       : corrections to ISOGG data
-* `isogg.omit.*.txt`          : SNPs to drop due to inconsistencies observed in test data
-* `isogg.multiallelic.txt`    : physical coordinates of multiallelic sites to be excluded
+* `y.tree.primary.DATE.nwk` : primary structure of the Y-chromosome tree
+* `isogg.DATE.txt` : phylogenetically informative SNPs scraped directly from the ISOGG website. 
+yHaplo resolves errors and formatting inconsistencies and emits cleaned versions 
+(`output/isogg.snps.cleaned.DATE.txt` and `output/isogg.snps.unique.DATE.txt`; 
+see `yHaplo.manual.pdf` for details).
+* `isogg.correct.*.txt` : corrections to ISOGG data
+* `isogg.omit.*.txt` : SNPs to drop due to inconsistencies observed in test data
+* `isogg.multiallelic.txt` : physical coordinates of multiallelic sites to be excluded
 * `representative.SNPs.*.txt` : SNPs deemed representative of corresponding haplogroups
 
 
@@ -73,7 +75,8 @@ your data set probably violates one or more of the assumptions listed above.
 * `.genos.txt`    : sample-major genotypes  
     * row 1: physical coordinates  
     * column 1: individual IDs
-    * cell (i, j): genotype for individual i at position j, encoded as a single character from the set { A, C, G, T, . }, with "." representing an unobserved value
+    * cell (i, j): genotype for individual i at position j, encoded as a single character 
+from the set { A, C, G, T, . }, with "." representing an unobserved value
 * `.resid.txt`    : file with 23andMe research IDs in the first column
 * `.vcf`, `.vcf.gz` : snp-major VCF file
 * `.vcf4`         : snp-major pseudo-VCF. differences include:
@@ -83,11 +86,29 @@ your data set probably violates one or more of the assumptions listed above.
 
 
 --------------------------------------------------------------------------------
+## Output
+
+All output file formats are described in detail in `yHaplo.manual.pdf`.
+
+The two primary output files are:
+
+1. `log.projectName.txt` : log file containing details of the run
+2. `haplogroups.projectName.txt` : haplogroup calls. The 4 columns are:
+    1. ID
+    2. Haplogroup short form, with the name of a SNP observed in the derived state
+    3. Haplogroup short form, with the name of a representative SNP
+    4. Haplogroup long form, using Y-Chromosome Consortium nomenclature
+
+yHaplo also produces a number of SNP tables, tree files, and auxiliary output files. 
+Please see `yHaplo.manual.pdf` and `callHaplogroups.py -h` for details.
+
+
+--------------------------------------------------------------------------------
 ## Code
 
 ### Driver script
 
-`callHaplogroups.py` : for an overiew of command-line options, issue the following command: `callHaplogroups.py -h`
+`callHaplogroups.py`
 
 ### Main classes
 
@@ -99,7 +120,7 @@ your data set probably violates one or more of the assumptions listed above.
                     represents the branch that leads to it
 * `SNP`          : knows position, ancestral and derived alleles, node, etc.
 * `PlatformSNP` : knows position and ablock index 
-* `Sample`       : knows an individual's genotypes and haplogroup
+* `Sample`       : knows genotypes and haplogroup of an individual 
 * `Customer`     : (subclass of Sample) has 23andMe metadata and genotypes from ablocks
 * `Path`         : path through a tree; stores the next node to visit, a list of SNPs 
                     observed in the derived state, the most derived SNP observed, 

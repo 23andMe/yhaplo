@@ -23,10 +23,10 @@ class Tree(object):
     '''
     
     def __init__(self, config):
-        self.config    = config
-        self.args      = config.args
+        self.config = config
+        self.args = config.args
         self.errAndLog = config.errAndLog
-        self.maxDepth  = 0
+        self.maxDepth = 0
         
         # node info
         self.hg2nodeDict = dict()
@@ -34,17 +34,17 @@ class Tree(object):
         
         # snp info
         self.snpDict = dict()  # keys: name, (haplogroup, position), position 
-        self.snpList                       = list()
-        self.snpPosSet                     = set()
-        self.snpNameSet                    = set()
-        self.preferredSNPnameSet           = set()
-        self.representativeSNPnameSet      = set()
-        self.multiAllelicOldPosSet         = set()
-        self.multiAllelicNewPosSet         = set()
-        self.isoggOmitSet                  = set()
-        self.isoggCorrectionDict           = dict()
-        self.isoggCountsDict               = defaultdict(int)
-        self.numSNPsCorrected              = 0
+        self.snpList = list()
+        self.snpPosSet = set()
+        self.snpNameSet = set()
+        self.preferredSNPnameSet = set()
+        self.representativeSNPnameSet = set()
+        self.multiAllelicOldPosSet = set()
+        self.multiAllelicNewPosSet = set()
+        self.isoggOmitSet = set()
+        self.isoggCorrectionDict = dict()
+        self.isoggCountsDict = defaultdict(int)
+        self.numSNPsCorrected = 0
         
         # build tree
         self.root = self.buildTreeFromNewick()
@@ -512,10 +512,10 @@ class Tree(object):
         
         # output file handles
         if self.config.suppressOutputAndLog:
-            isoggOutFile     = None
+            isoggOutFile = None
             isoggDropOutFile = None
         else:
-            isoggOutFile     = open(self.config.cleanedIsoggFN, 'w')
+            isoggOutFile = open(self.config.cleanedIsoggFN, 'w')
             isoggDropOutFile = open(self.config.droppedIsoggFN, 'w')
         
         droppedMarkerList = list()
@@ -615,7 +615,7 @@ class Tree(object):
             node.prioritySortSNPlistAndSetHgSNP()
         
     def writeIsoggCounts(self):
-        config     = self.config
+        config = self.config
         countsDict = self.isoggCountsDict
         numAltNames = countsDict['retained'] - countsDict['unique']
         

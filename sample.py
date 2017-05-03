@@ -6,7 +6,6 @@
 # - Sample
 # - Customer (a subclass of Sample)
 #----------------------------------------------------------------------
-import numpy as np
 import sys
 from collections import Counter
 from itertools import izip
@@ -22,25 +21,25 @@ class Sample(object):
     - knows its haplogroup.
     '''
     
-    tree       = None
-    config     = None
-    args       = None
-    errAndLog  = None
-    numAssigned  = 0
+    tree = None
+    config = None
+    args = None
+    errAndLog = None
+    numAssigned = 0
     numRootCalls = 0
     sampleList = list()
     prevCalledHaplogroupDict = dict()
     
     def __init__(self, ID, sampleIndex=None):
-        self.ID                   = ID
-        self.sampleIndex          = sampleIndex      # for snp-major data
-        self.pos2genoDict         = dict()
+        self.ID = ID
+        self.sampleIndex = sampleIndex      # for snp-major data
+        self.pos2genoDict = dict()
         
         self.ancDerCountTupleList = list()
-        self.haplogroupNode       = None
-        self.mostDerivedSNP       = None
-        self.derSNPlist           = None
-        self.ancSNPlist           = None
+        self.haplogroupNode = None
+        self.mostDerivedSNP = None
+        self.derSNPlist = None
+        self.ancSNPlist = None
         
         self.prevCalledHaplogroup = self.config.missingHaplogroup
         self.prevCalledHaplogroupDFSrank = 0
@@ -107,7 +106,7 @@ class Sample(object):
         
         if Sample.config.compareToPrevCalls:
             prevHgStart = self.prevCalledHaplogroup[:Sample.config.numCharsToCompare]
-            hgStart     = self.haplogroup[:Sample.config.numCharsToCompare]
+            hgStart = self.haplogroup[:Sample.config.numCharsToCompare]
             matchFlag = '.' if prevHgStart == hgStart else '*'
             sampleString = '%s %-25s %s' % (sampleString, 
                                             self.prevCalledHaplogroup, matchFlag)
@@ -125,7 +124,7 @@ class Sample(object):
     def strForCounts(self):
         'string representation for anc/der counts output'
         
-        leftPart  = '%-8s %s' % (self.ID, self.haplogroup)
+        leftPart = '%-8s %s' % (self.ID, self.haplogroup)
         rightPart = '%s %s'   % (self.hgSNPobs, self.hgSNP)
         if Sample.config.compareToPrevCalls:
             return '%s %s | %s' % (leftPart, self.prevCalledHaplogroup, rightPart)
@@ -243,10 +242,10 @@ class Sample(object):
     def callHaplogroup(self):
         'finds path through tree and returns haplogroup'
         
-        Sample.numAssigned   += 1
+        Sample.numAssigned += 1
         path, self.ancSNPlist = Sample.tree.identifyPhylogeneticPath(self)
-        self.derSNPlist       = path.derSNPlist
-        self.mostDerivedSNP   = path.mostDerivedSNP
+        self.derSNPlist = path.derSNPlist
+        self.mostDerivedSNP = path.mostDerivedSNP
 
         if self.mostDerivedSNP:
             self.haplogroupNode = self.mostDerivedSNP.node
@@ -301,10 +300,10 @@ class Sample(object):
     def setTreeConfigAndArgs(config, tree):
         'enables Sample class to know about the tree instance, config, and args'
         
-        Sample.config    = config
-        Sample.args      = config.args
+        Sample.config = config
+        Sample.args = config.args
         Sample.errAndLog = config.errAndLog
-        Sample.tree      = tree
+        Sample.tree = tree
         
         if Sample.args.writeHaplogroupsRealTime:
             Sample.realTimeHaplogroupWritingMessage()
@@ -354,7 +353,7 @@ class Sample(object):
             column 1 = sample ID
         '''
         
-        genoFN               = Sample.args.dataFN
+        genoFN = Sample.args.dataFN
         genoFile, genoReader = utils.getCSVreader(genoFN, delimiter='\t')
         Sample.errAndLog('%sReading genotype data:\n    %s\n\n' % \
                          (utils.DASHES, genoFN))
@@ -404,7 +403,7 @@ class Sample(object):
     def loadDataFromVCF():
         'constructs list of sample objects, each with a genotype dictionary'
         
-        vcfFN              = Sample.args.dataFN
+        vcfFN = Sample.args.dataFN
         vcfFile, vcfReader = utils.getCSVreader(vcfFN, delimiter='\t')
         Sample.setSampleListFromVCFheader(vcfReader)
 
@@ -617,7 +616,7 @@ class Sample(object):
 #--------------------------------------------------------------------------
 
 class Customer(Sample):
-    'a customer is a sample with 23andMe metadata and genotypes in ablocks'
+    'a "customer" is any sample whose genotypes are stored as 23andMe ablocks'
     
     numNoAblock, numNoGenotypes = 0, 0
     noAblocksFile, noGenotypesFile = None, None
@@ -628,7 +627,7 @@ class Customer(Sample):
         
     def setPrevCalledHaplogroup(self):
         '''
-        called from Customer.__init__() via Sample.__init__()
+        called from Customer.__init__() via Sample.__init__() (if config.compareToPrevCalls)
         for testing/comparison, sets previously called haplogroup from 
         original 23andMe algorithm. does not set corresponding DFS rank
         since the nomenclature has changed substantially
@@ -690,8 +689,7 @@ class Customer(Sample):
         Customer.openAuxiliaryOutputFiles()
 
         Sample.errAndLog('%sProcessing 23andMe customer data...\n\n' % utils.DASHES)
-        residList = Customer.generateResidList()
-        customerTupleList = Customer.buildCustomerTupleList(residList)
+        customerTupleList = Customer.buildCustomerTupleList()
 
         Sample.errAndLog('\n%sCalling haplogroups...\n\n' % (utils.DASHES) + \
                          ' Progress...\n')
@@ -710,37 +708,133 @@ class Customer(Sample):
         'open auxiliary output files'
         
         if not Sample.config.suppressOutputAndLog:
-            Customer.noAblocksFile   = open(Sample.config.noAblocksFN,   'w')
+            Customer.noAblocksFile = open(Sample.config.noAblocksFN, 'w')
             Customer.noGenotypesFile = open(Sample.config.noGenotypesFN, 'w')
+        
+    @classmethod
+    def buildCustomerTupleList(cls):
+        'builds a list of CustomerTuple instances'
+        
+        if Sample.args.ablockDSname:
+            customerTupleList = cls.buildCustomerTupleListFromFile()
+        else:
+            customerTupleList = cls.buildCustomerTupleListFromMetadata()
+        
+        return customerTupleList
+    
+    @staticmethod
+    def buildCustomerTupleListFromFile():
+        '''
+        builds a list of CustomerTuple instances from a two-column file.
+        
+        column 1: ID
+        column 2: comma-separated list of platforms for this individual
+        
+        example:  Sample314159 1,2,5
+        '''
+        
+        utils.checkFileExistence(Sample.args.dataFN, 'Sample IDs')
+        Sample.errAndLog('Reading sample IDs:\n    %s\n' % Sample.args.dataFN)
+        
+        customerTupleList = list()
+        IDset = set()
+        with open(Sample.args.dataFN, 'r') as idFile:
+            for line in idFile:
+                tokenList = line.strip().split()
+                if len(tokenList) != 2:
+                    sys.exit('ERROR. When specifying non-default ablock dataset,\n' + \
+                             'ID file must have 2 columns: ID, comma-separated list of integers\n' + \
+                             'indicating platform versions.\n')
 
+                ID, platformVersions = tokenList
+                IDset.add(ID)
+                tupleKwargsDict = {
+                    'resid': ID,
+                    'y_haplogroup': Sample.config.missingHaplogroup,    # previous call; not needed
+                }
+            
+                platformVersionsSet = set([int(i) for i in platformVersions.split(',')])
+                for i in xrange(1, Sample.config.maxPlatformVersionPlusOne):
+                    tupleKwargsDict['is_v%d' % i] = i in platformVersionsSet
+            
+                customerTuple = Sample.config.CustomerTuple(**tupleKwargsDict)
+                customerTupleList.append(customerTuple)
+                
+        Sample.errAndLog('    %8d read\n'     % len(customerTupleList))
+        Sample.errAndLog('    %8d unique\n\n' % len(IDset))
+
+        return customerTupleList
+
+    @staticmethod
+    def buildCustomerTupleListFromMetadata():
+        'builds a list of CustomerTuple instances from customer metadata.'
+        
+        import numpy as np
+        import pandas as pd
+
+        Sample.errAndLog('Building customer mask ... ')
+        metaDS      = Sample.config.customerMetaDS
+        metaColList = Sample.config.customerMetaColList
+        prevHapCol  = Sample.config.customerPrevHaplogroupCol
+        metaDF = pd.DataFrame(metaDS.load(metaColList))[metaColList]
+        metaDF[prevHapCol] = metaDS.load([prevHapCol])[prevHapCol] if Sample.config.compareToPrevCalls \
+                             else Sample.config.missingHaplogroup
+        mask, maskType = Customer.buildCustomerMask(metaDF, np, pd)
+        metaDF = metaDF[mask]
+        
+        customerTupleList = list()
+        for row in metaDF.itertuples():
+            customerTupleList.append(Sample.config.CustomerTuple(*row[1:]))
+    
+        Sample.errAndLog('Done.\n' +
+            '    %8d %s customers to be processed\n' % (len(customerTupleList), maskType))
+
+        return customerTupleList
+
+    @staticmethod
+    def buildCustomerMask(metaDF, np, pd):
+        'if resids have been specified, use those. otherwise, use all males.'
+
+        residList = Customer.generateResidList()
+        if residList:
+            maskType = 'specified'
+            mask = np.in1d(metaDF[Sample.config.customerIDcol], residList)
+        else:
+            maskType = 'male'
+            sexDF = pd.DataFrame(Sample.config.customerMetaDS.load(Sample.config.customerSexColList))
+            mask = np.ones(len(sexDF), dtype=bool)
+            for column in sexDF.columns:
+                mask = mask & (sexDF[column] == 'M')
+                
+        return mask, maskType
+        
     @staticmethod
     def generateResidList():
         '''
-        3 possibilities:
+        4 possibilities:
+            residList specified at config instantiation
             -a -s RESID           -> a single research ID has been specified
             -i FILENAME.resid.txt -> read research IDs from file
             -a                    -> return empty list to indicate no subsetting
         '''
-        
-        residList = list()
 
+        residList = list()
         if Sample.config.residList:
             residList = Sample.config.residList
             Sample.errAndLog('Research ID list supplied.\n' + \
-                             '    %8d resids (%d unique)\n\n' % \
-                                        (len(residList), len(set(residList))))
+                '    %8d resids (%d unique)\n\n' % (len(residList), len(set(residList))))
         elif Sample.args.singleSampleID:
             resid = Customer.generateResid(Sample.args.singleSampleID)
             residList = [resid]
             Sample.errAndLog('Will call haplogroup for:\n    %d\n\n' % resid)
         elif Sample.args.dataFN:
-            residFN = Sample.args.dataFN
-            utils.checkFileExistence(residFN, 'Research IDs')
-            Sample.errAndLog('Reading research IDs:\n    %s\n' % residFN)
-            with open(residFN, 'r') as residFile:
-                for lineList in residFile:
-                    ID = lineList.strip().split()[0]
+            utils.checkFileExistence(Sample.args.dataFN, 'Research IDs')
+            Sample.errAndLog('Reading research IDs:\n    %s\n' % Sample.args.dataFN)
+            with open(Sample.args.dataFN, 'r') as residFile:
+                for line in residFile:
+                    ID = line.strip().split()[0]
                     residList.append(Customer.generateResid(ID))
+                    
             Sample.errAndLog('    %8d read\n'     % len(residList))
             Sample.errAndLog('    %8d unique\n\n' % len(set(residList)))
 
@@ -756,40 +850,7 @@ class Customer(Sample):
             sys.exit('\nERROR. Cannot convert ID to integer: %s' % ID)
         
         return resid
-        
-    @staticmethod
-    def buildCustomerTupleList(residList):
-        '''
-        1. builds a customer mask.
-           a. if resids have been specified, use those.
-           b. otherwise, use all males.
-        2. generates a list of customer tuples subsetted to this mask
-        '''
-        
-        Sample.errAndLog('Building customer mask ... ')
 
-        customerMetaDS        = Sample.config.customerMetaDS
-        customerMetaArrayDict = customerMetaDS.load(Sample.config.customerMetaColList)
-        
-        if len(residList) > 0:
-            mask = np.in1d(customerMetaArrayDict['resid'], residList)
-            maskType = 'specified'
-        else:
-            customerSexArrayDict = customerMetaDS.load(Sample.config.customerSexColList)
-            mask = (customerSexArrayDict['sex'] == 'M') & \
-                   (customerSexArrayDict['sex_x'] == 'M') & \
-                   (customerSexArrayDict['sex_y'] == 'M')
-            maskType = 'male'
-
-        customerTupleList = [Sample.config.CustomerTuple(*row) \
-            for row in izip(*[customerMetaArrayDict[column][mask] \
-                              for column in Sample.config.customerMetaColList])]
-        
-        Sample.errAndLog('Done.\n' +
-            '    %8d %s customers to be processed\n' % \
-                (len(customerTupleList), maskType))
-        return customerTupleList
-    
     @staticmethod
     def emitProgress():
         'emit a message indicating how many haplogroups have been assigned thus far'

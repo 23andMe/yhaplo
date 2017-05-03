@@ -22,13 +22,13 @@ class Node(object):
     Throughout this code, each node represents the branch that leads to it. 
     '''
 
-    tree      = None
-    config    = None
-    args      = None
+    tree = None
+    config = None
+    args = None
     errAndLog = None
-    pageList  = list()
-    pageDict  = dict()
-    hgSNPset  = set()
+    pageList = list()
+    pageDict = dict()
+    hgSNPset = set()
 
     def __init__(self, parent, tree=None):
         self.parent = parent
@@ -41,16 +41,16 @@ class Node(object):
             if self.depth > Node.tree.maxDepth:
                 Node.tree.maxDepth = self.depth
 
-        self.haplogroup = '' # see setLabel  | ycc haplogroup name          e.g., R1b1c
-        self.label      = '' # see setLabel  | ycc including alt names      e.g., P/K2b2
-        self.hgTrunc    = '' # see setLabel  | truncated haplogroup         e.g., R1b1c -> R
-        self.hgSNP      = '' # see prioritySortSNPlistAndSetHgSNP |         e.g., R-V88
-        self.childList         = list()  # see addChild, bifurcate, serialSplit
-        self.snpList           = list()  # see addSNP
-        self.droppedMarkerList = list()  # see addDroppedMarker
-        self.page              = None    # see addSNP
-        self.branchLength      = None    # see setBranchLength
-        self.DFSrank           = 0       # see setDFSrank
+        self.haplogroup = ''            # see setLabel  | ycc haplogroup name     e.g., R1b1c
+        self.label = ''                 # see setLabel  | ycc including alt names e.g., P/K2b2
+        self.hgTrunc = ''               # see setLabel  | truncated haplogroup    e.g., R1b1c -> R
+        self.hgSNP = ''                 # see prioritySortSNPlistAndSetHgSNP |    e.g., R-V88
+        self.childList = list()         # see addChild, bifurcate, serialSplit
+        self.snpList = list()           # see addSNP
+        self.droppedMarkerList = list() # see addDroppedMarker
+        self.page = None                # see addSNP
+        self.branchLength = None        # see setBranchLength
+        self.DFSrank = 0                # see setDFSrank
 
         if Node.args.writeContentMappings and self.isRoot():
             self.page = Node.pageDict[Node.config.rootHaplogroup]
@@ -87,7 +87,7 @@ class Node(object):
             parentDFSrank = parentHgSNP = 'root'
         else:
             parentDFSrank = str(self.parent.DFSrank)
-            parentHgSNP   = self.parent.hgSNP
+            parentHgSNP = self.parent.hgSNP
             
         return '\t'.join([str(self.DFSrank), yccLabel, self.hgSNP, parentDFSrank, parentHgSNP])
 
@@ -110,9 +110,9 @@ class Node(object):
     def setTreeConfigAndArgs(tree):
         'enables Node class to know about the tree instance, config, and args'
         
-        Node.tree      = tree
-        Node.config    = tree.config
-        Node.args      = tree.args
+        Node.tree = tree
+        Node.config = tree.config
+        Node.args = tree.args
         Node.errAndLog = tree.config.errAndLog
         if Node.args.writeContentMappings:
             Node.buildPageDict()
@@ -161,7 +161,7 @@ class Node(object):
             Node.tree.hg2nodeDict[self.haplogroup] = self
         else:
             self.haplogroup = labelList[0]
-            self.hgTrunc    = Node.truncateHaplogroupLabel(self.haplogroup)
+            self.hgTrunc = Node.truncateHaplogroupLabel(self.haplogroup)
         
         for key in labelList:
             Node.tree.hg2nodeDict[key] = self

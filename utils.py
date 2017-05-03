@@ -10,7 +10,6 @@ import gzip
 import logging
 import os
 import re
-import subprocess
 import sys
 
 #----------------------------------------------------------------------
@@ -111,12 +110,6 @@ def readPositionsSet(inFN, column = 0, logFunction = None):
     else:
         sys.stderr.write(message)
     return positionsSet
-
-def runCMD(cmd):
-    'spawns an external process'
-
-    if subprocess.Popen(cmd, shell=True).wait():
-        sys.exit('\n'*3 + '!'*20 + '\nthe following command FAILED:\n' + cmd)
 
 def unimplementedMessage(methodName):
     'emits message and exits'

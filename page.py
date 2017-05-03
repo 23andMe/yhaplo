@@ -13,9 +13,9 @@ class Page(object):
     stringTp = '%-10s %s'
     
     def __init__(self, yccOld, snpName):
-        self.yccOld  = yccOld
+        self.yccOld = yccOld
         self.snpName = snpName
-        self.node    = None
+        self.node = None
 
     def __str__(self):
         if not self.node:

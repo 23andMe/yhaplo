@@ -49,14 +49,14 @@ class Path(object):
     def copyAllAttributesOtherThanNode(self, other):
         'copies all attributes of another path, other than its node'
         
-        self.derSNPlist                      = list(other.derSNPlist)
-        self.mostDerivedSNP                  = other.mostDerivedSNP
-        self.numAncestral                    = other.numAncestral
+        self.derSNPlist = list(other.derSNPlist)
+        self.mostDerivedSNP = other.mostDerivedSNP
+        self.numAncestral = other.numAncestral
         
-        self.nodeWhenPushedThrough           = other.nodeWhenPushedThrough
+        self.nodeWhenPushedThrough = other.nodeWhenPushedThrough
         self.mostDerivedSNPWhenPushedThrough = other.mostDerivedSNPWhenPushedThrough
-        self.numAncSincePushThrough          = other.numAncSincePushThrough
-        self.numDerSincePushThrough          = other.numDerSincePushThrough
+        self.numAncSincePushThrough = other.numAncSincePushThrough
+        self.numDerSincePushThrough = other.numDerSincePushThrough
     
     def __str__(self):
         return '%d %d\n%s\n%s\n' % (self.numAncestral, self.numDerived, 

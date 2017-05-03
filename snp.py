@@ -20,9 +20,9 @@ class SNP(object):
     - physical info: position, ancestral, derived
     '''
     
-    tree      = None
-    config    = None
-    args      = None
+    tree = None
+    config = None
+    args = None
     errAndLog = None
 
     def __init__(self, name, haplogroup, position, ancestral, derived):
@@ -34,10 +34,10 @@ class SNP(object):
         self.isRepresentative = name in SNP.tree.representativeSNPnameSet
 
         self.haplogroup = haplogroup
-        self.position   = position
-        self.ancestral  = ancestral
-        self.derived    = derived
-        self.alleleSet  = { ancestral, derived }
+        self.position = position
+        self.ancestral = ancestral
+        self.derived = derived
+        self.alleleSet = { ancestral, derived }
         
         self.node = SNP.tree.findOrCreateNode(haplogroup)
         self.node.addSNP(self)
@@ -154,9 +154,9 @@ class SNP(object):
     def setClassVariables(tree):
         'enables SNP class to know about the tree instance, config, and args'
         
-        SNP.tree      = tree
-        SNP.config    = tree.config
-        SNP.args      = tree.args
+        SNP.tree = tree
+        SNP.config = tree.config
+        SNP.args = tree.args
         SNP.errAndLog = tree.config.errAndLog
         
         if SNP.config.runFromAblocks or SNP.args.writePlatformTrees:
@@ -196,7 +196,7 @@ class SNP(object):
 class PlatformSNP(object):
     'A platform SNP knows its: position and ablock index'
 
-    platformPosSetDict  = dict()
+    platformPosSetDict = dict()
     platformSNPlistDict = dict()
     
     def __init__(self, position):
@@ -228,16 +228,17 @@ class PlatformSNP(object):
         '''
         gets genotype from ablock
         
-        input:  ablock      = a numpy array of { 0, ..., 15 }
+        input:  ablock      : a numpy array of { 0, ..., 15 }
                 ablockIndex
         output: genotype
         '''
         
-        diploidGenotype = SNP.config.ablockCodeToGenotypeDict[ablock[ablockIndex]]
-        if diploidGenotype in SNP.config.homozygousGenotypeSet:
-            return diploidGenotype[0]
-        else:
-            return SNP.config.missingGenotype
+        if ablockIndex < len(ablock):
+            diploidGenotype = SNP.config.ablockCodeToGenotypeDict[ablock[ablockIndex]]
+            if diploidGenotype in SNP.config.homozygousGenotypeSet:
+                return diploidGenotype[0]
+        
+        return SNP.config.missingGenotype
 
     @staticmethod
     def buildPlatformPosSetDict():
@@ -258,7 +259,7 @@ class PlatformSNP(object):
         
         SNP.errAndLog('Building dictionary of platform SNP lists...\n\n')
         for platformVersion in xrange(1, SNP.config.maxPlatformVersionPlusOne):
-            platformPosSet  = PlatformSNP.platformPosSetDict[platformVersion]
+            platformPosSet = PlatformSNP.platformPosSetDict[platformVersion]
             platformSNPlist = list()
             for position in platformPosSet:
                 platformSNPlist.append(PlatformSNP(position))
