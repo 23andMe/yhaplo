@@ -8,7 +8,6 @@
 #----------------------------------------------------------------------
 import sys
 from collections import Counter
-from itertools import izip
 from operator import attrgetter
 
 import utils
