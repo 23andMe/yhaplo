@@ -158,7 +158,26 @@ class Sample(object):
             haplogroupPath = ''
             
         return '%s | %s' % (self.strSimple(), haplogroupPath)
-    
+
+
+    def strHaplogroupPathdetail(self):
+        'constructs a string representation with haplogroup path include SNP labels'
+        if self.mostDerivedSNP:
+            haplogroupList = {}
+            for snp in self.derSNPlist:
+                if snp.haplogroup not in haplogroupList:
+                    haplogroupList[snp.haplogroup] = [snp.labelCleaned]
+                else:
+                    haplogroupList[snp.haplogroup].append(snp.labelCleaned)
+            haplogroupPath = ["{}:{}".format(hg, ",".join(haplogroupList[hg]))
+                              for hg in sorted(haplogroupList.keys())]
+        else:
+            haplogroupPath = ""
+
+        return '%s | %s' % (self.strSimple(), " ".join(haplogroupPath))
+
+
+
     def realTimeOutput(self):
         'generate real-time output if requested'
         
@@ -490,6 +509,9 @@ class Sample(object):
         if Sample.args.writeHaplogroupPaths:
             Sample.writeHaplogroupPaths()       # uses sample.strHaplogroupPath()
         
+        if Sample.args.writeHaplogroupPathsDetail:
+            Sample.writeHaplogroupPathsDetail()       # uses sample.strHaplogroupPath()
+        
         if Sample.args.writeDerSNPs:
             Sample.writeSNPs()                  # uses sample.strSNPs(ancestral)
         
@@ -564,6 +586,18 @@ class Sample(object):
 
         Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' + \
                          'with counts of derived SNPs observed:\n' + \
+                         '    %s\n\n' % Sample.config.haplogroupPathsFN)
+    
+    @staticmethod        
+    def writeHaplogroupPathsDetail():
+        'writes haplogroup path for each sample'
+
+        with open(Sample.config.haplogroupPathsFN, 'w') as haplogroupPathsFile: 
+            for sample in Sample.sampleList:
+                haplogroupPathsFile.write('%s\n' % sample.strHaplogroupPathdetail())
+
+        Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' + \
+                         'with observed derived SNPs:\n' + \
                          '    %s\n\n' % Sample.config.haplogroupPathsFN)
     
     @staticmethod

@@ -25,7 +25,7 @@ class Config(object):
     #--------------------------------------------------------------------
     isoggDate = '2016.01.04'        # date ISOGG website scraped to isoggFN
     rootHaplogroup = 'A'            # haplogroup to associate with root node
-    ancStopThresh = 2               # BFS stopping condition parameter
+    ancStopThresh = 10               # BFS stopping condition parameter
     derCollapseThresh = 2           # BFS collapsing parameter
     missingGenotype = '.'           # for text input
     missingHaplogroup = '.'         # for output
@@ -343,7 +343,7 @@ class Config(object):
 
         if self.args.writeAncDerCounts:
             self.countsAncDerFN = self.constructOutFileName(Config.countsAncDerFNtp)
-        if self.args.writeHaplogroupPaths:
+        if self.args.writeHaplogroupPaths or self.args.writeHaplogroupPathsDetail:
             self.haplogroupPathsFN = self.constructOutFileName(Config.haplogroupPathsFNtp)
         if self.args.writeDerSNPs:
             self.derSNPsFN = self.constructOutFileName(Config.derSNPsFNtp)
@@ -593,6 +593,10 @@ class Config(object):
             dest='writeHaplogroupPaths', action='store_true', default=False,
             help='end: sequence of branch labels from root to call,\n'
                  '     with counts of derived SNPs observed')
+        group.add_argument('-hpd', '--haplogroupPathsDetail', 
+            dest='writeHaplogroupPathsDetail', action='store_true', default=False,
+            help='end: sequence of branch labels from root to call,\n'
+                 '     with observed derived SNPs')
         group.add_argument('-ds', '--derSNPs', 
             dest='writeDerSNPs', action='store_true', default=False,
             help='end: lists of derived SNPs on path')
