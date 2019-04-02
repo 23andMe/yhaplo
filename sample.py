@@ -405,6 +405,8 @@ class Sample(object):
         vcfFN = Sample.args.dataFN
         vcfFile, vcfReader = utils.getCSVreader(vcfFN, delimiter='\t')
         Sample.setSampleListFromVCFheader(vcfReader)
+        ref_geno_set = {'0', '0/0'}
+        alt_geno_set = {'1', '1/1'}
 
         Sample.errAndLog('%sReading genotype data...\n    %s\n\n' % \
                          (utils.DASHES, vcfFN))
@@ -420,9 +422,9 @@ class Sample(object):
                         continue
                     elif Sample.config.runFromVCF:      # as opposed to .vcf4
                         ref, alt = lineList[3:5]
-                        if genotype == '0':
+                        if genotype in ref_geno_set:
                             genotype = ref
-                        elif genotype == '1':
+                        elif genotype in alt_geno_set:
                             genotype = alt
                             
                     sample.addGeno(position, genotype)

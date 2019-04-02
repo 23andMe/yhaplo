@@ -39,17 +39,29 @@ And, for an overiew of command-line options, issue the following command: `callH
 Please note the following caveats before running yHaplo:
 
 * yHaplo does not check for sex status; it assumes all samples are male.
+* yHaplo expects SNP coordinates consistent with the hg19/GRCh37 reference assembly.
 * yHaplo expects data at a reasonable number of ISOGG SNPs. This assumption is violated by:
+  * variants-only sequence data
   * very low-coverage sequencing
   * genotyping arrays with few Y-chromosome probes
-* yHaplo expects SNP coordinates consistent with the GRCh37 reference assembly. 
 
-If, for a given sample, yHaplo observes no derived alleles at ISOGG SNPs, it will call 
-the sample haplogroup "A," since all human Y-chromosome lineages are technically 
-sublineages of A. Before concluding that your sample belongs to paragroup A (which 
+
+If, for a given sample, yHaplo observes no derived alleles at ISOGG SNPs on the upper 
+branches of the Y-chromosome phylogeny, it will call the sample haplogroup "A," 
+since all human Y-chromosome lineages are technically sublineages of A. 
+Before concluding that your sample belongs to paragroup A (which 
 includes haplogroups A00, A0, A1a, and A1b1), run with the `-as` option, and check the 
 auxiliary output for ancestral alleles at haplogroup-BT SNPs. If you do not see any, 
 your data set probably violates one or more of the assumptions listed above.
+
+In particular, "variants-only" VCF files restrict to SNPs at which alternative alleles 
+were observed, but ref/alt status is unimportant to yHaplo. What is important is 
+ancestral/derived status. The reference sequence contains many derived alleles, 
+and yHaplo will not be happy if you discard these valuable data. So please emit all 
+confident sites when calling variants. To limit compute time and file size, you could 
+safely restrict to positions in `output/isogg.snps.unique.DATE.txt`, as these are the 
+only SNPs yHaplo considers. To generate this file, just run `callHaplogroups.py` 
+with no arguments.
 
 
 --------------------------------------------------------------------------------
