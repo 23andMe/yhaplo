@@ -25,8 +25,6 @@ class Config(object):
     #--------------------------------------------------------------------
     isoggDate = '2016.01.04'        # date ISOGG website scraped to isoggFN
     rootHaplogroup = 'A'            # haplogroup to associate with root node
-    ancStopThresh = 2               # BFS stopping condition parameter
-    derCollapseThresh = 2           # BFS collapsing parameter
     missingGenotype = '.'           # for text input
     missingHaplogroup = '.'         # for output
     vcfStartCol = 9                 # first data column in .vcf
@@ -343,7 +341,7 @@ class Config(object):
 
         if self.args.writeAncDerCounts:
             self.countsAncDerFN = self.constructOutFileName(Config.countsAncDerFNtp)
-        if self.args.writeHaplogroupPaths:
+        if self.args.writeHaplogroupPaths or self.args.writeHaplogroupPathsDetail:
             self.haplogroupPathsFN = self.constructOutFileName(Config.haplogroupPathsFNtp)
         if self.args.writeDerSNPs:
             self.derSNPsFN = self.constructOutFileName(Config.derSNPsFNtp)
@@ -543,7 +541,7 @@ class Config(object):
             dest='test1000YplatformVersion', metavar='version',
             help='1000Y testing: 23andMe sites, all samples\n'
                  '\n* the 4 test-data options above are mutually exclusive\n\n\n')
-        
+
         # test data format
         group = parser.add_mutually_exclusive_group()
         group.add_argument('-tvcf', '--test1000Yvcf', 
@@ -554,10 +552,16 @@ class Config(object):
             help='1000Y testing: use .vcf4 file rather than .genos.txt\n'
                  '\n* the 2 test-data format options above are mutually exclusive\n'
                  '  and require one of the 4 1000Y test options above.\n\n')
-    
+
         # tree traversal
         groupDescription = 'traverse tree'
         group = parser.add_argument_group('trees', groupDescription)
+        group.add_argument('--ancStopThresh', 
+            dest='ancStopThresh', default=2, 
+            help='BFS stopping condition parameter [2]')
+        group.add_argument('--derCollapseThresh', 
+            dest='derCollapseThresh', default=2, 
+            help='BFS collapsing parameter [2]')
         group.add_argument('-b', '--breadthFirst', 
             dest='traverseBF', action='store_true', default=False, 
             help='write bread-first traversal')
@@ -593,6 +597,10 @@ class Config(object):
             dest='writeHaplogroupPaths', action='store_true', default=False,
             help='end: sequence of branch labels from root to call,\n'
                  '     with counts of derived SNPs observed')
+        group.add_argument('-hpd', '--haplogroupPathsDetail', 
+            dest='writeHaplogroupPathsDetail', action='store_true', default=False,
+            help='end: sequence of branch labels from root to call,\n'
+                 '     with observed derived SNPs')
         group.add_argument('-ds', '--derSNPs', 
             dest='writeDerSNPs', action='store_true', default=False,
             help='end: lists of derived SNPs on path')
