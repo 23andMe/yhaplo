@@ -12,12 +12,21 @@ from collections import namedtuple, defaultdict
 import utils
 
 DESCRIPTION = '''
-This software identifies the Y-chromosome haplogroup of each male in a sample of 
-one to millions. Sequence data will yield the most highly resolved classifications, 
-but the algorithm also works well with chip-based genotype data, provided a reasonable 
-number of phylogenetically informative sites have been assayed. 
+This software, yhaplo, identifies the Y-chromosome haplogroup of each male in a sample of
+one to millions. Sequence data will yield the most highly resolved classifications,
+but the algorithm also works well with chip-based genotype data, provided a reasonable
+number of phylogenetically informative sites have been assayed.
 '''
 
+#----------------------------------------------------------------------
+# constants
+
+VERSION = '1.0.15'
+
+ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
+DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
+
+#----------------------------------------------------------------------
 class Config(object):
     'container for parameters, constants, filenames, and command-line arguments'
 
@@ -25,8 +34,6 @@ class Config(object):
     #--------------------------------------------------------------------
     isoggDate = '2016.01.04'        # date ISOGG website scraped to isoggFN
     rootHaplogroup = 'A'            # haplogroup to associate with root node
-    ancStopThresh_default = 2       # BFS stopping condition parameter default
-    derCollapseThresh_default = 2   # BFS collapsing parameter default
     missingGenotype = '.'           # for text input
     missingHaplogroup = '.'         # for output
     vcfStartCol = 9                 # first data column in .vcf
@@ -624,11 +631,13 @@ class Config(object):
         groupDescription = 'change search parameters'
         group = parser.add_argument_group('search parameters', groupDescription)
         group.add_argument('-ast', '--ancStopThresh',
-            dest='ancStopThresh', type=int, default=type(self).ancStopThresh_default,
-            help='BFS stopping condition parameter (default: %d)' % type(self).ancStopThresh_default)
+            dest='ancStopThresh', type=int, default=ANC_STOP_THRESH_DEFAULT,
+            help='BFS stopping condition parameter ' +
+                 '(default: %d)' % ANC_STOP_THRESH_DEFAULT)
         group.add_argument('-dct', '--derCollapseThresh',
-            dest='derCollapseThresh', type=int, default=type(self).derCollapseThresh_default,
-            help='BFS collapsing parameter (default: %d)' % type(self).derCollapseThresh_default)
+            dest='derCollapseThresh', type=int, default=DER_COLLAPSE_THRESH_DEFAULT,
+            help='BFS collapsing parameter ' +
+                 '(default: %d)' % DER_COLLAPSE_THRESH_DEFAULT)
 
         # restrictions
         groupDescription = 'restrict input or traversal'
@@ -666,7 +675,9 @@ class Config(object):
         group.add_argument('-o', '--outDir', type=str,
             dest='outDir', metavar='dirName', default=None,
             help='set output directory')
-    
+        group.add_argument('-v', '--version', action='version',
+            version='yhaplo %s' % VERSION)
+        
         if self.useDefaultCmdLineArgs:
             self.args = parser.parse_args([])
         else:
