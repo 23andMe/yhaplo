@@ -7,7 +7,7 @@
 # - Customer (a subclass of Sample)
 #----------------------------------------------------------------------
 import sys
-from collections import Counter
+from collections import defaultdict
 from operator import attrgetter
 
 import utils
@@ -141,43 +141,30 @@ class Sample(object):
         snpListString = ' '.join(snp.strShort() for snp in snpList)
         return '%s | %s' % (self.strSimple(), snpListString)
     
-    def strHaplogroupPath(self):
+    def strHaplogroupPath(self, include_SNPs=False):
         'constructs a string representation with haplogroup path'
 
         if self.mostDerivedSNP:
-            haplogroupList = list()
+            snp_label_list_dict = defaultdict(list)
             for snp in self.derSNPlist:
-                haplogroupList.append(snp.node.haplogroup)
-            haplogroupCounter = Counter(haplogroupList)
-            haplogroupPath = ' '.join([ \
-                '%s:%d' % (node.haplogroup, haplogroupCounter[node.haplogroup]) \
-                    for node in self.mostDerivedSNP.backTracePath() \
-                    if node.haplogroup in haplogroupCounter
-            ])
-        else:
-            haplogroupPath = ''
+                snp_label_list_dict[snp.node.haplogroup].append(snp.labelCleaned)
             
-        return '%s | %s' % (self.strSimple(), haplogroupPath)
-
-
-    def strHaplogroupPathdetail(self):
-        'constructs a string representation with haplogroup path include SNP labels'
-        if self.mostDerivedSNP:
-            haplogroupList = {}
-            for snp in self.derSNPlist:
-                if snp.haplogroup not in haplogroupList:
-                    haplogroupList[snp.haplogroup] = [snp.labelCleaned]
-                else:
-                    haplogroupList[snp.haplogroup].append(snp.labelCleaned)
-            haplogroupPath = ["{}:{}".format(hg, ",".join(haplogroupList[hg]))
-                              for hg in sorted(haplogroupList.keys())]
+            path_info_list = list()
+            for node in self.mostDerivedSNP.backTracePath():
+                if node.haplogroup in snp_label_list_dict:
+                    snp_label_list = snp_label_list_dict[node.haplogroup]
+                    num_snps = len(snp_label_list)
+                    path_info = '%s:%d' % (node.haplogroup, num_snps)
+                    if include_SNPs:
+                        path_info = '%s:%s' % (path_info, ','.join(snp_label_list))
+                    path_info_list.append(path_info)
+            
+            haplogroup_path = ' '.join(path_info_list)
         else:
-            haplogroupPath = ""
-
-        return '%s | %s' % (self.strSimple(), " ".join(haplogroupPath))
-
-
-
+            haplogroup_path = ''
+        
+        return '%s | %s' % (self.strSimple(), haplogroup_path)
+    
     def realTimeOutput(self):
         'generate real-time output if requested'
         
@@ -220,7 +207,7 @@ class Sample(object):
                 ID, prevCalledHaplogroup = lineList[0], lineList[-1]
                 Sample.prevCalledHaplogroupDict[ID] = prevCalledHaplogroup
 
-        Sample.errAndLog('%sRead previously called haplogroups:\n    %s\n\n' % \
+        Sample.errAndLog('%sRead previously called haplogroups:\n    %s\n\n' %
                        (utils.DASHES, Sample.config.prevCalledHgFN))
                 
     def setPrevCalledHaplogroupDFSrank(self, ignore=False):
@@ -284,11 +271,12 @@ class Sample(object):
         'free up some memory if possible'
         
         self.pos2genoDict = None
-        if not (Sample.args.writeDerSNPs or \
-                Sample.args.writeDerSNPsDetail or \
-                Sample.args.writeHaplogroupPaths):
+        if not (Sample.args.writeDerSNPs or
+                Sample.args.writeDerSNPsDetail or
+                Sample.args.writeHaplogroupPaths or
+                Sample.args.writeHaplogroupPathsDetail):
             self.derSNPlist = None
-        if not (Sample.args.writeAncSNPs or \
+        if not (Sample.args.writeAncSNPs or
                 Sample.args.writeAncSNPsDetail):
             self.ancSNPlist = None
     
@@ -331,9 +319,9 @@ class Sample(object):
         'emit a message for real-time haplogroup writing'
         
         Sample.errAndLog( \
-            '%sWill write haplogroups as they are called:\n' % utils.DASHES + \
-            '    %s\n\n' % Sample.config.haplogroupRealTimeFN + \
-            'Note: This file includes DFS rank, so it can be sorted ex post facto with:\n' + \
+            '%sWill write haplogroups as they are called:\n' % utils.DASHES +
+            '    %s\n\n' % Sample.config.haplogroupRealTimeFN +
+            'Note: This file includes DFS rank, so it can be sorted ex post facto with:\n' +
             '    sort -nk5 %s\n\n' % Sample.config.haplogroupRealTimeFN)
 
     @staticmethod
@@ -345,7 +333,7 @@ class Sample(object):
                                    config.runFromVCF4 + \
                                    config.runFromAblocks
         if numberOfRunModesSelected > 1:
-            sys.exit('ERROR. Expecting no more than one run mode\n' + \
+            sys.exit('ERROR. Expecting no more than one run mode\n' +
                      '    %d selected\n' % numberOfRunModesSelected)
 
 
@@ -373,7 +361,7 @@ class Sample(object):
         
         genoFN = Sample.args.dataFN
         genoFile, genoReader = utils.getCSVreader(genoFN, delimiter='\t')
-        Sample.errAndLog('%sReading genotype data:\n    %s\n\n' % \
+        Sample.errAndLog('%sReading genotype data:\n    %s\n\n' %
                          (utils.DASHES, genoFN))
 
         # determine relevant physical coordinates and corresponding columns        
@@ -427,7 +415,7 @@ class Sample(object):
         ref_geno_set = {'0', '0/0'}
         alt_geno_set = {'1', '1/1'}
 
-        Sample.errAndLog('%sReading genotype data...\n    %s\n\n' % \
+        Sample.errAndLog('%sReading genotype data...\n    %s\n\n' %
                          (utils.DASHES, vcfFN))
 
         for lineList in vcfReader:
@@ -474,7 +462,7 @@ class Sample(object):
         
         col2label = lineList[1]
         if col2label != 'POS':
-            sys.exit('ERROR. Invalid VCF. Expected column 2 header to be POS.\n' + \
+            sys.exit('ERROR. Invalid VCF. Expected column 2 header to be POS.\n' +
                      '       Instead found: %s' % col2label)
 
 
@@ -508,11 +496,10 @@ class Sample(object):
         if Sample.args.writeAncDerCounts:
             Sample.writeAncDerCounts()          # uses sample.strForCounts()
             
-        if Sample.args.writeHaplogroupPaths:
-            Sample.writeHaplogroupPaths()       # uses sample.strHaplogroupPath()
-        
         if Sample.args.writeHaplogroupPathsDetail:
-            Sample.writeHaplogroupPathsDetail()       # uses sample.strHaplogroupPath()
+            Sample.writeHaplogroupPaths(include_SNPs=True) # uses sample.strHaplogroupPath()
+        elif Sample.args.writeHaplogroupPaths:
+            Sample.writeHaplogroupPaths()                  # uses sample.strHaplogroupPath()
         
         if Sample.args.writeDerSNPs:
             Sample.writeSNPs()                  # uses sample.strSNPs(ancestral)
@@ -530,9 +517,9 @@ class Sample(object):
     def reportCounts():
         'report number assigned and number assigned to root'
         
-        Sample.errAndLog('%sCalled haplogroups:\n\n' % utils.DASHES + \
-            '    %8d assigned\n' % Sample.numAssigned + \
-            '    %8d assigned to root haplogroup: %s\n\n' % \
+        Sample.errAndLog('%sCalled haplogroups:\n\n' % utils.DASHES +
+            '    %8d assigned\n' % Sample.numAssigned +
+            '    %8d assigned to root haplogroup: %s\n\n' %
                     (Sample.numRootCalls, Sample.tree.root.haplogroup))
         
         if Sample.numRootCalls > 0:
@@ -543,7 +530,7 @@ class Sample(object):
         'warning for datasets that exclude sites with no variation in the sample'
         
         Sample.errAndLog( \
-            'WARNING. If the dataset does not include fixed reference sites,\n' + \
+            'WARNING. If the dataset does not include fixed reference sites,\n' +
             '         re-run with alternative root (e.g., with: -r A0-T).\n\n\n')
 
     @staticmethod
@@ -555,7 +542,7 @@ class Sample(object):
                 haplogroupCallsFile.write('%s\n' % str(sample))
                 
         Sample.errAndLog( \
-            'Wrote called haplogroups:\n' + \
+            'Wrote called haplogroups:\n' +
             '    %s\n\n' % Sample.config.haplogroupCallsFN)
 
     @staticmethod
@@ -574,33 +561,23 @@ class Sample(object):
 
                 countsAncDerFile.write('%s\n\n' % sample.strForCounts())
                                                   
-        Sample.errAndLog('Wrote counts of ancestral and derived alleles encountered\n' + \
-                         'at each node visited (excluding nodes with zero of each):\n' + \
+        Sample.errAndLog('Wrote counts of ancestral and derived alleles encountered\n' +
+                         'at each node visited (excluding nodes with zero of each):\n' +
                          '    %s\n\n' % Sample.config.countsAncDerFN)
 
     @staticmethod        
-    def writeHaplogroupPaths():
+    def writeHaplogroupPaths(include_SNPs=False):
         'writes haplogroup path for each sample'
-
+        
         with open(Sample.config.haplogroupPathsFN, 'w') as haplogroupPathsFile: 
             for sample in Sample.sampleList:
-                haplogroupPathsFile.write('%s\n' % sample.strHaplogroupPath())
-
-        Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' + \
-                         'with counts of derived SNPs observed:\n' + \
-                         '    %s\n\n' % Sample.config.haplogroupPathsFN)
-    
-    @staticmethod        
-    def writeHaplogroupPathsDetail():
-        'writes haplogroup path for each sample'
-
-        with open(Sample.config.haplogroupPathsFN, 'w') as haplogroupPathsFile: 
-            for sample in Sample.sampleList:
-                haplogroupPathsFile.write('%s\n' % sample.strHaplogroupPathdetail())
-
-        Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' + \
-                         'with observed derived SNPs:\n' + \
-                         '    %s\n\n' % Sample.config.haplogroupPathsFN)
+                path = sample.strHaplogroupPath(include_SNPs)
+                haplogroupPathsFile.write('%s\n' % path)
+        
+        snps_included_text = ' and a list thereof' if include_SNPs else '' 
+        Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' +
+            'with counts of derived SNPs observed%s:\n' % snps_included_text +
+            '    %s\n\n' % Sample.config.haplogroupPathsFN)
     
     @staticmethod
     def writeSNPs(ancestral=False):
@@ -644,7 +621,7 @@ class Sample(object):
                     snpDetailFile.write('%-8s %s\n' % (sample.ID, snp))
                 snpDetailFile.write('\n')
                                                   
-        Sample.errAndLog('Wrote detailed information about each %s:\n' % typeOfSNPs + \
+        Sample.errAndLog('Wrote detailed information about each %s:\n' % typeOfSNPs +
                          '    %s\n\n' % snpDetailFN)
 
 
@@ -726,7 +703,7 @@ class Customer(Sample):
         Sample.errAndLog('%sProcessing 23andMe customer data...\n\n' % utils.DASHES)
         customerTupleList = Customer.buildCustomerTupleList()
 
-        Sample.errAndLog('\n%sCalling haplogroups...\n\n' % (utils.DASHES) + \
+        Sample.errAndLog('\n%sCalling haplogroups...\n\n' % (utils.DASHES) +
                          ' Progress...\n')
         for customerTuple in customerTupleList:
             customer = Customer(customerTuple)
@@ -777,8 +754,8 @@ class Customer(Sample):
             for line in idFile:
                 tokenList = line.strip().split()
                 if len(tokenList) != 2:
-                    sys.exit('ERROR. When specifying non-default ablock dataset,\n' + \
-                             'ID file must have 2 columns: ID, comma-separated list of integers\n' + \
+                    sys.exit('ERROR. When specifying non-default ablock dataset,\n' +
+                             'ID file must have 2 columns: ID, comma-separated list of integers\n' +
                              'indicating platform versions.\n')
 
                 ID, platformVersions = tokenList
@@ -856,7 +833,7 @@ class Customer(Sample):
         residList = list()
         if Sample.config.residList:
             residList = Sample.config.residList
-            Sample.errAndLog('Research ID list supplied.\n' + \
+            Sample.errAndLog('Research ID list supplied.\n' +
                 '    %8d resids (%d unique)\n\n' % (len(residList), len(set(residList))))
         elif Sample.args.singleSampleID:
             resid = Customer.generateResid(Sample.args.singleSampleID)
