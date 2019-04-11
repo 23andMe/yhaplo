@@ -25,8 +25,8 @@ class Config(object):
     #--------------------------------------------------------------------
     isoggDate = '2016.01.04'        # date ISOGG website scraped to isoggFN
     rootHaplogroup = 'A'            # haplogroup to associate with root node
-    ancStopThresh = 2               # BFS stopping condition parameter
-    derCollapseThresh = 2           # BFS collapsing parameter
+    ancStopThresh_default = 2       # BFS stopping condition parameter default
+    derCollapseThresh_default = 2   # BFS collapsing parameter default
     missingGenotype = '.'           # for text input
     missingHaplogroup = '.'         # for output
     vcfStartCol = 9                 # first data column in .vcf
@@ -343,7 +343,7 @@ class Config(object):
 
         if self.args.writeAncDerCounts:
             self.countsAncDerFN = self.constructOutFileName(Config.countsAncDerFNtp)
-        if self.args.writeHaplogroupPaths:
+        if self.args.writeHaplogroupPaths or self.args.writeHaplogroupPathsDetail:
             self.haplogroupPathsFN = self.constructOutFileName(Config.haplogroupPathsFNtp)
         if self.args.writeDerSNPs:
             self.derSNPsFN = self.constructOutFileName(Config.derSNPsFNtp)
@@ -482,6 +482,7 @@ class Config(object):
     
         self.args.writeAncDerCounts = False
         self.args.writeHaplogroupPaths = False
+        self.args.writeHaplogroupPathsDetail = False
         self.args.writeDerSNPs = False
         self.args.writeDerSNPsDetail = False
         self.args.writeAncSNPs = False
@@ -554,7 +555,7 @@ class Config(object):
             help='1000Y testing: use .vcf4 file rather than .genos.txt\n'
                  '\n* the 2 test-data format options above are mutually exclusive\n'
                  '  and require one of the 4 1000Y test options above.\n\n')
-    
+        
         # tree traversal
         groupDescription = 'traverse tree'
         group = parser.add_argument_group('trees', groupDescription)
@@ -593,10 +594,14 @@ class Config(object):
             dest='writeHaplogroupPaths', action='store_true', default=False,
             help='end: sequence of branch labels from root to call,\n'
                  '     with counts of derived SNPs observed')
-        group.add_argument('-ds', '--derSNPs', 
+        group.add_argument('-hpd', '--haplogroupPathsDetail', 
+            dest='writeHaplogroupPathsDetail', action='store_true', default=False,
+            help='end: sequence of branch labels from root to call,\n'
+                 '     with counts of derived SNPs observed and lists thereof')
+        group.add_argument('-ds', '--derSNPs',
             dest='writeDerSNPs', action='store_true', default=False,
             help='end: lists of derived SNPs on path')
-        group.add_argument('-dsd', '--derSNPsDetail', 
+        group.add_argument('-dsd', '--derSNPsDetail',
             dest='writeDerSNPsDetail', action='store_true', default=False,
             help='end: detailed information about each derived SNP on path')
         group.add_argument('-as', '--ancSNPs', 
@@ -615,6 +620,16 @@ class Config(object):
             help='real time: genotypes at SNPs associated with this haplogroup,\n'
                  '           if the corresponding node is visited')
         
+        # search parameters
+        groupDescription = 'change search parameters'
+        group = parser.add_argument_group('search parameters', groupDescription)
+        group.add_argument('-ast', '--ancStopThresh',
+            dest='ancStopThresh', type=int, default=type(self).ancStopThresh_default,
+            help='BFS stopping condition parameter (default: %d)' % type(self).ancStopThresh_default)
+        group.add_argument('-dct', '--derCollapseThresh',
+            dest='derCollapseThresh', type=int, default=type(self).derCollapseThresh_default,
+            help='BFS collapsing parameter (default: %d)' % type(self).derCollapseThresh_default)
+
         # restrictions
         groupDescription = 'restrict input or traversal'
         group = parser.add_argument_group('restrictions', groupDescription)

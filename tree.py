@@ -279,11 +279,11 @@ class Tree(object):
                 sample.appendAncDerCountTuple(path.node, numAncestral, numDerived)
             
             if path.node.isLeaf() \
-                or (numAncestral  > self.config.ancStopThresh) \
-                or (numAncestral == self.config.ancStopThresh and numDerived == 0):
+                or (numAncestral  > self.config.args.ancStopThresh) \
+                or (numAncestral == self.config.args.ancStopThresh and numDerived == 0):
                 stoppedPathList.append(path)
             else:
-                if numDerived >= self.config.derCollapseThresh:
+                if numDerived >= self.config.args.derCollapseThresh:
                     pathDeque = deque()
                 pathDeque.extend(path.fork(path.node.childList))
         
