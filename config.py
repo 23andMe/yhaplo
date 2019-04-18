@@ -21,7 +21,7 @@ number of phylogenetically informative sites have been assayed.
 #----------------------------------------------------------------------
 # constants
 
-VERSION = '1.0.15'
+VERSION = '1.0.16'
 
 ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
 DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
@@ -393,7 +393,8 @@ class Config(object):
         else:
             self.logFile = open(self.logFN, 'w', 0)
         
-        self.errAndLog('\n%s   yHaplo | Y-chromosome haplogroup caller\n' % utils.DASHES)
+        self.errAndLog('\n%s   yHaplo %s | Y-chromosome haplogroup caller\n' %
+                       (utils.DASHES, VERSION))
         if not self.useDefaultCmdLineArgs:
             self.errAndLog('      Command: %s\n' % ' '.join(sys.argv))
         if not self.suppressOutputAndLog:
