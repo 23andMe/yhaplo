@@ -411,7 +411,7 @@ class Sample(object):
         
         vcfFN = Sample.args.dataFN
         vcfFile, vcfReader = utils.getCSVreader(vcfFN, delimiter='\t')
-        Sample.setSampleListFromVCFheader(vcfReader)
+        Sample.setSampleListFromVCFheader(vcfFile)
         ref_geno_set = {'0', '0/0'}
         alt_geno_set = {'1', '1/1'}
 
@@ -439,17 +439,20 @@ class Sample(object):
         vcfFile.close()
     
     @staticmethod
-    def setSampleListFromVCFheader(vcfReader):
+    def setSampleListFromVCFheader(vcfFile):
         '''
-        reads a VCF header until it finds the sample IDs,
-        then uses them to construct a list of sample objects
+        skips over VCF metadata,
+        checks that the next line contains the column names,
+        extracts sample IDs,
+        and construct a list of sample objects
         '''
         
-        for lineList in vcfReader:
-            if lineList[0][:2] != '##':     # ignore metadata
+        for line in vcfFile:
+            if not line.startswith('##'):
                 break
+        
+        lineList = line.strip().split('\t')
         Sample.validateVCFheader(lineList)
-
         idList = lineList[Sample.config.vcfStartCol:]
         for sampleIndex, ID in enumerate(idList):
             if not Sample.args.singleSampleID or ID == Sample.args.singleSampleID:

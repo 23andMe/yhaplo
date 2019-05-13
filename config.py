@@ -21,7 +21,7 @@ number of phylogenetically informative sites have been assayed.
 #----------------------------------------------------------------------
 # constants
 
-VERSION = '1.0.16'
+VERSION = '1.0.17'
 
 ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
 DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
