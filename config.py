@@ -21,7 +21,7 @@ number of phylogenetically informative sites have been assayed.
 #----------------------------------------------------------------------
 # constants
 
-VERSION = '1.0.17'
+VERSION = '1.0.18'
 
 ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
 DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
@@ -624,9 +624,9 @@ class Config(object):
             help='real time: write haplogroups in real time. includes DFS rank,\n'
                  '           to enable ex post facto sorting: sort -nk5')
         group.add_argument('-hg', '--hgGenos', type=str, 
-            dest='haplogroupToListGenotypesFor', metavar='hg', default=None,
-            help='real time: genotypes at SNPs associated with this haplogroup,\n'
-                 '           if the corresponding node is visited')
+            dest='haplogroupToListGenotypesFor', metavar='haplogroup', default=None,
+            help='real time: write genotypes observed for SNPs associated with\n'
+                 '           a specified node of the tree, when it is visited')
         
         # search parameters
         groupDescription = 'change search parameters'

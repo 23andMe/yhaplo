@@ -183,7 +183,8 @@ def main():
     elif fnType == 'ttam':
         convertTTAM(inFN, ID=fnRoot)
     else:
-        sys.exit('ERROR. Input file must .23andMe.txt or (.ped, .map)')
+        sys.exit('ERROR. Input file must be a .ped or a .23andMe.txt ' +
+                 'in the corresponding format')
     
 if __name__ == '__main__':
     main()
