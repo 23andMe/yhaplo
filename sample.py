@@ -473,15 +473,23 @@ class Sample(object):
     #----------------------------------------------------------------------
     @staticmethod
     def sortSampleList(sortByPrevHg=False):
-        'sorts sample list by haplogroup (previously called or current)'
+        '''
+        sorts sample list:
+        1. primarily by haplogroup
+        2. secondarily by ID
         
+        If a previously called haplogroup is available and sortByPrevHg is True,
+        the primary sort uses it. Otherwise, if a newly called haplogroup is
+        available, the primary sort uses that. Otherwise, sorting is by ID only.
+        '''
+        
+        Sample.sampleList = sorted(Sample.sampleList, key=attrgetter('ID'))
         if sortByPrevHg and Sample.config.compareToPrevCalls:
-            primarySortKey = 'prevCalledHaplogroupDFSrank'
-        else:
-            primarySortKey = 'haplogroupDFSrank'
-        
-        Sample.sampleList = sorted(Sample.sampleList, 
-                                   key = attrgetter(primarySortKey, 'ID'))
+            Sample.sampleList = sorted(Sample.sampleList,
+                                       key=attrgetter('prevCalledHaplogroupDFSrank'))
+        elif Sample.sampleList[0].haplogroupNode:
+            Sample.sampleList = sorted(Sample.sampleList,
+                                       key=attrgetter('haplogroupDFSrank'))
 
     @staticmethod
     def writeSampleList():
