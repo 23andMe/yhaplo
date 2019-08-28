@@ -419,8 +419,9 @@ class Sample(object):
                          (utils.DASHES, vcfFN))
 
         for lineList in vcfReader:
-            position = int(lineList[1])
-            if position in Sample.tree.snpPosSet:
+            chromosome, position = lineList[0], int(lineList[1])
+            if chromosome in Sample.config.vcf_chrom_label_set and \
+                    position in Sample.tree.snpPosSet:
                 genoList = lineList[Sample.config.vcfStartCol:]
                 for sample in Sample.sampleList:
                     genotype = genoList[sample.sampleIndex].split(':')[0]

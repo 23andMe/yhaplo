@@ -90,7 +90,8 @@ see `yHaplo.manual.pdf` for details).
     * cell (i, j): genotype for individual i at position j, encoded as a single character 
 from the set { A, C, G, T, . }, with "." representing an unobserved value
 * `.resid.txt`    : file with 23andMe research IDs in the first column
-* `.vcf`, `.vcf.gz` : snp-major VCF file
+* `.vcf`, `.vcf.gz` : snp-major VCF file.
+    Note that it is most efficient to restrict input VCF files to the Y chromosome.
 * `.vcf4`         : snp-major pseudo-VCF. differences include:
     * no "#" in header row
     * fewer header columns

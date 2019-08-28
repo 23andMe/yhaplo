@@ -21,7 +21,7 @@ number of phylogenetically informative sites have been assayed.
 #----------------------------------------------------------------------
 # constants
 
-VERSION = '1.0.18'
+VERSION = '1.0.19'
 
 ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
 DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
@@ -36,6 +36,7 @@ class Config(object):
     rootHaplogroup = 'A'            # haplogroup to associate with root node
     missingGenotype = '.'           # for text input
     missingHaplogroup = '.'         # for output
+    vcf_chrom_label_set = {'Y', 'chrY', '24'}  # to restrict VCF input to chrY
     vcfStartCol = 9                 # first data column in .vcf
     vcf4startCol = 7                # first data column in ".vcf4"
     numCharsToCompareDefault = 3    # for matchFlag in Sample.__str__
@@ -58,8 +59,8 @@ class Config(object):
 
     # 23andMe-specific parameters and constants
     #--------------------------------------------------------------------
-    ttamHgCallReplacementDict = { 'BT': 'B' }               # prevents artifactual calls
-    callingProgressEarlySet = { 100, 500, 1000, 5000 }      # for progress messages
+    ttamHgCallReplacementDict = {'BT': 'B'}                 # prevents artifactual calls
+    callingProgressEarlySet = {100, 500, 1000, 5000}        # for progress messages
     callingProgressInterval = 10000                         # for progress messages
     
     # SNPs
