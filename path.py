@@ -4,14 +4,16 @@
 #
 # Defines the Path class.
 #----------------------------------------------------------------------
+from __future__ import absolute_import
 from collections import deque
-from snp import SNP
+
+from .snp import SNP
 
 class Path(object):
     '''
-    An instance of this class represents a path through a tree. 
-    It stores the next node to visit, a list of SNPs observed in the derived state, 
-    the most derived SNP observed, and the number of ancestral alleles encountered. 
+    An instance of this class represents a path through a tree.
+    It stores the next node to visit, a list of SNPs observed in the derived state,
+    the most derived SNP observed, and the number of ancestral alleles encountered.
     '''
     
     def __init__(self, node):
@@ -23,7 +25,7 @@ class Path(object):
         
     def initPushThroughVars(self):
         '''
-        initializes variables that track progress subsequent to pushing through 
+        initializes variables that track progress subsequent to pushing through
         a branch with 1 ancestral and 0 derived alleles
         '''
         
@@ -59,7 +61,7 @@ class Path(object):
         self.numDerSincePushThrough = other.numDerSincePushThrough
     
     def __str__(self):
-        return '%d %d\n%s\n%s\n' % (self.numAncestral, self.numDerived, 
+        return '%d %d\n%s\n%s\n' % (self.numAncestral, self.numDerived,
                                     self.nodeString, self.snpString)
 
     # properties
@@ -93,10 +95,10 @@ class Path(object):
     def betterThan(self, other):
         'evaluates whether this path is better than another'
         
-        return other is None \
-                or  self.numDerived  > other.numDerived \
-                or (self.numDerived == other.numDerived \
-                    and self.numAncestral < other.numAncestral)
+        return (other is None
+                or self.numDerived  > other.numDerived
+                or (self.numDerived == other.numDerived
+                    and self.numAncestral < other.numAncestral))
 
     def fork(self, nodeList):
         '''
@@ -119,9 +121,9 @@ class Path(object):
         number of ancestral alleles, revert the path to its state before pushing through
         '''
         
-        if self.hasPushedThrough \
-                and self.numAncSincePushThrough  > 0 \
-                and self.numDerSincePushThrough == 1:
+        if (self.hasPushedThrough
+                and self.numAncSincePushThrough  > 0
+                and self.numDerSincePushThrough == 1):
             self.node = self.nodeWhenPushedThrough
             del(self.derSNPlist[-1])
             self.mostDerivedSNP = self.mostDerivedSNPWhenPushedThrough
@@ -130,8 +132,8 @@ class Path(object):
     
     def updateWithBranchAssessment(self, ancSNPlist, derSNPlist):
         '''
-        extends derived SNP list, sets most derived SNP, and adds number of 
-        ancestral alleles seen. also, manages tracking of whether or not path 
+        extends derived SNP list, sets most derived SNP, and adds number of
+        ancestral alleles seen. also, manages tracking of whether or not path
         has pushed through an (anc,der)==(1,0) branch
         '''
             

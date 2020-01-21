@@ -4,6 +4,7 @@
 #
 # Defines utility functions and non-application-specific global constants.
 #----------------------------------------------------------------------
+from __future__ import absolute_import, print_function
 import csv
 import errno
 import gzip
@@ -17,7 +18,7 @@ import sys
 
 DASHES = '-'*72 + '\n'
 
-type2fmtDict = { bool: '%i', int: '%i', str: '%s', float: '%f' }
+type2fmtDict = {bool: '%i', int: '%i', str: '%s', float: '%f'}
 
 
 #----------------------------------------------------------------------
@@ -56,7 +57,7 @@ def getCSVreader(inFN, delimiter='\t'):
 
     extension = os.path.splitext(inFN)[1]
     if extension == '.gz':
-        try: inFile = gzip.GzipFile(inFN, 'r')
+        try: inFile = gzip.open(inFN, 'rt')
         except IOError:
             sys.exit('\nERROR. Could not open: %s\n' % inFN)
     else:
@@ -85,14 +86,14 @@ def object2fmt(x):
 def printAndLogger(message):
     'output a message to stdout and to the logger'
 
-    print message
+    print(message)
     logging.info(message)
 
 def printIterable(myIterable):
     'cycles through an iterable, printing each item'
 
     for item in myIterable:
-        print item
+        print(item)
 
 def readPositionsSet(inFN, column = 0, logFunction = None):
     'reads positions from the specified column of a file and constructs a set'

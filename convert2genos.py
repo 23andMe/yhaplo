@@ -3,12 +3,15 @@
 # David Poznik
 # 2016.6.30
 # convert2genos.py
+#
+# To run: python -m yhaplo.convert2genos
 #----------------------------------------------------------------------
+from __future__ import absolute_import, print_function
 import argparse
 import os
 import sys
-sys.path.append('..')
-import utils
+
+from . import utils
 
 DESCRIPTION = '''
 Converts data to .genos.txt format for yHaplogroup sofware.
@@ -25,7 +28,7 @@ Input format options:
     Column 5: Allele 2 (if present)
 '''
 
-CHROMOSOME_SET = { '24', 'Y' }
+CHROMOSOME_SET = {'24', 'Y'}
 ALLELE_SET = set('ACGTDI')
 
 fnEnding2fnTypeDict = {
@@ -51,7 +54,7 @@ def convertPed(pedFN, fnRoot, fnEnding):
     indexList = readMap(mapFN, outFile)
     processPed(pedFN, indexList, outFile)
 
-    print 'Output: %s\n' % outFN
+    print('Output: %s\n' % outFN)
     outFile.close()
 
 def readMap(mapFN, outFile):
@@ -59,7 +62,7 @@ def readMap(mapFN, outFile):
 
     if not os.path.exists(mapFN):
         sys.exit('ERROR. Expecting map file: %s' % mapFN)
-    print 'Map: %s\n' % mapFN
+    print('Map: %s\n' % mapFN)
     
     positionList = list()
     indexList = list()
@@ -101,9 +104,9 @@ def processPed(pedFN, indexList, outFile):
             ID = '-'.join(lineList[:2])
             outFile.write('%s\t%s\n' % (ID, '\t'.join(haploidGenoList)))
 
-    print '%5d females ignored' % numFemale
-    print '%5d individuals written' % numIndividuals
-    print '%5d markers\n' % len(indexList)
+    print('%5d females ignored' % numFemale)
+    print('%5d individuals written' % numIndividuals)
+    print('%5d markers\n' % len(indexList))
 
 
 #----------------------------------------------------------------------
@@ -127,8 +130,8 @@ def convertTTAM(inFN, ID):
             if numFields == 5:
                 allele2 = lineList[4]
             elif numFields != 4:
-                sys.exit('ERROR. Encountered line with %d elements:\n%s' % \
-                            (numFields, line))
+                sys.exit('ERROR. Encountered line with %d elements:\n%s' %
+                         (numFields, line))
              
             if chromosome in CHROMOSOME_SET:
                 if allele1 in ALLELE_SET and (numFields == 4 or allele1 == allele2):
@@ -142,10 +145,10 @@ def convertTTAM(inFN, ID):
         writeLineFromTupleList(0, genoTupleList, outFile, 'ID')
         writeLineFromTupleList(1, genoTupleList, outFile, ID)
         
-    print '%6d non-Y genotypes ignored' % numNonY
-    print '%6d Y-chromosome genotypes ignored (het or no-call)' % numHetOrNoCall
-    print '%6d written\n' % len(genoTupleList)
-    print 'Output: %s\n' % outFN
+    print('%6d non-Y genotypes ignored' % numNonY)
+    print('%6d Y-chromosome genotypes ignored (het or no-call)' % numHetOrNoCall)
+    print('%6d written\n' % len(genoTupleList))
+    print('Output: %s\n' % outFN)
 
 def writeLineFromTupleList(index, tupleList, outFile, rowHeader=''):
     'given a list of tuples, writes one line with the i-th element of each tuple'
@@ -161,7 +164,7 @@ def writeLineFromTupleList(index, tupleList, outFile, rowHeader=''):
 # main
 
 def main():
-    parser = argparse.ArgumentParser(description=DESCRIPTION, 
+    parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('inFN', type=str, help='input file name')
     args = parser.parse_args()
@@ -169,7 +172,7 @@ def main():
 
     if not os.path.exists(inFN):
         sys.exit('ERROR. Input file does not exist: %s' % inFN)
-    print 'Input: %s\n' % inFN
+    print('Input: %s\n' % inFN)
     
     fnType = None
     for fnEnding in fnEnding2fnTypeDict:

@@ -65,6 +65,18 @@ with no arguments.
 
 
 --------------------------------------------------------------------------------
+## Python Versions
+
+yHaplo is now compatible with both Python 2 and Python 3.
+Enabling Python 3 compatibility necessitated two changes that affect users:
+
+1. The Python package `six` is now a dependency.
+2. The driver script must now be loaded as a module rather than as a top-level script.  
+Externally: ```python -m yhaplo.callHaplogroups```  
+Internally: ```python -m ttam.yhaplo.callHaplogroups```
+
+
+--------------------------------------------------------------------------------
 ## Input
 
 ### Phylogenetic data

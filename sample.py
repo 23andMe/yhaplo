@@ -1,22 +1,25 @@
 # David Poznik
 # 2016.1.26
 # sample.py
-# 
+#
 # Defines two classes:
 # - Sample
 # - Customer (a subclass of Sample)
 #----------------------------------------------------------------------
+from __future__ import absolute_import
+import six
 import sys
 from collections import defaultdict
 from operator import attrgetter
+from six.moves import range
 
-import utils
-from snp import PlatformSNP
+from . import utils
+from .snp import PlatformSNP
 
 class Sample(object):
     '''
     A sample:
-    - holds a genotype dictionary 
+    - holds a genotype dictionary
     - knows its haplogroup.
     '''
     
@@ -66,7 +69,7 @@ class Sample(object):
     @property
     def hgSNPobs(self):
         '''
-        like hgSNP, but rather than one representative SNP per haplogroup, 
+        like hgSNP, but rather than one representative SNP per haplogroup,
         uses the most highly ranked SNP this individual was observed to possess
         '''
         
@@ -100,14 +103,14 @@ class Sample(object):
     def __str__(self):
         'string representation gets extra information if previous calls exist'
         
-        sampleString = '%-8s %-15s %-15s %-25s' % \
-            (self.ID, self.hgSNPobs, self.hgSNP, self.haplogroup)
+        sampleString = ('%-8s %-15s %-15s %-25s' %
+            (self.ID, self.hgSNPobs, self.hgSNP, self.haplogroup))
         
         if Sample.config.compareToPrevCalls:
             prevHgStart = self.prevCalledHaplogroup[:Sample.config.numCharsToCompare]
             hgStart = self.haplogroup[:Sample.config.numCharsToCompare]
             matchFlag = '.' if prevHgStart == hgStart else '*'
-            sampleString = '%s %-25s %s' % (sampleString, 
+            sampleString = '%s %-25s %s' % (sampleString,
                                             self.prevCalledHaplogroup, matchFlag)
         
         return sampleString
@@ -196,7 +199,7 @@ class Sample(object):
     @staticmethod
     def importPrevCalledHaplogroups():
         '''
-        reads file with previously called haplogroups, 
+        reads file with previously called haplogroups,
         assuming first col = ID & last col = haplogroup
         '''
         
@@ -228,7 +231,7 @@ class Sample(object):
         '''
         adds one value to the genotype dictionary
         if a contradiction is encountered, sets value to missing
-        Note: there is no reason to call this method with a missing genotype, 
+        Note: there is no reason to call this method with a missing genotype,
             this should be the only way missing values enter the dictionary.
         '''
         
@@ -318,7 +321,7 @@ class Sample(object):
     def realTimeHaplogroupWritingMessage():
         'emit a message for real-time haplogroup writing'
         
-        Sample.errAndLog( \
+        Sample.errAndLog(
             '%sWill write haplogroups as they are called:\n' % utils.DASHES +
             '    %s\n\n' % Sample.config.haplogroupRealTimeFN +
             'Note: This file includes DFS rank, so it can be sorted ex post facto with:\n' +
@@ -328,10 +331,8 @@ class Sample(object):
     def testNumberOfRunModes(config):
         'consistency check the number of run modes'
         
-        numberOfRunModesSelected = config.runFromSampleMajorTxt + \
-                                   config.runFromVCF + \
-                                   config.runFromVCF4 + \
-                                   config.runFromAblocks
+        numberOfRunModesSelected = (config.runFromSampleMajorTxt +
+            config.runFromVCF + config.runFromVCF4 + config.runFromAblocks)
         if numberOfRunModesSelected > 1:
             sys.exit('ERROR. Expecting no more than one run mode\n' +
                      '    %d selected\n' % numberOfRunModesSelected)
@@ -364,8 +365,8 @@ class Sample(object):
         Sample.errAndLog('%sReading genotype data:\n    %s\n\n' %
                          (utils.DASHES, genoFN))
 
-        # determine relevant physical coordinates and corresponding columns        
-        allPositionsList = [int(position) for position in genoReader.next()[1:]]
+        # determine relevant physical coordinates and corresponding columns
+        allPositionsList = [int(position) for position in six.next(genoReader)[1:]]
         columnPositionTupleList = list()
         for column, position in enumerate(allPositionsList):
             if position in Sample.tree.snpPosSet:
@@ -397,8 +398,8 @@ class Sample(object):
         'run pipeline on snp-major data'
         
         Sample.loadDataFromVCF()
-        if Sample.args.writeHaplogroupsRealTime or \
-           Sample.args.haplogroupToListGenotypesFor:
+        if (Sample.args.writeHaplogroupsRealTime
+            or Sample.args.haplogroupToListGenotypesFor):
             Sample.sortSampleList(sortByPrevHg=True)
         for sample in Sample.sampleList:
             sample.callHaplogroup()
@@ -420,8 +421,8 @@ class Sample(object):
 
         for lineList in vcfReader:
             chromosome, position = lineList[0], int(lineList[1])
-            if chromosome in Sample.config.vcf_chrom_label_set and \
-                    position in Sample.tree.snpPosSet:
+            if (chromosome in Sample.config.vcf_chrom_label_set and
+                    position in Sample.tree.snpPosSet):
                 genoList = lineList[Sample.config.vcfStartCol:]
                 for sample in Sample.sampleList:
                     genotype = genoList[sample.sampleIndex].split(':')[0]
@@ -541,7 +542,7 @@ class Sample(object):
     def warnVariantsOnlyData():
         'warning for datasets that exclude sites with no variation in the sample'
         
-        Sample.errAndLog( \
+        Sample.errAndLog(
             'WARNING. If the dataset does not include fixed reference sites,\n' +
             '         re-run with alternative root (e.g., with: -r A0-T).\n\n\n')
 
@@ -549,11 +550,11 @@ class Sample(object):
     def writeHaplogroups():
         'writes haplogroup of each sample'
     
-        with open(Sample.config.haplogroupCallsFN, 'w') as haplogroupCallsFile: 
+        with open(Sample.config.haplogroupCallsFN, 'w') as haplogroupCallsFile:
             for sample in Sample.sampleList:
                 haplogroupCallsFile.write('%s\n' % str(sample))
                 
-        Sample.errAndLog( \
+        Sample.errAndLog(
             'Wrote called haplogroups:\n' +
             '    %s\n\n' % Sample.config.haplogroupCallsFN)
 
@@ -564,11 +565,11 @@ class Sample(object):
         at each node visited (excluding nodes with zero of each)
         '''
     
-        with open(Sample.config.countsAncDerFN, 'w') as countsAncDerFile: 
+        with open(Sample.config.countsAncDerFN, 'w') as countsAncDerFile:
             for sample in Sample.sampleList:
                 for node, numAncestral, numDerived in sample.ancDerCountTupleList:
                     if numAncestral > 0 or numDerived > 0:
-                        countsAncDerFile.write('%-8s %-20s %3d %3d\n' % 
+                        countsAncDerFile.write('%-8s %-20s %3d %3d\n' %
                                 (sample.ID, node.label, numAncestral, numDerived))
 
                 countsAncDerFile.write('%s\n\n' % sample.strForCounts())
@@ -577,16 +578,16 @@ class Sample(object):
                          'at each node visited (excluding nodes with zero of each):\n' +
                          '    %s\n\n' % Sample.config.countsAncDerFN)
 
-    @staticmethod        
+    @staticmethod
     def writeHaplogroupPaths(include_SNPs=False):
         'writes haplogroup path for each sample'
         
-        with open(Sample.config.haplogroupPathsFN, 'w') as haplogroupPathsFile: 
+        with open(Sample.config.haplogroupPathsFN, 'w') as haplogroupPathsFile:
             for sample in Sample.sampleList:
                 path = sample.strHaplogroupPath(include_SNPs)
                 haplogroupPathsFile.write('%s\n' % path)
         
-        snps_included_text = ' and a list thereof' if include_SNPs else '' 
+        snps_included_text = ' and a list thereof' if include_SNPs else ''
         Sample.errAndLog('Wrote sequences of haplogroups from root to calls,\n' +
             'with counts of derived SNPs observed%s:\n' % snps_included_text +
             '    %s\n\n' % Sample.config.haplogroupPathsFN)
@@ -605,7 +606,7 @@ class Sample(object):
             snpFN = Sample.config.derSNPsFN
             typeOfSNPs = 'derived SNPs on path'
     
-        with open(snpFN, 'w') as snpFile: 
+        with open(snpFN, 'w') as snpFile:
             for sample in Sample.sampleList:
                 snpFile.write('%s\n' % sample.strSNPs(ancestral))
 
@@ -614,7 +615,7 @@ class Sample(object):
     @staticmethod
     def writeSNPsDetail(ancestral=False):
         '''
-        for each sample, writes detailed information about each 
+        for each sample, writes detailed information about each
         derived SNP on path or about each ancestral SNP encountered in search
         '''
         
@@ -625,7 +626,7 @@ class Sample(object):
             snpDetailFN = Sample.config.derSNPsDetailFN
             typeOfSNPs = 'derived SNP on path'
 
-        with open(snpDetailFN, 'w') as snpDetailFile: 
+        with open(snpDetailFN, 'w') as snpDetailFile:
             for sample in Sample.sampleList:
                 snpDetailFile.write('%s\n' % sample.strCompressed())
                 snpList = sample.ancSNPlist if ancestral else sample.derSNPlist
@@ -652,7 +653,7 @@ class Customer(Sample):
     def setPrevCalledHaplogroup(self):
         '''
         called from Customer.__init__() via Sample.__init__() (if config.compareToPrevCalls)
-        for testing/comparison, sets previously called haplogroup from 
+        for testing/comparison, sets previously called haplogroup from
         original 23andMe algorithm. does not set corresponding DFS rank
         since the nomenclature has changed substantially
         '''
@@ -683,7 +684,7 @@ class Customer(Sample):
         'pulls phylogenetically informative genotypes from ablock'
         
         hasGenotypes = False
-        for platformVersion in xrange(1, Sample.config.maxPlatformVersionPlusOne):
+        for platformVersion in range(1, Sample.config.maxPlatformVersionPlusOne):
             if getattr(self.customerTuple, 'is_v%d' % platformVersion):
                 hasGenotypes = True
                 platformSNPlist = PlatformSNP.platformSNPlistDict[platformVersion]
@@ -696,8 +697,8 @@ class Customer(Sample):
     def fixHaplogroupIfArtifact(self):
         'fixes artifactual haplogroup assignments'
         
-        for calledHaplogroup, replacementHaplogroup in \
-                Sample.config.ttamHgCallReplacementDict.iteritems():
+        for calledHaplogroup, replacementHaplogroup in (
+                six.iteritems(Sample.config.ttamHgCallReplacementDict)):
             if self.haplogroup == calledHaplogroup:
                 self.haplogroupNode = Sample.tree.hg2nodeDict[replacementHaplogroup]
                 break
@@ -778,7 +779,7 @@ class Customer(Sample):
                 }
             
                 platformVersionsSet = set([int(i) for i in platformVersions.split(',')])
-                for i in xrange(1, Sample.config.maxPlatformVersionPlusOne):
+                for i in range(1, Sample.config.maxPlatformVersionPlusOne):
                     tupleKwargsDict['is_v%d' % i] = i in platformVersionsSet
             
                 customerTuple = Sample.config.CustomerTuple(**tupleKwargsDict)
@@ -801,8 +802,9 @@ class Customer(Sample):
         metaColList = Sample.config.customerMetaColList
         prevHapCol  = Sample.config.customerPrevHaplogroupCol
         metaDF = pd.DataFrame(metaDS.load(metaColList))[metaColList]
-        metaDF[prevHapCol] = metaDS.load([prevHapCol])[prevHapCol] if Sample.config.compareToPrevCalls \
-                             else Sample.config.missingHaplogroup
+        metaDF[prevHapCol] = (
+            metaDS.load([prevHapCol])[prevHapCol] if Sample.config.compareToPrevCalls
+            else Sample.config.missingHaplogroup)
         mask, maskType = Customer.buildCustomerMask(metaDF, np, pd)
         metaDF = metaDF[mask]
         
@@ -868,9 +870,9 @@ class Customer(Sample):
     def generateResid(ID):
         'converts ID to integer, exiting gracefully if not possible'
         
-        try: 
+        try:
             resid = int(ID)
-        except ValueError: 
+        except ValueError:
             sys.exit('\nERROR. Cannot convert ID to integer: %s' % ID)
         
         return resid
@@ -879,8 +881,8 @@ class Customer(Sample):
     def emitProgress():
         'emit a message indicating how many haplogroups have been assigned thus far'
         
-        if Sample.numAssigned in Sample.config.callingProgressEarlySet \
-                or Sample.numAssigned % Sample.config.callingProgressInterval == 0:
+        if (Sample.numAssigned in Sample.config.callingProgressEarlySet
+            or Sample.numAssigned % Sample.config.callingProgressInterval == 0):
             Sample.errAndLog('    %8d haplogroups assigned\n' % Sample.numAssigned)
 
     @staticmethod
