@@ -29,8 +29,8 @@ bioRxiv [pre-print](http://biorxiv.org/content/early/2016/11/19/088716):
     Poznik GD. 2016. Identifying Y-chromosome haplogroups in arbitrarily large samples 
     of sequenced or genotyped men. bioRxiv doi: 10.1101/088716
 
-To learn more about the software, please see the manual, `yHaplo.manual.pdf`. 
-And, for an overiew of command-line options, issue the following command: `callHaplogroups.py -h`
+To learn more about the software, please see the manual, `yHaplo.manual.<DATE>.pdf`. 
+And, for an overiew of command-line options, issue the following command: `python -m yhaplo.callHaplogroups -h`
 
 
 --------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ ancestral/derived status. The reference sequence contains many derived alleles,
 and yHaplo will not be happy if you discard these valuable data. So please emit all 
 confident sites when calling variants. To limit compute time and file size, you could 
 safely restrict to positions in `output/isogg.snps.unique.DATE.txt`, as these are the 
-only SNPs yHaplo considers. To generate this file, just run `callHaplogroups.py` 
+only SNPs yHaplo considers. To generate this file, just run `python -m yhaplo.callHaplogroups` 
 with no arguments.
 
 
@@ -87,7 +87,7 @@ Internally: ```python -m ttam.yhaplo.callHaplogroups```
 * `isogg.DATE.txt` : phylogenetically informative SNPs scraped directly from the ISOGG website. 
 yHaplo resolves errors and formatting inconsistencies and emits cleaned versions 
 (`output/isogg.snps.cleaned.DATE.txt` and `output/isogg.snps.unique.DATE.txt`; 
-see `yHaplo.manual.pdf` for details).
+see `yHaplo.manual.<DATE>.pdf` for details).
 * `isogg.correct.*.txt` : corrections to ISOGG data
 * `isogg.omit.*.txt` : SNPs to drop due to inconsistencies observed in test data
 * `isogg.multiallelic.txt` : physical coordinates of multiallelic sites to be excluded
@@ -113,7 +113,7 @@ from the set { A, C, G, T, . }, with "." representing an unobserved value
 --------------------------------------------------------------------------------
 ## Output
 
-All output file formats are described in detail in `yHaplo.manual.pdf`.
+All output file formats are described in detail in `yHaplo.manual.<DATE>.pdf`.
 
 The two primary output files are:
 
@@ -125,7 +125,7 @@ The two primary output files are:
     4. Haplogroup long form, using Y-Chromosome Consortium nomenclature
 
 yHaplo also produces a number of SNP tables, tree files, and auxiliary output files. 
-Please see `yHaplo.manual.pdf` and `callHaplogroups.py -h` for details.
+Please see `yHaplo.manual.<DATE>.pdf` and `python -m yhaplo.callHaplogroups -h` for details.
 
 
 --------------------------------------------------------------------------------
