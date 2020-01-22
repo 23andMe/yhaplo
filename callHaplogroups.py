@@ -5,13 +5,16 @@
 # callHaplogroups.py
 #
 # yHaplo driver script
+#
+# To run: python -m yhaplo.callHaplogroups
 #----------------------------------------------------------------------
-from config import Config
-from tree import Tree
-from sample import Sample
+from __future__ import absolute_import
+from .config import Config
+from .sample import Sample
+from .tree import Tree
 
-def callHaplogroups(useDefaultCmdLineArgs=False, 
-                    suppressOutputAndLog=False, 
+def callHaplogroups(useDefaultCmdLineArgs=False,
+                    suppressOutputAndLog=False,
                     outDir=None,
                     residList=None):
     'configures run, builds tree, and calls haplogroups'
@@ -27,7 +30,7 @@ def callHaplogroupsOnResidList(residList):
     '''calls haplogroups over a list of 23andMe research IDs.
         returns a dictionary: key=resid, value=dictionary of results'''
     
-    callHaplogroups(useDefaultCmdLineArgs=True, 
+    callHaplogroups(useDefaultCmdLineArgs=True,
                     suppressOutputAndLog=True,
                     residList=residList)
 

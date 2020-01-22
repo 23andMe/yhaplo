@@ -4,22 +4,24 @@
 #
 # Defines the Node class.
 #----------------------------------------------------------------------
+from __future__ import absolute_import
 from collections import deque
 from operator import attrgetter
+from six.moves import range
 
-import utils
-from page import Page
-from snp import SNP
+from . import utils
+from .page import Page
+from .snp import SNP
 
 class Node(object):
     '''
     A node knows its:
-        - parent ( self.parent is None == self.isRoot() )
+        - parent (self.parent is None == self.isRoot())
         - depth
         - children
         - diagnostic SNPs
     
-    Throughout this code, each node represents the branch that leads to it. 
+    Throughout this code, each node represents the branch that leads to it.
     '''
 
     tree = None
@@ -74,7 +76,7 @@ class Node(object):
         'string representation: indicates depth with a series of dots and pipes'
         
         dotList = list('.' * (self.depth))
-        for i in xrange(0, len(dotList), 5):
+        for i in range(0, len(dotList), 5):
             dotList[i] = '|'
         return '%s%s %s' % (''.join(dotList), self.label, self.hgSNP)
 
@@ -142,7 +144,7 @@ class Node(object):
     def truncateHaplogroupLabel(haplogroup):
         'returns first 2-5 characters of specified haplogroups and first letter of others'
         
-        for numChars in xrange(Node.config.multiCharHgTruncMaxLen, 1, -1):
+        for numChars in range(Node.config.multiCharHgTruncMaxLen, 1, -1):
             if haplogroup[:numChars] in Node.config.multiCharHgTruncSet:
                 return haplogroup[:numChars]
         
@@ -193,7 +195,7 @@ class Node(object):
         '''
         first, sorts snp list (or dropped marker list) by priority ranking.
         then, sets reresentative-SNP-based label: self.hgSNP
-        the standard form incudes the truncated haplogroup label 
+        the standard form incudes the truncated haplogroup label
         and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
         '''
         
@@ -223,12 +225,12 @@ class Node(object):
                     i = 1
                     hgSNPuniqe = '%s%d' % (self.hgSNP, i)
                     while hgSNPuniqe in Node.hgSNPset:
-                        i += 1 
+                        i += 1
                         hgSNPuniqe = '%s%d' % (self.hgSNP, i)
                     
                     self.hgSNP = hgSNPuniqe
             else:
-                Node.errAndLog('WARNING. Attempted to set star label, ' + \
+                Node.errAndLog('WARNING. Attempted to set star label, ' +
                                'but parent.hgSNP not set yet: %s\n' % self.haplogroup)
                 self.hgSNP = self.haplogroup
                 
@@ -277,7 +279,7 @@ class Node(object):
             - derived genotypes were observed
         '''
         
-        genotypedSnpList = [snp for snp in self.snpList \
+        genotypedSnpList = [snp for snp in self.snpList
                             if snp.position in sample.pos2genoDict]
         ancSNPlist, derSNPlist = list(), list()
         listAllGenotypes = Node.args.haplogroupToListGenotypesFor == self.haplogroup
@@ -292,7 +294,7 @@ class Node(object):
 
             if listAllGenotypes:
                 derivedFlag = '*' if snp.isDerived(geno) else ''
-                Node.config.hgGenosFile.write('%-8s %s %s %s\n' % 
+                Node.config.hgGenosFile.write('%-8s %s %s %s\n' %
                                               (sample.ID, snp, geno, derivedFlag))
         
         return ancSNPlist, derSNPlist
@@ -310,7 +312,7 @@ class Node(object):
         currentNode = self
         startLength = len(self.haplogroup)
         endLength = len(targetHaplogroup)
-        for strLen in xrange(startLength, endLength):
+        for strLen in range(startLength, endLength):
             nextNode = None
             targetHgSubstring = targetHaplogroup[:(strLen+1)]
             if currentNode.numChildren < 2:
@@ -394,15 +396,15 @@ class Node(object):
 
     # writing tree to file in Newick format
     #----------------------------------------------------------------------
-    def writeNewick(self, newickFN, 
+    def writeNewick(self, newickFN,
                     useHgSNPlabel=False, alignTips=False, platformVersion=None):
         'write Newick string for the subtree rooted at this node'
 
         if not Node.config.suppressOutputAndLog:
             with open(newickFN, 'w') as outFile:
-                outFile.write('%s;\n' % \
-                    self.buildNewickStringRecursive(useHgSNPlabel, 
-                                                    alignTips, platformVersion))
+                outFile.write('%s;\n' %
+                    self.buildNewickStringRecursive(
+                        useHgSNPlabel, alignTips, platformVersion))
             
             if alignTips:
                 treeDescriptor = 'aligned '
@@ -416,17 +418,17 @@ class Node(object):
             else:
                 labelType = 'YCC'
                 
-            Node.errAndLog('Wrote %stree with %s labels:\n    %s\n\n' % \
+            Node.errAndLog('Wrote %stree with %s labels:\n    %s\n\n' %
                            (treeDescriptor, labelType, newickFN))
 
-    def buildNewickStringRecursive(self, 
+    def buildNewickStringRecursive(self,
             useHgSNPlabel=False, alignTips=False, platformVersion=None):
         'recursively builds Newick string for the subtree rooted at this node'
         
         if not self.isLeaf():
             childStringList = list()
             for child in self.childList[::-1]:
-                childString = child.buildNewickStringRecursive(useHgSNPlabel, 
+                childString = child.buildNewickStringRecursive(useHgSNPlabel,
                                                                alignTips, platformVersion)
                 childStringList.append(childString)
             treeStringPart1 = '(%s)' % ','.join(childStringList)
