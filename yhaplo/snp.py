@@ -247,14 +247,14 @@ class PlatformSNP(object):
 
     @staticmethod
     def buildPlatformPosSetDict():
-        'reads files to build a dictionary: platformVersion -> set of positions'
+        'reads files to build a dictionary: platform_version -> set of positions'
 
         SNP.errAndLog('%sReading platform positions...\n\n' % utils.DASHES)
-        for platformVersion in range(1, SNP.config.maxPlatformVersionPlusOne):
-            platformPosFN = SNP.config.platformPosFNtp % platformVersion
-            platformPosSet = utils.readPositionsSet(platformPosFN,
-                                                    logFunction = SNP.errAndLog)
-            PlatformSNP.platformPosSetDict[platformVersion] = platformPosSet
+        for platform_version in range(1, SNP.config.maxPlatformVersionPlusOne):
+            platform_pos_fn = SNP.config.platform_pos_fn_tp.format(platform_version)
+            platform_pos_set = utils.readPositionsSet(
+                platform_pos_fn, logFunction = SNP.errAndLog)
+            PlatformSNP.platformPosSetDict[platform_version] = platform_pos_set
 
         SNP.errAndLog('\n')
 

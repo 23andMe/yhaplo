@@ -13,19 +13,17 @@ from collections import namedtuple, defaultdict
 from six.moves import range
 from six.moves import zip
 
-from . import utils
+from . import utils, __version__
 
 DESCRIPTION = '''
-This software, yhaplo, identifies the Y-chromosome haplogroup of each male in a sample of
-one to millions. Sequence data will yield the most highly resolved classifications,
-but the algorithm also works well with chip-based genotype data, provided a reasonable
-number of phylogenetically informative sites have been assayed.
+yhaplo identifies the Y-chromosome haplogroup of each male in a sample of one
+to millions. Sequence data will yield the most highly resolved classifications,
+but the algorithm also works well with chip-based genotype data, provided a
+reasonable number of phylogenetically informative sites have been assayed.
 '''
 
 #----------------------------------------------------------------------
 # constants
-
-VERSION = '1.0.21'
 
 ANC_STOP_THRESH_DEFAULT = 2         # BFS stopping condition parameter default
 DER_COLLAPSE_THRESH_DEFAULT = 2     # BFS collapsing parameter default
@@ -76,6 +74,8 @@ class Config(object):
 
     # genotypes
     ablockDSnameDefault = 'genotype.customer.ablock'
+    ablock_fn_tp = '{}.ablock.npy.gz'
+    bitpacked_ablock_fn_tp = '*.{}.ablock' # for use in a glob.glob
 
     # samples
     customerMetaDSname = 'Metadata.customer'                    # for when using ablockDSnameDefault
@@ -110,11 +110,15 @@ class Config(object):
     pagesFN                =  '%s/23andMe.content.pages.txt'                 % inDir
 
     # input: platform
-    platformPosFNtp        = '%s/platform/output/v%%d.sites.txt' % softwareDir
-
+    platform_pos_fn_tp = os.path.join(softwareDir, 'platform_sites/v{}.sites.txt')
+    
+    # input: example data
+    kgp_subset_fn = os.path.join(softwareDir, 'data', '1000Y.subset.genos.txt')
+    kgp_single_sample_vcf_fn = os.path.join(softwareDir, 'data', 'HG01938.vcf.gz')
+    
     # input: test data
-    thousandYdataFNtp      = '%s/1000Y/process/output/%%s' % softwareDir
-    thousandYhgFN          = '%s/1000Y/haplogroups/4.haplogroups.called.txt' % softwareDir
+    thousandYdataFNtp = os.path.join(softwareDir, '1000Y/process/output/%s')
+    thousandYhgFN = os.path.join(softwareDir, '1000Y/haplogroups/4.haplogroups.called.txt')
 
     # output: phylogenetic info
     phyloOutputFNtpDictDict = {
@@ -189,6 +193,12 @@ class Config(object):
     def setParamsGeneral(self, outDir):
         'set general parameters'
 
+        # run type: zero or one of these four will be set to True by downstream methods
+        self.runFromAblocks = False
+        self.runFromSampleMajorTxt = False
+        self.runFromVCF = False
+        self.runFromVCF4 = False
+        
         # output directories
         if outDir is not None:
             self.outDir = outDir
@@ -198,12 +208,23 @@ class Config(object):
             self.outDir = Config.defaultOutDir
         self.phyloOutDir = self.outDir
 
-        # run type: zero or one of these four will be set to True by downstream methods
-        self.runFromAblocks = False
-        self.runFromSampleMajorTxt = False
-        self.runFromVCF = False
-        self.runFromVCF4 = False
-
+        # dependent args
+        if self.args.example_1000Y_subset or self.args.example_single_sample_vcf:
+            self.args.all_aux_output = True
+        
+        if self.args.all_aux_output:
+            aux_output_arg_list = [
+                'writeAncDerCounts', 'writeHaplogroupPaths', 'writeHaplogroupPathsDetail',
+                'writeDerSNPs', 'writeDerSNPsDetail', 'writeAncSNPs', 'writeAncSNPsDetail']
+            for aux_output_arg in aux_output_arg_list:
+                setattr(self.args, aux_output_arg, True)
+        
+        # example data
+        if self.args.example_1000Y_subset:
+            self.args.dataFN = type(self).kgp_subset_fn
+        elif self.args.example_single_sample_vcf:
+            self.args.dataFN = type(self).kgp_single_sample_vcf_fn
+        
         # derived 1000Y testing parameters
         self.test1000Y = (self.args.test1000Yall
                           or self.args.test1000YplatformVersion
@@ -216,10 +237,15 @@ class Config(object):
         self.vcfStartCol = Config.vcfStartCol
         self.numCharsToCompare = Config.numCharsToCompareDefault
         self.prevCalledHgFN = self.args.prevCalledHgFN
-        self.compareToPrevCalls = (self.prevCalledHgFN is not None
-                                   or self.test1000Y
-                                   or self.args.compareToMetadata)
-
+        self.compareToPrevCalls = (
+            self.prevCalledHgFN
+            or (self.args.dataFN
+                and self.args.dataFN.endswith('.resid.txt')
+                and os.path.isfile(self.args.dataFN)
+                and len(open(self.args.dataFN).readline().split()) > 2)
+            or self.test1000Y
+            or self.args.compareToMetadata)
+    
     #----------------------------------------------------------------------
     def validateParams(self):
         'ensure consistency of run options'
@@ -227,25 +253,32 @@ class Config(object):
         # preclude specification of both a data option and a test option
         if self.test1000Y:
             if self.args.dataFN:
-                sys.exit('ERROR. Do not specify a 1000Y test option and a specific data file.\n')
+                sys.exit('ERROR. Do not specify a 1000Y test option '
+                         'and a specific data file.\n')
             if self.args.allMaleCustomers:
-                sys.exit('ERROR. Do not specify a 1000Y test option to run on all male 23andMe customers.\n')
+                sys.exit('ERROR. Do not specify a 1000Y test option '
+                         'to run on all male 23andMe customers.\n')
             if self.args.primaryOnly:
-                sys.exit('ERROR. Do not specify a 1000Y test option if not importing ISOGG SNPs.\n')
+                sys.exit('ERROR. Do not specify a 1000Y test option '
+                         'if not importing ISOGG SNPs.\n')
         elif self.test1000YformatSpecified:
-            sys.exit('ERROR. Only specify a 1000Y data format when running on 1000Y data.\n')
+            sys.exit('ERROR. Only specify a 1000Y data format '
+                     'when running on 1000Y data.\n')
 
         # require a resid list input file when ablock dataset specified
-        if self.args.ablockDSname:
+        if self.args.ablockDSname or self.args.ablocks_dir:
             if not self.args.dataFN or not self.args.dataFN.endswith('.resid.txt'):
-                sys.exit('ERROR. Provide a resid list (-i) when specifying a non-default ablock dataset name.')
+                sys.exit('ERROR. Provide a resid list (-i file_label.resid.txt) '
+                         'when specifying\n    a non-default ablock dataset '
+                         'name or ablock directory')
             if self.args.compareToMetadata:
-                sys.exit('ERROR. Will not check metadata when using non-default ablock dataset.\n')
+                sys.exit('ERROR. Will not check metadata when using '
+                         'non-default ablock dataset.\n')
 
     #----------------------------------------------------------------------
     def setParamsBasedOnInputType(self):
         'set parameters based on input type'
-
+        
         if self.test1000Y:
             self.setParams1000Y()
         elif self.args.dataFN:          # any type of input file, including resid list
@@ -399,7 +432,7 @@ class Config(object):
             self.logFile = open(self.logFN, 'w', 1)
 
         self.errAndLog('\n%s   yHaplo %s | Y-chromosome haplogroup caller\n' %
-                       (utils.DASHES, VERSION))
+                       (utils.DASHES, __version__))
         if not self.useDefaultCmdLineArgs:
             module_name = sys.argv[0]
             if 'ttam/' in module_name:
@@ -433,16 +466,29 @@ class Config(object):
     #----------------------------------------------------------------------
     def setParams23andMe(self):
         'set arguments for 23andMe data'
-
-        self.ablockDSname = self.args.ablockDSname if self.args.ablockDSname else Config.ablockDSnameDefault
+        
+        self.ablockDSname = None
+        self.ablocks_dir = None
+        if self.args.ablocks_dir:
+            self.ablocks_dir = self.args.ablocks_dir
+        elif self.args.ablockDSname:
+            self.ablockDSname = self.args.ablockDSname
+        else:
+            self.ablockDSname = type(self).ablockDSnameDefault
+        
         self.noAblocksFN = self.constructOutFileName(Config.noAblocksFNtp)
         self.noGenotypesFN = self.constructOutFileName(Config.noGenotypesFNtp)
         self.args.writeContentMappings = True
         self.numCharsToCompare = 1
 
     def get23andMeDatasets(self):
-        'get 3 datasets: snp metadata, customer metadata (if needed), genotypes'
-
+        '''
+        get 3 datasets:
+        - snp metadata
+        - customer metadata (if pulling ablocks from ablockDSnameDefault)
+        - ablock dataset (unless self.args.ablocks_dir has been specified)
+        '''
+        
         # imports
         self.errAndLog('\n%sAccessing 23andMe data...\n\n' % utils.DASHES)
         try:
@@ -450,7 +496,9 @@ class Config(object):
             from rtk23.dataset import dataset_factory, UnknownDatasetException
             from rtk23.lib.coregen import VALUE_TO_CALL as ablockCodeToGenotypeDict
         except ImportError:
-            sys.exit('ERROR. Cannot import from rtk23.')
+            sys.exit('ERROR. Cannot import from rtk23.\n'
+                     'This run configuration is only supported '
+                     'in the 23andMe research environment.')
         self.ablockCodeToGenotypeDict = ablockCodeToGenotypeDict
 
         # initialization
@@ -465,16 +513,17 @@ class Config(object):
         self.errAndLog('Done.\n')
 
         # customer metadata
-        if not self.args.ablockDSname:
+        if not (self.args.ablockDSname or self.ablocks_dir):
             self.errAndLog('    Customers: getting metadata...\n')
             self.customerMetaDS = dataset_factory.get_dataset(Config.customerMetaDSname)
 
         # genotypes
-        self.errAndLog('    Genotypes: getting ablock dataset...\n')
-        try:
-            self.ablockDS = dataset_factory.get_dataset(self.ablockDSname)
-        except UnknownDatasetException:
-            sys.exit('\nERROR. Unknown ablock dataset: %s' % self.ablockDSname)
+        if not self.ablocks_dir:
+            self.errAndLog('    Genotypes: getting ablock dataset...\n')
+            try:
+                self.ablockDS = dataset_factory.get_dataset(self.ablockDSname)
+            except UnknownDatasetException:
+                sys.exit('\nERROR. Unknown ablock dataset: %s' % self.ablockDSname)
 
     def setPos2ablockIndexListDict(self):
         '''
@@ -533,166 +582,176 @@ class Config(object):
         'reads command-line arguments or sets defaults if self.useDefaultCmdLineArgs'
 
         parser = argparse.ArgumentParser(description=DESCRIPTION,
-                                         formatter_class=argparse.RawTextHelpFormatter)
+            formatter_class=utils.RawTextWithDefaultsHelpFormatter)
 
-        # data
-        group = parser.add_mutually_exclusive_group()
-        group.add_argument('-i', '--input', type=str,
-            dest='dataFN', metavar='fileName', default=None,
-            help='specify input file in one of the following formats:\n'
-                 '    .resid.txt           : list of 23andMe research IDs (col 1)\n'
-                 '    .genos.txt           : sample-major text data\n'
-                 '                           row 1: coordinates, col 1: sample IDs\n'
-                 '    .vcf, .vcf.gz, .vcf4 : snp-major text data\n'
-                 'The file format inferred from its name.')
+        group = parser.add_argument_group('input')
+        group.add_argument('-i', '--input',
+            dest='dataFN', metavar='fileName',
+            help='input file in one of the following formats:\n'
+                 '    .resid.txt : col 1: 23andMe research IDs\n' +
+                 '                 col 2: (optional) comma-separated int platforms\n' +
+                 '                 col 3: (optional) previous haplogroup calls\n'
+                 '    .genos.txt : sample-major text data\n'
+                 '                 row 1: coordinates, col 1: sample IDs\n'
+                 '    .vcf, .vcf.gz, .vcf4 : snp-major text data')
+
+        group = parser.add_argument_group('[23andMe only] input')
         group.add_argument('-a', '--allMaleCustomers',
-            dest='allMaleCustomers', action='store_true', default=False,
-            help='run on all male 23andMe customers (or one when used with -s)\n'
-                 '\n* the 2 data options above are mutually exclusive\n'
-                 '  and preclude any of the 4 test options below.\n\n\n')
+            dest='allMaleCustomers', action='store_true',
+            help='run on all male 23andMe customers (or one, when used with -s)')
+        group.add_argument('-ab', '--ablockDSname',
+            dest='ablockDSname', metavar='dsName',
+            help='non-default ablock dataset name')
+        group.add_argument('-ad', '--ablocks_dir',
+            help='directory containing ablocks,\n' +
+                 'each named <resid>.ablock.npy.gz')
+        
+        group = parser.add_argument_group('output')
+        group.add_argument('-o', '--outDir',
+            dest='outDir', metavar='dirName',
+            help='output directory')
+       
+        group = parser.add_argument_group('run on example data')
+        group.add_argument('-ex', '--example_1000Y_subset',
+            action='store_true',
+            help='run yhaplo on a subset of 1000 Genomes data\n'
+                 'and produce all auxiliary output')
+        group.add_argument('-ex1', '--example_single_sample_vcf',
+            action='store_true',
+            help='run yhaplo on a single-sample 1000 Genomes VCF\n'
+                 'and produce all auxiliary output')
+        
+        group = parser.add_argument_group('generate auxiliary output',
+            'generate files detailing haplogroup calling for each individual')
+        group.add_argument('-aao', '--all_aux_output',
+            action='store_true',
+            help='generate all auxilary output.\n'
+                 'equivalent to these seven options:\n'
+                 '--ancDerCounts --haplogroupPaths --haplogroupPathsDetail\n'
+                 '--derSNPs --derSNPsDetail --ancSNPs --ancSNPsDetail')
+        group.add_argument('-c', '--ancDerCounts',
+            dest='writeAncDerCounts', action='store_true',
+            help='counts of ancestral and derived alleles encountered\n'
+                 'at each node visited (omits nodes with zero of each)')
+        group.add_argument('-hp', '--haplogroupPaths',
+            dest='writeHaplogroupPaths', action='store_true',
+            help='sequence of branch labels from root to call,\n'
+                 'with counts of derived SNPs observed')
+        group.add_argument('-hpd', '--haplogroupPathsDetail',
+            dest='writeHaplogroupPathsDetail', action='store_true',
+            help='sequence of branch labels from root to call,\n'
+                 'with counts of derived SNPs observed and lists thereof')
+        group.add_argument('-ds', '--derSNPs',
+            dest='writeDerSNPs', action='store_true',
+            help='lists of derived SNPs on path')
+        group.add_argument('-dsd', '--derSNPsDetail',
+            dest='writeDerSNPsDetail', action='store_true',
+            help='detailed information about each derived SNP on path')
+        group.add_argument('-as', '--ancSNPs',
+            dest='writeAncSNPs', action='store_true',
+            help='lists of ancestral SNPs encountered in search')
+        group.add_argument('-asd', '--ancSNPsDetail',
+            dest='writeAncSNPsDetail', action='store_true',
+            help='detailed information about each ancestral SNP\n'
+                 'encountered in search')
+        
+        group = parser.add_argument_group('generate real-time auxilary output',
+            'write haplogroup calling information as each individual is processed')
+        group.add_argument('-rt', '--writeRealTime',
+            dest='writeHaplogroupsRealTime', action='store_true',
+            help='write haplogroups in real time. includes DFS rank,\n'
+                 'to sort ex post facto: sort -nk5')
+        group.add_argument('-hg', '--hgGenos',
+            dest='haplogroupToListGenotypesFor', metavar='haplogroup',
+            help='write genotypes observed for SNPs associated with\n'
+                 'a specified node of the tree, when it is visited')
+        
+        group = parser.add_argument_group('traverse tree')
+        group.add_argument('-b', '--breadthFirst',
+            dest='traverseBF', action='store_true',
+            help='write bread-first traversal')
+        group.add_argument('-d', '--depthFirst',
+            dest='traverseDF', action='store_true',
+            help='write depth-first (pre-order) traversal')
+        group.add_argument('-dt', '--depthFirstTable',
+            dest='writeTreeTable', action='store_true',
+            help='write depth-first (pre-order) traversal table')
+        group.add_argument('-m', '--mrca', nargs=2,
+            dest='mrcaHaplogroupList', metavar=('haplogroup1', 'haplogroup2'),
+            help='output mrca of two haplogroups')
+        group.add_argument('-sq', '--snpQuery',
+            dest='querySNPname', metavar='snpName',
+            help='list phylogenetic path for a query SNP')
+        group.add_argument('-cm', '--contentMapping',
+            dest='writeContentMappings', action='store_true',
+            help='23andMe: map each node to the most recent ancestor\n'
+                 'with an info page')
+        group.add_argument('-pt', '--platformTrees',
+            dest='writePlatformTrees', action='store_true',
+            help='23andMe: write trees whose branch lengths are numbers\n'
+                 'of platform sites')
 
-        # test data
-        group = parser.add_mutually_exclusive_group()
+        group = parser.add_argument_group(
+            'compare to previously called haplogroups')
+        group.add_argument('-mdh', '--compareToMetadata',
+            dest='compareToMetadata', action='store_true',
+            help='23andMe: compare to haplogroups called by original algorithm')
+        group.add_argument('-ph', '--prevCalledHgFN',
+            dest='prevCalledHgFN', metavar='fileName',
+            help='import previously called haplogroups:\n'
+                 'ID in first column, Haplogroup in last')
+        
+        group = parser.add_argument_group('change search parameters')
+        group.add_argument('-ast', '--ancStopThresh',
+            dest='ancStopThresh', metavar='anc_stop_thresh',
+            type=int, default=ANC_STOP_THRESH_DEFAULT,
+            help='BFS ancestral allele stopping condition')
+        group.add_argument('-dct', '--derCollapseThresh',
+            dest='derCollapseThresh', metavar='der_collapse_thresh',
+            type=int, default=DER_COLLAPSE_THRESH_DEFAULT,
+            help='BFS derived allele collapsing parameter')
+        
+        group = parser.add_argument_group('restrict input or traversal')
+        group.add_argument('-po', '--primaryOnly',
+            action='store_true',
+            help='do NOT import ISOGG SNPs')
+        group.add_argument('-r', '--root',
+            dest='alternativeRoot', metavar='haplogroup',
+            help='start searching tree from this branch')
+        group.add_argument('-s', '--singleSample',
+            dest='singleSampleID', metavar='ID',
+            help='restrict to a single sample (resid for 23andMe data)')
+        
+        group = parser.add_argument_group('[dev only] test data')
         group.add_argument('-ta', '--test1000Yall',
-            action='store_true', default=False,
+            action='store_true',
             help='1000Y testing: all sites, all samples')
         group.add_argument('-ts', '--test1000Ysubset',
-            action='store_true', default=False,
+            action='store_true',
             help='1000Y testing: all sites, subset of samples')
-        group.add_argument('-t1', '--test1000YoneID', type=str,
+        group.add_argument('-t1', '--test1000YoneID',
             metavar='ID',
             help='1000Y testing: all sites, one sample')
         group.add_argument('-tv', '--test1000YplatformSites', type=int,
             dest='test1000YplatformVersion', metavar='version',
-            help='1000Y testing: 23andMe sites, all samples\n'
-                 '\n* the 4 test-data options above are mutually exclusive\n\n\n')
-
-        # test data format
-        group = parser.add_mutually_exclusive_group()
+            help='1000Y testing: 23andMe sites, all samples')
+        
+        group = parser.add_argument_group('[dev only] test data format')
         group.add_argument('-tvcf', '--test1000Yvcf',
-            dest='test1000Yvcf', action='store_true', default=False,
+            dest='test1000Yvcf', action='store_true',
             help='1000Y testing: use .vcf.gz file rather than .genos.txt')
         group.add_argument('-tvcf4', '--test1000Yvcf4',
-            dest='test1000Yvcf4', action='store_true', default=False,
-            help='1000Y testing: use .vcf4 file rather than .genos.txt\n'
-                 '\n* the 2 test-data format options above are mutually exclusive\n'
-                 '  and require one of the 4 1000Y test options above.\n\n')
-
-        # tree traversal
-        groupDescription = 'traverse tree'
-        group = parser.add_argument_group('trees', groupDescription)
-        group.add_argument('-b', '--breadthFirst',
-            dest='traverseBF', action='store_true', default=False,
-            help='write bread-first traversal')
-        group.add_argument('-d', '--depthFirst',
-            dest='traverseDF', action='store_true', default=False,
-            help='write depth-first (pre-order) traversal')
-        group.add_argument('-dt', '--depthFirstTable',
-            dest='writeTreeTable', action='store_true', default=False,
-            help='write depth-first (pre-order) traversal table')
-        group.add_argument('-m', '--mrca', type=str, nargs=2,
-            dest='mrcaHaplogroupList', metavar=('haplogroup1', 'haplogroup2'),
-            help='output mrca of two haplogroups')
-        group.add_argument('-sq', '--snpQuery', type=str,
-            dest='querySNPname', metavar='snpName', default=None,
-            help='list phylogenetic path for a query SNP')
-        group.add_argument('-cm', '--contentMapping',
-            dest='writeContentMappings', action='store_true', default=False,
-            help='23andMe: map each node to the most recent ancestor with an info page')
-        group.add_argument('-pt', '--platformTrees',
-            dest='writePlatformTrees', action='store_true', default=False,
-            help='23andMe: write trees whose branch lengths are numbers of platform sites\n')
-
-        # axiliary output
-        groupDescription = ('write to files details of haplogroup calling for each sample\n' +
-            '    + end       : written after all haplogroups have been called and samples sorted\n' +
-            '    + real time : written as haplogroups are called')
-        group = parser.add_argument_group('auxiliary output', groupDescription)
-        group.add_argument('-c', '--ancDerCounts',
-            dest='writeAncDerCounts', action='store_true', default=False,
-            help='end: counts of ancestral and derived alleles encountered\n'
-                 '     at each node visited (omits nodes with zero of each)')
-        group.add_argument('-hp', '--haplogroupPaths',
-            dest='writeHaplogroupPaths', action='store_true', default=False,
-            help='end: sequence of branch labels from root to call,\n'
-                 '     with counts of derived SNPs observed')
-        group.add_argument('-hpd', '--haplogroupPathsDetail',
-            dest='writeHaplogroupPathsDetail', action='store_true', default=False,
-            help='end: sequence of branch labels from root to call,\n'
-                 '     with counts of derived SNPs observed and lists thereof')
-        group.add_argument('-ds', '--derSNPs',
-            dest='writeDerSNPs', action='store_true', default=False,
-            help='end: lists of derived SNPs on path')
-        group.add_argument('-dsd', '--derSNPsDetail',
-            dest='writeDerSNPsDetail', action='store_true', default=False,
-            help='end: detailed information about each derived SNP on path')
-        group.add_argument('-as', '--ancSNPs',
-            dest='writeAncSNPs', action='store_true', default=False,
-            help='end: lists of ancestral SNPs encountered in search')
-        group.add_argument('-asd', '--ancSNPsDetail',
-            dest='writeAncSNPsDetail', action='store_true', default=False,
-            help='end: detailed information about each ancestral SNP encountered in search\n\n')
-
-        group.add_argument('-rt', '--writeRealTime',
-            dest='writeHaplogroupsRealTime', action='store_true', default=False,
-            help='real time: write haplogroups in real time. includes DFS rank,\n'
-                 '           to enable ex post facto sorting: sort -nk5')
-        group.add_argument('-hg', '--hgGenos', type=str,
-            dest='haplogroupToListGenotypesFor', metavar='haplogroup', default=None,
-            help='real time: write genotypes observed for SNPs associated with\n'
-                 '           a specified node of the tree, when it is visited')
-
-        # search parameters
-        groupDescription = 'change search parameters'
-        group = parser.add_argument_group('search parameters', groupDescription)
-        group.add_argument('-ast', '--ancStopThresh',
-            dest='ancStopThresh', type=int, default=ANC_STOP_THRESH_DEFAULT,
-            help='BFS stopping condition parameter ' +
-                 '(default: %d)' % ANC_STOP_THRESH_DEFAULT)
-        group.add_argument('-dct', '--derCollapseThresh',
-            dest='derCollapseThresh', type=int, default=DER_COLLAPSE_THRESH_DEFAULT,
-            help='BFS collapsing parameter ' +
-                 '(default: %d)' % DER_COLLAPSE_THRESH_DEFAULT)
-
-        # restrictions
-        groupDescription = 'restrict input or traversal'
-        group = parser.add_argument_group('restrictions', groupDescription)
-        group.add_argument('-po', '--primaryOnly',
-            action='store_true', default=False,
-            help='do NOT import ISOGG SNPs')
-        group.add_argument('-r', '--root', type=str,
-            dest='alternativeRoot', metavar='haplogroup',
-            help='start searching tree from this branch')
-        group.add_argument('-s', '--singleSample', type=str,
-            dest='singleSampleID', metavar='ID',
-            help='restrict to a single sample (resid for 23andMe data)\n')
-
-        # comparisons to previously called haplogroups
-        groupDescription = 'previously called haplogroups'
-        group = parser.add_argument_group('comparisons', groupDescription)
-        group.add_argument('-mdh', '--compareToMetadata',
-            dest='compareToMetadata', action='store_true', default=False,
-            help='23andMe: compare to previous calls')
-        group.add_argument('-ph', '--prevCalledHgFN', type=str,
-            dest='prevCalledHgFN', metavar='fileName', default=None,
-            help='import previously called haplogroups:\n' +
-                 'ID in first column, Haplogroup in last\n')
-
-        # other options
-        groupDescription = 'other options'
-        group = parser.add_argument_group('other', groupDescription)
-        group.add_argument('-ab', '--ablockDSname', type=str,
-            dest='ablockDSname', metavar='dsName', default=None,
-            help='23andMe: specify non-default ablock dataset name')
+            dest='test1000Yvcf4', action='store_true',
+            help='1000Y testing: use .vcf4 file rather than .genos.txt')
+        
+        group = parser.add_argument_group('spot-check and exit')
         group.add_argument('-fn', '--fileNamesOnly',
-            action='store_true', default=False,
-            help='print file names to stdout and exit\n\n')
-        group.add_argument('-o', '--outDir', type=str,
-            dest='outDir', metavar='dirName', default=None,
-            help='set output directory')
+            action='store_true',
+            help='print file names to stdout and exit')
         group.add_argument('-v', '--version', action='version',
-            version='yhaplo %s' % VERSION)
-
+            version='yhaplo %s' % __version__)
+        
+        
         if self.useDefaultCmdLineArgs:
             self.args = parser.parse_args([])
         else:

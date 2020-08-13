@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
 # David Poznik
-# 2016.1.7
-# plotTree.py
+# 2016.01.07
+# plot_tree.py
 #
-# To run: python -m yhaplo.plotTree
+# To run: python -m yhaplo.plot_tree
 #----------------------------------------------------------------------
 from __future__ import absolute_import
 import argparse

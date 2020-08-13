@@ -7,15 +7,30 @@
 # - Customer (a subclass of Sample)
 #----------------------------------------------------------------------
 from __future__ import absolute_import
+import glob
+import gzip
+import os
 import six
 import sys
+import warnings
 from collections import defaultdict
 from operator import attrgetter
+
 from six.moves import range
+
+# only used within 23andMe research env
+try:
+    import numpy as np
+    import pandas as pd
+    import rtk23.lib.coregen as coregen
+except ImportError:
+    pass
 
 from . import utils
 from .snp import PlatformSNP
 
+
+#----------------------------------------------------------------------
 class Sample(object):
     '''
     A sample:
@@ -110,8 +125,8 @@ class Sample(object):
             prevHgStart = self.prevCalledHaplogroup[:Sample.config.numCharsToCompare]
             hgStart = self.haplogroup[:Sample.config.numCharsToCompare]
             matchFlag = '.' if prevHgStart == hgStart else '*'
-            sampleString = '%s %-25s %s' % (sampleString,
-                                            self.prevCalledHaplogroup, matchFlag)
+            sampleString = '%s %-25s %s' % (
+                sampleString, self.prevCalledHaplogroup, matchFlag)
         
         return sampleString
 
@@ -186,13 +201,14 @@ class Sample(object):
         sets previously called haplogroup for testing/comparison.
         also sets corresponding DFS rank for sorting
         '''
-
+        
         if not Sample.prevCalledHaplogroupDict:
             Sample.importPrevCalledHaplogroups()
         if self.ID in Sample.prevCalledHaplogroupDict:
             self.prevCalledHaplogroup = Sample.prevCalledHaplogroupDict[self.ID]
         else:
-            Sample.errAndLog('WARNING. No previously called haplogroup for: %s\n' % self.ID)
+            Sample.errAndLog(
+                'WARNING. No previously called haplogroup for: %s\n' % self.ID)
             
         self.setPrevCalledHaplogroupDFSrank()
         
@@ -649,23 +665,25 @@ class Customer(Sample):
     def __init__(self, customerTuple):
         self.customerTuple = customerTuple
         Sample.__init__(self, customerTuple.resid)
-        
+    
     def setPrevCalledHaplogroup(self):
         '''
-        called from Customer.__init__() via Sample.__init__() (if config.compareToPrevCalls)
         for testing/comparison, sets previously called haplogroup from
-        original 23andMe algorithm. does not set corresponding DFS rank
+        original 23andMe algorithm. does not set corresponding DFS rank,
         since the nomenclature has changed substantially
+        
+        called from Customer constructor via Sample constructor,
+        if config.compareToPrevCalls
         '''
 
         self.prevCalledHaplogroup = self.customerTuple.y_haplogroup
-        
-    def loadAblockAndCallHaplogroup(self, purgeGenotypes=True):
+    
+    def loadAblockAndCallHaplogroup(self):
         'loads ablock, reads relevant genotypes, calls haplogroup'
-
-        try:
-            ablock = Sample.config.ablockDS.load_block(self.ID)
-        except:
+        
+        ablock = type(self).load_ablock(self.ID)
+        
+        if ablock is None:
             Customer.numNoAblock += 1
             if Customer.noAblocksFile:
                 Customer.noAblocksFile.write('%d\n' % self.ID)
@@ -679,7 +697,47 @@ class Customer(Sample):
             if Customer.noGenotypesFile:
                 Customer.noGenotypesFile.write('%d\n' % self.ID)
             return False
+    
+    @classmethod
+    def load_ablock(cls, ID):
+        '''
+        loads an a ablock
         
+        if a directory has been supplied, ablocks can be bitpacked or .npy.gz.
+        if not, the ablock will be loaded from an ablock dataset.
+        '''
+        
+        ablock = None
+        
+        if cls.config.ablocks_dir:
+            # .npy.gz
+            ablock_fn = os.path.join(
+                cls.config.ablocks_dir,
+                cls.config.ablock_fn_tp.format(ID))
+            if os.path.isfile(ablock_fn):
+                ablock = np.load(gzip.open(ablock_fn))
+            
+            # bitpacked
+            else:
+                bitpacked_ablock_fn = glob.glob(os.path.join(
+                    cls.config.ablocks_dir,
+                    cls.config.bitpacked_ablock_fn_tp.format(ID))).pop()
+                if os.path.isfile(bitpacked_ablock_fn):
+                    with open(bitpacked_ablock_fn) as bitpacked_ablock_file:
+                        ablock = coregen.ABlockFormat.decompress(
+                            bitpacked_ablock_file.read())
+        
+        # ablock dataset
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                try:
+                    ablock = cls.config.ablockDS.load_block(ID)
+                except KeyError:
+                    pass
+        
+        return ablock
+    
     def readAblockGenotypes(self, ablock):
         'pulls phylogenetically informative genotypes from ablock'
         
@@ -720,14 +778,14 @@ class Customer(Sample):
                          ' Progress...\n')
         for customerTuple in customerTupleList:
             customer = Customer(customerTuple)
-            if customer.loadAblockAndCallHaplogroup(purgeGenotypes=True):
+            if customer.loadAblockAndCallHaplogroup():
                 Sample.sampleList.append(customer)
                 Customer.emitProgress()
         
         Customer.closeAuxiliaryFilesAndReportCounts()
         Sample.sortSampleList()
         Sample.writeSampleList()
-
+    
     @staticmethod
     def openAuxiliaryOutputFiles():
         'open auxiliary output files'
@@ -735,12 +793,12 @@ class Customer(Sample):
         if not Sample.config.suppressOutputAndLog:
             Customer.noAblocksFile = open(Sample.config.noAblocksFN, 'w')
             Customer.noGenotypesFile = open(Sample.config.noGenotypesFN, 'w')
-        
+    
     @classmethod
     def buildCustomerTupleList(cls):
         'builds a list of CustomerTuple instances'
         
-        if Sample.args.ablockDSname:
+        if Sample.args.ablockDSname or cls.config.ablocks_dir:
             customerTupleList = cls.buildCustomerTupleListFromFile()
         else:
             customerTupleList = cls.buildCustomerTupleListFromMetadata()
@@ -754,58 +812,62 @@ class Customer(Sample):
         
         column 1: ID
         column 2: comma-separated list of platforms for this individual
+        column 3: (optional) previous haplogroup call
         
-        example:  Sample314159 1,2,5
+        example:
+        314159265358979323  1,2,5   R1b1a2a1a
         '''
         
         utils.checkFileExistence(Sample.args.dataFN, 'Sample IDs')
-        Sample.errAndLog('Reading sample IDs:\n    %s\n' % Sample.args.dataFN)
+        Sample.errAndLog('Reading sample IDs:\n    {}\n'.format(Sample.args.dataFN))
         
-        customerTupleList = list()
-        IDset = set()
-        with open(Sample.args.dataFN, 'r') as idFile:
-            for line in idFile:
-                tokenList = line.strip().split()
-                if len(tokenList) != 2:
-                    sys.exit('ERROR. When specifying non-default ablock dataset,\n' +
-                             'ID file must have 2 columns: ID, comma-separated list of integers\n' +
-                             'indicating platform versions.\n')
-
-                ID, platformVersions = tokenList
-                IDset.add(ID)
-                tupleKwargsDict = {
-                    'resid': ID,
-                    'y_haplogroup': Sample.config.missingHaplogroup,    # previous call; not needed
-                }
-            
-                platformVersionsSet = set([int(i) for i in platformVersions.split(',')])
-                for i in range(1, Sample.config.maxPlatformVersionPlusOne):
-                    tupleKwargsDict['is_v%d' % i] = i in platformVersionsSet
-            
-                customerTuple = Sample.config.CustomerTuple(**tupleKwargsDict)
-                customerTupleList.append(customerTuple)
+        customer_tuple_list = list()
+        id_set = set()
+        with open(Sample.args.dataFN) as id_file:
+            for line in id_file:
+                token_list = line.strip().split()
+                if len(token_list) < 2 or len(token_list) > 3:
+                    sys.exit(
+                        'ERROR. When loading ablocks from file or non-default ' +
+                        'ablock dataset,\ninput file must have 2 or 3 columns:\n' +
+                        '1. ID\n' +
+                        '2. comma-separated integer platform versions\n' +
+                        '3. (optional) Previous haplogroup')
                 
-        Sample.errAndLog('    %8d read\n'     % len(customerTupleList))
-        Sample.errAndLog('    %8d unique\n\n' % len(IDset))
+                ID, platform_versions = token_list[:2]
+                prev_haplogroup = (token_list[2] if len(token_list) > 2
+                                   else Sample.config.missingHaplogroup)
+                id_set.add(ID)
+                tuple_kwargs_dict = {
+                    'resid': ID, 'y_haplogroup': prev_haplogroup}
+                platform_version_set = set(
+                    [int(i) for i in platform_versions.split(',')])
+                for i in range(1, Sample.config.maxPlatformVersionPlusOne):
+                    tuple_kwargs_dict['is_v%d' % i] = i in platform_version_set
+                
+                customer_tuple = Sample.config.CustomerTuple(**tuple_kwargs_dict)
+                customer_tuple_list.append(customer_tuple)
+                
+        Sample.errAndLog('    %8d read\n'     % len(customer_tuple_list))
+        Sample.errAndLog('    %8d unique\n\n' % len(id_set))
 
-        return customerTupleList
-
+        return customer_tuple_list
+    
     @staticmethod
     def buildCustomerTupleListFromMetadata():
         'builds a list of CustomerTuple instances from customer metadata.'
         
-        import numpy as np
-        import pandas as pd
-
         Sample.errAndLog('Building customer mask ... ')
         metaDS      = Sample.config.customerMetaDS
         metaColList = Sample.config.customerMetaColList
         prevHapCol  = Sample.config.customerPrevHaplogroupCol
         metaDF = pd.DataFrame(metaDS.load(metaColList))[metaColList]
-        metaDF[prevHapCol] = (
-            metaDS.load([prevHapCol])[prevHapCol] if Sample.config.compareToPrevCalls
-            else Sample.config.missingHaplogroup)
-        mask, maskType = Customer.buildCustomerMask(metaDF, np, pd)
+        if Sample.config.compareToPrevCalls:
+            metaDF[prevHapCol] = (
+                pd.Series(metaDS.load([prevHapCol])[prevHapCol]))
+        else:
+            metaDF[prevHapCol] = Sample.config.missingHaplogroup
+        mask, maskType = Customer.buildCustomerMask(metaDF)
         metaDF = metaDF[mask]
         
         customerTupleList = list()
@@ -816,24 +878,26 @@ class Customer(Sample):
             '    %8d %s customers to be processed\n' % (len(customerTupleList), maskType))
 
         return customerTupleList
-
+    
     @staticmethod
-    def buildCustomerMask(metaDF, np, pd):
+    def buildCustomerMask(metaDF):
         'if resids have been specified, use those. otherwise, use all males.'
-
+        
         residList = Customer.generateResidList()
         if residList:
             maskType = 'specified'
-            mask = np.in1d(metaDF[Sample.config.customerIDcol], residList)
+            mask = np.in1d(
+                metaDF[Sample.config.customerIDcol], residList)
         else:
             maskType = 'male'
-            sexDF = pd.DataFrame(Sample.config.customerMetaDS.load(Sample.config.customerSexColList))
+            sexDF = pd.DataFrame(Sample.config.customerMetaDS.load(
+                Sample.config.customerSexColList))
             mask = np.ones(len(sexDF), dtype=bool)
             for column in sexDF.columns:
                 mask = mask & (sexDF[column] == 'M')
                 
         return mask, maskType
-        
+    
     @staticmethod
     def generateResidList():
         '''
@@ -848,14 +912,16 @@ class Customer(Sample):
         if Sample.config.residList:
             residList = Sample.config.residList
             Sample.errAndLog('Research ID list supplied.\n' +
-                '    %8d resids (%d unique)\n\n' % (len(residList), len(set(residList))))
+                '    %8d resids (%d unique)\n\n' % (
+                    len(residList), len(set(residList))))
         elif Sample.args.singleSampleID:
             resid = Customer.generateResid(Sample.args.singleSampleID)
             residList = [resid]
             Sample.errAndLog('Will call haplogroup for:\n    %d\n\n' % resid)
         elif Sample.args.dataFN:
             utils.checkFileExistence(Sample.args.dataFN, 'Research IDs')
-            Sample.errAndLog('Reading research IDs:\n    %s\n' % Sample.args.dataFN)
+            Sample.errAndLog(
+                'Reading research IDs:\n    %s\n' % Sample.args.dataFN)
             with open(Sample.args.dataFN, 'r') as residFile:
                 for line in residFile:
                     ID = line.strip().split()[0]
@@ -876,7 +942,7 @@ class Customer(Sample):
             sys.exit('\nERROR. Cannot convert ID to integer: %s' % ID)
         
         return resid
-
+    
     @staticmethod
     def emitProgress():
         'emit a message indicating how many haplogroups have been assigned thus far'
@@ -884,7 +950,7 @@ class Customer(Sample):
         if (Sample.numAssigned in Sample.config.callingProgressEarlySet
             or Sample.numAssigned % Sample.config.callingProgressInterval == 0):
             Sample.errAndLog('    %8d haplogroups assigned\n' % Sample.numAssigned)
-
+    
     @staticmethod
     def closeAuxiliaryFilesAndReportCounts():
         'close auxiliary files and report counts'

@@ -5,6 +5,7 @@
 # Defines utility functions and non-application-specific global constants.
 #----------------------------------------------------------------------
 from __future__ import absolute_import, print_function
+import argparse
 import csv
 import errno
 import gzip
@@ -116,3 +117,27 @@ def unimplementedMessage(methodName):
     'emits message and exits'
 
     sys.exit('\n\n! Unimplemented method: %s\nExiting.\n' % methodName)
+
+
+#----------------------------------------------------------------------
+# command-line arguments
+
+class RawTextWithDefaultsHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    '''
+    argparse help message formatter which:
+    - retains help text formatting
+    - adds default values to argument help
+    combines argparse.RawTextHelpFormatter and argparse.ArgumentDefaultsHelpFormatter
+    '''
+    
+    def _split_lines(self, text, _):
+        return text.splitlines()
+    
+    def _get_help_string(self, action):
+        help_message = action.help
+        if '%(default)' not in action.help:
+            if action.default is not argparse.SUPPRESS:
+                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+                if action.option_strings or action.nargs in defaulting_nargs:
+                    help_message += '\n(default: %(default)s)'
+        return help_message
