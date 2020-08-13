@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #
 # David Poznik
-# 2016.6.30
-# convert2genos.py
+# 2016.06.30
+# convert_to_genos.py
 #
-# To run: python -m yhaplo.convert2genos
+# To run: python -m yhaplo.convert_to_genos
 #----------------------------------------------------------------------
 from __future__ import absolute_import, print_function
 import argparse

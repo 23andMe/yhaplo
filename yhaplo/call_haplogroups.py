@@ -2,21 +2,21 @@
 #
 # David Poznik
 # 2016.01.08
-# callHaplogroups.py
+# call_haplogroups.py
 #
-# yHaplo driver script
+# yhaplo driver script
 #
-# To run: python -m yhaplo.callHaplogroups
+# To run: python -m yhaplo.call_haplogroups
 #----------------------------------------------------------------------
 from __future__ import absolute_import
 from .config import Config
 from .sample import Sample
 from .tree import Tree
 
-def callHaplogroups(useDefaultCmdLineArgs=False,
-                    suppressOutputAndLog=False,
-                    outDir=None,
-                    residList=None):
+def call_haplogroups(useDefaultCmdLineArgs=False,
+                     suppressOutputAndLog=False,
+                     outDir=None,
+                     residList=None):
     'configures run, builds tree, and calls haplogroups'
     
     config = Config(useDefaultCmdLineArgs=useDefaultCmdLineArgs,
@@ -26,23 +26,25 @@ def callHaplogroups(useDefaultCmdLineArgs=False,
     tree = Tree(config)
     Sample.callHaplogroups(config, tree)
 
-def callHaplogroupsOnResidList(residList):
-    '''calls haplogroups over a list of 23andMe research IDs.
-        returns a dictionary: key=resid, value=dictionary of results'''
+def call_haplogroups_for_resid_list(resid_list):
+    '''
+    calls haplogroups over a list of 23andMe research IDs.
+    returns a dictionary: key=resid, value=dictionary of results
+    '''
     
-    callHaplogroups(useDefaultCmdLineArgs=True,
-                    suppressOutputAndLog=True,
-                    residList=residList)
-
-    resultsDict = dict()
+    call_haplogroups(useDefaultCmdLineArgs=True,
+                     suppressOutputAndLog=True,
+                     residList=resid_list)
+    
+    results_dict = dict()
     for sample in Sample.sampleList:
-        resultsDict[sample.ID] = {
+        results_dict[sample.ID] = {
             'yhaplo:haplogroup': sample.haplogroup,
             'yhaplo:hgSNP':      sample.hgSNP,
             'yhaplo:hgSNPobs':   sample.hgSNPobs,
         }
-        
-    return resultsDict
+    
+    return results_dict
 
 if __name__ == '__main__':
-    callHaplogroups()
+    call_haplogroups()
