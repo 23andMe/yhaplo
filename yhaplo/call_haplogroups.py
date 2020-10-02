@@ -9,6 +9,9 @@
 # To run: python -m yhaplo.call_haplogroups
 #----------------------------------------------------------------------
 from __future__ import absolute_import
+
+import six
+
 from .config import Config
 from .sample import Sample
 from .tree import Tree
@@ -39,9 +42,9 @@ def call_haplogroups_for_resid_list(resid_list):
     results_dict = dict()
     for sample in Sample.sampleList:
         results_dict[sample.ID] = {
-            'yhaplo:haplogroup': sample.haplogroup,
-            'yhaplo:hgSNP':      sample.hgSNP,
-            'yhaplo:hgSNPobs':   sample.hgSNPobs,
+            'yhaplo:haplogroup': six.ensure_str(sample.haplogroup),
+            'yhaplo:hgSNP': six.ensure_str(sample.hgSNP),
+            'yhaplo:hgSNPobs': six.ensure_str(sample.hgSNPobs),
         }
     
     return results_dict
