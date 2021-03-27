@@ -1,0 +1,17 @@
+default_stages: [commit, merge-commit]
+repos:
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.0
+    hooks:
+      - id: flake8
+        types: [file, python]
+        args: [--select, "F401,F841"]  # Check for unused imports and variables
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+        language_version: python3
