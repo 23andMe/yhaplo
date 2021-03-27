@@ -1,4 +1,3 @@
 [tool.isort]
 profile = "black"
 filter_files = true
-known_third_party = ["h5py", "metaflow"]
