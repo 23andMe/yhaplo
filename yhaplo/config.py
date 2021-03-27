@@ -491,7 +491,7 @@ class Config(object):
             self.logFile = open(self.logFN, "w", 1)
 
         self.errAndLog(
-            "\n%s   yHaplo %s | Y-chromosome haplogroup caller\n"
+            "\n%s   yhaplo %s | Y-chromosome haplogroup caller\n"
             % (utils.DASHES, __version__)
         )
         if not self.useDefaultCmdLineArgs:

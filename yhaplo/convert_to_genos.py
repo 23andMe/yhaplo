@@ -15,7 +15,7 @@ import sys
 from . import utils
 
 DESCRIPTION = """
-Converts data to .genos.txt format for yHaplogroup sofware.
+Converts data to .genos.txt format for yhaplo sofware.
 
 Input format options:
 
