@@ -495,16 +495,9 @@ class Config(object):
             % (utils.DASHES, __version__)
         )
         if not self.useDefaultCmdLineArgs:
-            module_name = sys.argv[0]
-            if "ttam/" in module_name:
-                module_name = module_name[module_name.rfind("ttam/") :]
-            else:
-                module_name = module_name[module_name.rfind("yhaplo/") :]
-            module_name = module_name.replace("/", ".").replace(".py", "")
-            self.errAndLog(
-                "      Command: python -m %s %s\n"
-                % (module_name, " ".join(sys.argv[1:]))
-            )
+            command = os.path.basename(sys.argv[0])
+            args = " ".join(sys.argv[1:])
+            self.errAndLog("      Command: %s %s\n" % (command, args))
         if not self.suppressOutputAndLog:
             self.errAndLog("      Log:     %s\n" % self.logFN)
         self.errAndLog("%s" % utils.DASHES)
