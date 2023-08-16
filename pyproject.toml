@@ -1,3 +1,95 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "yhaplo"
+authors = [
+    {name = "Population Genetics R&D"},
+    {email = "popgen.rd@23andme.com"},
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyyaml",
+]
+description = "Y-chromosome haplogroup caller"
+dynamic = ["version"]
+license = {text = "LICENSE.txt"}
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "ipython",
+    "pytest",
+    "setuptools_scm",
+]
+plot = [
+    "biopython",
+]
+vcf = [
+    "pysam",
+]
+
+[project.scripts]
+yhaplo = "yhaplo.cli.yhaplo:main"
+yhaplo_convert_to_genos = "yhaplo.cli.convert_to_genos:main"
+yhaplo_plot_tree = "yhaplo.cli.plot_tree:main"
+
+[project.urls]
+homepage = "https://github.com/23andMe/yhaplo"
+
+[tool.setuptools_scm]
+write_to = "yhaplo/_version.py"
+
 [tool.isort]
 profile = "black"
 filter_files = true
+known_first_party = ["logic"]  # aws/logic/ includes logic for flow
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pydocstyle]
+# D107 Missing docstring in __init__
+# D202 No blank lines allowed after function docstring
+#      Ignoring allows blank lines after one-line docstrings.
+# D211 No blank lines allowed before class docstring
+#      Contradicts D203.
+# D213 Multi-line docstring summary should start at the second line
+#      Contradicts D212.
+#      https://github.com/PyCQA/pydocstyle/issues/242#issuecomment-288166773
+ignore = "D107,D202,D211,D213"
+match_dir = "(?!tests|\\.).*"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # ttam.coregen: https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    "ignore:Deprecated call to `pkg_resources.declare_namespace",
+    "ignore:pkg_resources is deprecated as an API",
+]
+norecursedirs = [
+    ".*",
+    "build",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py39, py310, py311
+[testenv]
+commands =
+    pytest
+sitepackages = false
+deps =
+    pysam
+    pytest
+extras =
+    ttam
+"""

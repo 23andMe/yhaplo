@@ -1,466 +1,526 @@
-# David Poznik
-# 2015.12.29
-# node.py
-#
-# Defines the Node class.
-# ----------------------------------------------------------------------
-from __future__ import absolute_import
+"""Define Node class."""
 
+from __future__ import annotations
+
+import argparse
+import logging
 from collections import deque
 from operator import attrgetter
+from typing import Optional, TextIO
 
-from six.moves import range
+from yhaplo import sample as sample_module  # noqa F401
+from yhaplo import snp as snp_module  # noqa F401
+from yhaplo import tree as tree_module  # noqa F401
+from yhaplo.config import Config
 
-from . import utils
-from .page import Page
-from .snp import SNP
+logger = logging.getLogger(__name__)
 
 
-class Node(object):
-    """
+class Node:
+
+    """Class representing one node of a haplogroup tree.
+
+    Each node represents the branch that leads to it.
+
     A node knows its:
-        - parent (self.parent is None == self.isRoot())
-        - depth
-        - children
-        - diagnostic SNPs
+    - Parent
+    - Depth
+    - Children
+    - Diagnostic SNPs
 
-    Throughout this code, each node represents the branch that leads to it.
     """
 
-    tree = None
-    config = None
-    args = None
-    errAndLog = None
-    pageList = list()
-    pageDict = dict()
-    hgSNPset = set()
+    tree: "tree_module.Tree"
+    config: Config
+    args: argparse.Namespace
+    hg_snp_set: set[str] = set()
 
-    def __init__(self, parent, tree=None):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        tree: Optional["tree_module.Tree"] = None,
+    ):
         self.parent = parent
-        if self.isRoot():
-            Node.setTreeConfigAndArgs(tree)
-            self.depth = 0
+        if parent is None:
+            if tree is not None:
+                type(self).set_tree_config_and_args(tree)
+                self.depth = 0
+            else:
+                raise ValueError(
+                    "A tree instance must be supplied when instantiating a root node."
+                )
         else:
-            parent.addChild(self)
+            parent.add_child(self)
             self.depth = parent.depth + 1
-            if self.depth > Node.tree.maxDepth:
-                Node.tree.maxDepth = self.depth
+            if self.depth > type(self).tree.max_depth:
+                type(self).tree.max_depth = self.depth
 
-        self.haplogroup = ""  # see setLabel  | ycc haplogroup name     e.g., R1b1c
-        self.label = ""  # see setLabel  | ycc including alt names e.g., P/K2b2
-        self.hgTrunc = ""  # see setLabel  | truncated haplogroup    e.g., R1b1c -> R
-        self.hgSNP = ""  # see prioritySortSNPlistAndSetHgSNP |    e.g., R-V88
-        self.childList = list()  # see addChild, bifurcate, serialSplit
-        self.snpList = list()  # see addSNP
-        self.droppedMarkerList = list()  # see addDroppedMarker
-        self.page = None  # see addSNP
-        self.branchLength = None  # see setBranchLength
-        self.DFSrank = 0  # see setDFSrank
+        self.haplogroup: str = ""  # YCC haplogroup name (e.g., "R1b1c")
+        self.label: str = ""  # YCC including alt names (e.g., "P/K2b2")
+        self.hg_trunc: str = ""  # Truncated haplogroup (e.g., "R")
+        self.hg_snp: str = ""  # Haplogroup with representative SNP (e.g., "R-V88")
+        self.child_list: list[Node] = []
+        self.snp_list: list["snp_module.SNP"] = []
+        self.dropped_marker_list: list["snp_module.DroppedMarker"] = []
+        self.branch_length: Optional[float] = None
+        self.dfs_rank: int = 0
 
-        if Node.args.writeContentMappings and self.isRoot():
-            self.page = Node.pageDict[Node.config.rootHaplogroup]
-            self.page.setNode(self)
+    # String representations
+    # ----------------------------------------------------------------------
+    def __str__(self) -> str:
+        """Return string representation."""
 
-    def __str__(self):
-        return self.strSimple()
+        return self.str_simple
 
-    def strSimple(self):
-        "string representation: label and representative SNP"
+    @property
+    def str_simple(self) -> str:
+        """Return string representation with label and representative SNP."""
 
-        return "%-25s %s" % (self.label, self.hgSNP)
+        return f"{self.label:25s} {self.hg_snp}"
 
-    def strSNPlist(self):
-        "string representation: label and list of snps"
+    @property
+    def str_snp_list(self) -> str:
+        """Return string representation with label and list of snps."""
 
-        snpString = " ".join(snp.label for snp in self.snpList)
-        return "%-25s %s" % (self.label, snpString)
+        snp_string = " ".join(snp.label for snp in self.snp_list)
+        str_snp_list = f"{self.label:25s} {snp_string}"
 
-    def strDotPipeDepth(self):
-        "string representation: indicates depth with a series of dots and pipes"
+        return str_snp_list
 
-        dotList = list("." * (self.depth))
-        for i in range(0, len(dotList), 5):
-            dotList[i] = "|"
-        return "%s%s %s" % ("".join(dotList), self.label, self.hgSNP)
+    @property
+    def str_dot_pipe_depth(self) -> str:
+        """Return string representation indicating depth with dots and pipes."""
 
-    def strTreeTableRow(self):
-        "string representation: one row of tree table"
+        dot_list = list("." * (self.depth))
+        for i in range(0, len(dot_list), 5):
+            dot_list[i] = "|"
 
-        yccLabel = self.haplogroup
+        dots = "".join(dot_list)
+        str_dot_pipe_depth = f"{dots}{self.label} {self.hg_snp}"
 
-        if self.isRoot():
-            parentDFSrank = parentHgSNP = "root"
+        return str_dot_pipe_depth
+
+    # Other properties
+    # ----------------------------------------------------------------------
+    @property
+    def tree_table_data(self) -> tuple[str, str, str, str, str]:
+        """Return a tuple of data summarizing the node.
+
+        Returns
+        -------
+        tree_table_tuple : tuple[str, str, str, str, str]
+            Depth-first-search rank, YCC haplogroup label, SNP-based haplogroup,
+            parent DFS rank, parent SNP-based haplogroup.
+
+        """
+        if self.parent is not None:
+            parent_dfs_rank = str(self.parent.dfs_rank)
+            parent_hg_snp = self.parent.hg_snp
         else:
-            parentDFSrank = str(self.parent.DFSrank)
-            parentHgSNP = self.parent.hgSNP
+            parent_dfs_rank = "root"
+            parent_hg_snp = "root"
 
-        return "\t".join(
-            [str(self.DFSrank), yccLabel, self.hgSNP, parentDFSrank, parentHgSNP]
+        tree_table_row = (
+            str(self.dfs_rank),
+            self.haplogroup,
+            self.hg_snp,
+            parent_dfs_rank,
+            parent_hg_snp,
         )
 
-    @property
-    def mostHighlyRankedSNP(self):
-        "the most highly ranked SNP"
-
-        return SNP.mostHighlyRankedMarkerOnList(self.snpList)
+        return tree_table_row
 
     @property
-    def mostHighlyRankedDroppedMarker(self):
-        "the most highly ranked dropped marker"
+    def most_highly_ranked_snp(self) -> "snp_module.SNP":
+        """Return the most highly ranked SNP."""
 
-        return SNP.mostHighlyRankedMarkerOnList(self.droppedMarkerList)
+        return self.snp_list[0]
 
-    # static methods, including class variable setters
+    @property
+    def most_highly_ranked_dropped_marker(self) -> "snp_module.DroppedMarker":
+        """Return the most highly ranked dropped marker."""
+
+        return self.dropped_marker_list[0]
+
+    # Class methods
     # ----------------------------------------------------------------------
-    @staticmethod
-    def setTreeConfigAndArgs(tree):
-        "enables Node class to know about the tree instance, config, and args"
+    @classmethod
+    def set_tree_config_and_args(cls, tree: "tree_module.Tree") -> None:
+        """Set tree, config, and args."""
 
-        Node.tree = tree
-        Node.config = tree.config
-        Node.args = tree.args
-        Node.errAndLog = tree.config.errAndLog
-        if Node.args.writeContentMappings:
-            Node.buildPageDict()
+        cls.tree = tree
+        cls.config = tree.config
+        cls.args = tree.args
 
-    @staticmethod
-    def buildPageDict():
+    @classmethod
+    def truncate_haplogroup_label(cls, haplogroup: str) -> str:
+        """Return first truncated haplogroup label.
+
+        Truncation here means the first two to five characters of specified haplogroups
+        and the first letter of others.
+
         """
-        builds a dictionary of 23andMe content pages. pagesFN comes from these two gdocs:
-        - https://docs.google.com/spreadsheets/d/1mf86slweZEKUd5hzG2GmKGTGIpHuDipJz2u221y2zVE/edit?ts=568eb997#gid=0
-        - https://docs.google.com/spreadsheets/d/1oo0sRmYFNeWikuOxcb_1obOoO35wQccmOzyGRmqDMtc/edit?ts=578578d0#gid=362797346
-        """
+        truncated_haplogroup_label = haplogroup[0]
+        for num_chars in range(cls.config.multi_char_hg_trunc_max_len, 1, -1):
+            if haplogroup[:num_chars] in cls.config.multi_char_hg_trunc_set:
+                truncated_haplogroup_label = haplogroup[:num_chars]
+                break
 
-        utils.checkFileExistence(Node.config.pagesFN, "Content pages")
-        with open(Node.config.pagesFN, "r") as pagesFile:
-            pagesFile.readline()  # header
-            for line in pagesFile:
-                yccOld, snpName = line.strip().split()
-                page = Page(yccOld, snpName)
-                Node.pageList.append(page)
+        return truncated_haplogroup_label
 
-                if yccOld == Node.config.rootHaplogroup:
-                    Node.pageDict[Node.config.rootHaplogroup] = page
-                elif snpName != ".":
-                    Node.pageDict[snpName] = page
-
-    @staticmethod
-    def truncateHaplogroupLabel(haplogroup):
-        "returns first 2-5 characters of specified haplogroups and first letter of others"
-
-        for numChars in range(Node.config.multiCharHgTruncMaxLen, 1, -1):
-            if haplogroup[:numChars] in Node.config.multiCharHgTruncSet:
-                return haplogroup[:numChars]
-
-        return haplogroup[0]
-
-    # setters, mutaters
+    # Setters and mutaters
     # ----------------------------------------------------------------------
-    def setLabel(self, label):
-        "sets label, haplogroup, and hgTrunc"
+    def set_label(self, label: str) -> None:
+        """Set label, haplogroup, and hg_trunc."""
 
         self.label = label
-        labelList = label.split("/")
+        label_list = label.split("/")
 
-        if self.isRoot():
-            self.haplogroup = self.hgTrunc = self.config.rootHaplogroup
-            Node.tree.hg2nodeDict[self.haplogroup] = self
+        if self.is_root():
+            self.haplogroup = self.hg_trunc = self.config.root_haplogroup
+            type(self).tree.haplogroup_to_node[self.haplogroup] = self
         else:
-            self.haplogroup = labelList[0]
-            self.hgTrunc = Node.truncateHaplogroupLabel(self.haplogroup)
+            self.haplogroup = label_list[0]
+            self.hg_trunc = type(self).truncate_haplogroup_label(self.haplogroup)
 
-        for key in labelList:
-            Node.tree.hg2nodeDict[key] = self
+        for key in label_list:
+            type(self).tree.haplogroup_to_node[key] = self
 
-    def setBranchLength(self, branchLength):
-        "sets the branch length"
+    def set_branch_length(self, branch_length: float) -> None:
+        """Set branch length."""
 
-        self.branchLength = branchLength
+        self.branch_length = branch_length
 
-    def setDFSrank(self, DFSrank):
-        "set depth-first search rank"
+    def set_dfs_rank(self, dfs_rank: int) -> None:
+        """Set depth-first search rank."""
 
-        self.DFSrank = DFSrank
+        self.dfs_rank = dfs_rank
 
-    def addSNP(self, snp):
-        "appends a snp to the snp list"
+    def add_snp(self, snp: "snp_module.SNP") -> None:
+        """Append a SNP to the SNP list."""
 
-        self.snpList.append(snp)
-        if snp.label in Node.pageDict:
-            self.page = Node.pageDict[snp.label]
-            self.page.setNode(self)
+        self.snp_list.append(snp)
 
-    def addDroppedMarker(self, droppedMarker):
-        "appends a dropped marker to the list"
+    def add_dropped_marker(
+        self,
+        dropped_marker: "snp_module.DroppedMarker",
+    ) -> None:
+        """Append a dropped marker to the list."""
 
-        self.droppedMarkerList.append(droppedMarker)
+        self.dropped_marker_list.append(dropped_marker)
 
-    def prioritySortSNPlistAndSetHgSNP(self):
-        """
-        first, sorts snp list (or dropped marker list) by priority ranking.
-        then, sets reresentative-SNP-based label: self.hgSNP
-        the standard form incudes the truncated haplogroup label
+    def priority_sort_snp_list_and_set_hg_snp(self) -> None:
+        """Sort SNP list and set SNP-based haplogroup.
+
+        First, sort SNP list (or dropped marker list) by priority ranking.
+        Then, set reresentative-SNP-based label: self.hg_snp.
+        The standard form incudes the truncated haplogroup label
         and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
+
         """
+        # Root: no markers
+        if self.is_root():
+            self.hg_snp = self.haplogroup
 
-        # root: no markers
-        if self.isRoot():
-            self.hgSNP = self.haplogroup
+        # Normal case
+        elif self.snp_list:
+            self.snp_list = snp_module.priority_sort_marker_list(self.snp_list)
+            self.hg_snp = self.most_highly_ranked_snp.hg_snp
 
-        # normal case
-        elif self.snpList:
-            self.snpList = SNP.prioritySortMarkerList(self.snpList)
-            self.hgSNP = self.mostHighlyRankedSNP.hgSNP
+        # Backup: use discarded marker name
+        elif self.dropped_marker_list:
+            self.dropped_marker_list = snp_module.priority_sort_marker_list(
+                self.dropped_marker_list
+            )
+            marker_name = self.most_highly_ranked_dropped_marker.name
+            self.hg_snp = f"{self.hg_trunc}-{marker_name}"
 
-        # backup: use discared marker name
-        elif self.droppedMarkerList:
-            self.droppedMarkerList = SNP.prioritySortMarkerList(self.droppedMarkerList)
-            markerName = self.mostHighlyRankedDroppedMarker.name
-            self.hgSNP = "%s-%s" % (self.hgTrunc, markerName)
-
-        # no markers to use
+        # No markers to use
         else:
-            if self.parent.hgSNP:
-                symbol = "*" if self.isLeaf() else "+"
-                self.hgSNP = self.parent.hgSNP + symbol
+            if self.parent is not None and self.parent.hg_snp:
+                symbol = "*" if self.is_leaf() else "+"
+                self.hg_snp = self.parent.hg_snp + symbol
 
-                # uniquify if necessary
-                if self.hgSNP in Node.hgSNPset:
+                # Uniquify if necessary
+                if self.hg_snp in type(self).hg_snp_set:
                     i = 1
-                    hgSNPuniqe = "%s%d" % (self.hgSNP, i)
-                    while hgSNPuniqe in Node.hgSNPset:
+                    hg_snp_uniqe = f"{self.hg_snp}{i}"
+                    while hg_snp_uniqe in type(self).hg_snp_set:
                         i += 1
-                        hgSNPuniqe = "%s%d" % (self.hgSNP, i)
+                        hg_snp_uniqe = f"{self.hg_snp}{i}"
 
-                    self.hgSNP = hgSNPuniqe
+                    self.hg_snp = hg_snp_uniqe
             else:
-                Node.errAndLog(
+                logger.warning(
                     "WARNING. Attempted to set star label, "
-                    + "but parent.hgSNP not set yet: %s\n" % self.haplogroup
+                    f"but parent.hg_snp not set yet: {self.haplogroup}\n"
                 )
-                self.hgSNP = self.haplogroup
+                self.hg_snp = self.haplogroup
 
-        Node.hgSNPset.add(self.hgSNP)
+        type(self).hg_snp_set.add(self.hg_snp)
 
-    # queries
+    # Queries
     # ----------------------------------------------------------------------
-    def isRoot(self):
+    def is_root(self) -> bool:
+        """Return a Boolean indicating whether or not the Node is root."""
+
         return self.parent is None
 
-    def isLeaf(self):
-        return len(self.childList) == 0
+    def is_leaf(self) -> bool:
+        """Return a Boolean indicating whether or not the Node is a leaf."""
 
-    def getBranchLength(self, alignTips=False, platformVersion=None):
-        if self.branchLength:
-            return self.branchLength
-        elif alignTips and self.isLeaf():
-            return Node.tree.maxDepth - self.depth + 1
-        elif alignTips:
-            return 1
-        elif platformVersion:
-            branchLength = 0
-            for snp in self.snpList:
-                if snp.isOnPlatform(platformVersion):
-                    branchLength += 1
-            return branchLength
+        return len(self.child_list) == 0
+
+    def get_branch_length(
+        self,
+        align_tips: bool = False,
+        platform: Optional[str] = None,
+    ) -> Optional[float]:
+        """Get branch length."""
+
+        if self.branch_length:
+            branch_length = self.branch_length
+        elif align_tips and self.is_leaf():
+            branch_length = type(self).tree.max_depth - self.depth + 1
+        elif align_tips:
+            branch_length = 1
+        elif platform:
+            branch_length = 0
+            for snp in self.snp_list:
+                if snp.is_on_platform(platform):
+                    branch_length += 1
         else:
-            return None
+            branch_length = None
 
-    def backTracePath(self):
-        "returns a list of nodes from root to self"
+        return branch_length
 
-        nodeList = [self]
+    def back_trace_path(self) -> list[Node]:
+        """Return a list of nodes from root to self."""
+
+        node_list = [self]
         parent = self.parent
         while parent is not None:
-            nodeList.append(parent)
+            node_list.append(parent)
             parent = parent.parent
-        nodeList.reverse()
-        return nodeList
 
-    def assessGenotypes(self, sample):
+        node_list.reverse()
+
+        return node_list
+
+    def assess_genotypes(
+        self,
+        sample: "sample_module.Sample",
+    ) -> tuple[list["snp_module.SNP"], list["snp_module.SNP"]]:
+        """Assess an individual's genotypes with respect to self.snp_list.
+
+        Returns
+        -------
+        anc_snp_list : list[SNP]
+            SNPs for which ancestral genotypes were observed.
+        der_snp_list : list[SNP]
+            SNPs for which derived genotypes were observed.
+
         """
-        assess an individual's genotypes with respect to self.snpList
-        returns two lists of snps. those for which:
-            - ancestral genotypes were observed
-            - derived genotypes were observed
-        """
+        anc_snp_list, der_snp_list = [], []
+        for snp in self.snp_list:
+            genotype = sample.get_genotype(snp.position)
+            if genotype != Config.missing_genotype:
+                if snp.is_ancestral(genotype):
+                    anc_snp_list.append(snp)
+                elif snp.is_derived(genotype):
+                    der_snp_list.append(snp)
 
-        genotypedSnpList = [
-            snp for snp in self.snpList if snp.position in sample.pos2genoDict
-        ]
-        ancSNPlist, derSNPlist = list(), list()
-        listAllGenotypes = Node.args.haplogroupToListGenotypesFor == self.haplogroup
+                if type(self).args.haplogroup_to_list_genotypes_for == self.haplogroup:
+                    file = type(self).config.hg_genos_file
+                    derived_flag = "*" if snp.is_derived(genotype) else ""
+                    file.write(
+                        f"{str(sample.iid):8s} {snp} {genotype} {derived_flag}\n"
+                    )
 
-        for snp in genotypedSnpList:
-            geno = sample.pos2genoDict[snp.position]
+        return anc_snp_list, der_snp_list
 
-            if snp.isAncestral(geno):
-                ancSNPlist.append(snp)
-            elif snp.isDerived(geno):
-                derSNPlist.append(snp)
-
-            if listAllGenotypes:
-                derivedFlag = "*" if snp.isDerived(geno) else ""
-                Node.config.hgGenosFile.write(
-                    "%-8s %s %s %s\n" % (sample.ID, snp, geno, derivedFlag)
-                )
-
-        return ancSNPlist, derSNPlist
-
-    # children
+    # Children
     # ----------------------------------------------------------------------
-    def addChild(self, child):
-        "appends a child to the child list"
+    def add_child(self, child: Node) -> None:
+        """Append a child to the child list."""
 
-        self.childList.append(child)
+        self.child_list.append(child)
 
-    def serialSplit(self, targetHaplogroup):
-        "serially split node until there is a spot for the target haplogroup"
+    def serial_split(self, target_haplogroup: str) -> Node:
+        """Split node serially until there is a spot for the target haplogroup."""
 
-        currentNode = self
-        startLength = len(self.haplogroup)
-        endLength = len(targetHaplogroup)
-        for strLen in range(startLength, endLength):
-            nextNode = None
-            targetHgSubstring = targetHaplogroup[: (strLen + 1)]
-            if currentNode.numChildren < 2:
-                currentNode.bifurcate()
-            for node in currentNode.childList:
-                if node.haplogroup == targetHgSubstring:
-                    nextNode = node
-            if nextNode is None:
-                nextNode = Node(parent=currentNode)
-                nextNode.setLabel(targetHgSubstring)
-                currentNode.sortChildren()
+        current_node = self
+        start_length = len(self.haplogroup)
+        end_length = len(target_haplogroup)
+        for str_len in range(start_length, end_length):
+            next_node = None
+            target_hg_substring = target_haplogroup[: (str_len + 1)]
+            if current_node.num_children < 2:
+                current_node.bifurcate()
+            for node in current_node.child_list:
+                if node.haplogroup == target_hg_substring:
+                    next_node = node
+            if next_node is None:
+                next_node = type(self)(parent=current_node)
+                next_node.set_label(target_hg_substring)
+                current_node.sort_children()
 
-            currentNode = nextNode
+            current_node = next_node
 
-        return currentNode
+        return current_node
 
     @property
-    def numChildren(self):
-        return len(self.childList)
+    def num_children(self) -> int:
+        """Return number of children."""
 
-    def bifurcate(self):
-        "split a node and return the two children"
+        return len(self.child_list)
 
-        leftChild = Node(parent=self)
-        rightChild = Node(parent=self)
+    def bifurcate(self) -> tuple[Node, Node]:
+        """Split a node and return the two children."""
+
+        left_child = type(self)(parent=self)
+        right_child = type(self)(parent=self)
         if self.haplogroup[-1].isalpha():
-            leftChild.setLabel(self.haplogroup + "1")
-            rightChild.setLabel(self.haplogroup + "2")
+            left_child.set_label(self.haplogroup + "1")
+            right_child.set_label(self.haplogroup + "2")
         else:
-            leftChild.setLabel(self.haplogroup + "a")
-            rightChild.setLabel(self.haplogroup + "b")
-        return leftChild, rightChild
+            left_child.set_label(self.haplogroup + "a")
+            right_child.set_label(self.haplogroup + "b")
 
-    def sortChildren(self):
-        self.childList = sorted(self.childList, key=attrgetter("haplogroup"))
+        return left_child, right_child
 
-    def reverseChildren(self):
-        self.childList.reverse()
+    def sort_children(self) -> None:
+        """Sort children by haplogroup."""
 
-    # tree traversals
+        self.child_list = sorted(self.child_list, key=attrgetter("haplogroup"))
+
+    def reverse_children(self) -> None:
+        """Reverse child list."""
+
+        self.child_list.reverse()
+
+    # Tree traversals
     # ----------------------------------------------------------------------
-    def writeBreadthFirstTraversal(self, bfTreeFile):
-        "writes breadth-first traversal"
+    def write_breadth_first_traversal(self, bf_tree_file: TextIO) -> None:
+        """Write breadth-first traversal."""
 
-        bfTreeFile.write("%s\n" % self.strDotPipeDepth())
-        nodeDeque = deque(self.childList)
-        while nodeDeque:
-            node = nodeDeque.popleft()
-            bfTreeFile.write("%s\n" % node.strDotPipeDepth())
-            nodeDeque.extend(node.childList)
+        bf_tree_file.write(self.str_dot_pipe_depth + "\n")
+        node_deque = deque(self.child_list)
+        while node_deque:
+            node = node_deque.popleft()
+            bf_tree_file.write(node.str_dot_pipe_depth + "\n")
+            node_deque.extend(node.child_list)
 
-    def getDepthFirstNodeList(self):
-        "wrapper function for recursive depth-first pre-order traversal"
+    def get_depth_first_node_list(self) -> list[Node]:
+        """Conduct depth-first pre-order traversal."""
 
-        depthFirstNodeList = [self]
-        self.traverseDepthFirstPreOrderRecursive(depthFirstNodeList)
-        return depthFirstNodeList
+        depth_first_node_list = [self]
+        self.traverse_depth_first_pre_order_recursive(depth_first_node_list)
 
-    def traverseDepthFirstPreOrderRecursive(self, depthFirstNodeList):
-        "recursively appends each node in depth-first pre order"
+        return depth_first_node_list
 
-        for child in self.childList:
-            depthFirstNodeList.append(child)
-            child.traverseDepthFirstPreOrderRecursive(depthFirstNodeList)
+    def traverse_depth_first_pre_order_recursive(
+        self,
+        depth_first_node_list: list[Node],
+    ) -> None:
+        """Append each node in depth-first pre order, recursively."""
 
-    def mrca(self, otherNode):
-        "returns the most recent common ancestor of this node and another"
+        for child in self.child_list:
+            depth_first_node_list.append(child)
+            child.traverse_depth_first_pre_order_recursive(depth_first_node_list)
 
-        if self.depth < otherNode.depth:
-            higherNode, lowerNode = self, otherNode
+    def mrca(self, other_node: Node) -> Node:
+        """Return the most recent common ancestor of this node and another."""
+
+        if self.depth < other_node.depth:
+            higher_node, lower_node = self, other_node
         else:
-            higherNode, lowerNode = otherNode, self
+            higher_node, lower_node = other_node, self
 
-        while higherNode.depth < lowerNode.depth:
-            lowerNode = lowerNode.parent
-        while lowerNode != higherNode:
-            lowerNode = lowerNode.parent
-            higherNode = higherNode.parent
+        while higher_node.depth < lower_node.depth:
+            assert lower_node.parent is not None
+            lower_node = lower_node.parent
+        while lower_node != higher_node:
+            assert lower_node.parent is not None
+            assert higher_node.parent is not None
+            lower_node = lower_node.parent
+            higher_node = higher_node.parent
 
-        return higherNode
+        return higher_node
 
-    # writing tree to file in Newick format
+    # Writing tree to file in Newick format
     # ----------------------------------------------------------------------
-    def writeNewick(
-        self, newickFN, useHgSNPlabel=False, alignTips=False, platformVersion=None
-    ):
-        "write Newick string for the subtree rooted at this node"
+    def write_newick(
+        self,
+        newick_fp: str,
+        use_hg_snp_label: bool = False,
+        align_tips: bool = False,
+        platform: Optional[str] = None,
+    ) -> None:
+        """Write Newick string for the subtree rooted at this node."""
 
-        if not Node.config.suppressOutputAndLog:
-            with open(newickFN, "w") as outFile:
-                outFile.write(
-                    "%s;\n"
-                    % self.buildNewickStringRecursive(
-                        useHgSNPlabel, alignTips, platformVersion
+        if not type(self).config.suppress_output:
+            with open(newick_fp, "w") as out_file:
+                out_file.write(
+                    self.build_newick_string_recursive(
+                        use_hg_snp_label,
+                        align_tips,
+                        platform,
                     )
+                    + ";\n"
                 )
 
-            if alignTips:
-                treeDescriptor = "aligned "
-            elif platformVersion:
-                treeDescriptor = "platform v%d " % platformVersion
+            if align_tips:
+                tree_descriptor = "aligned "
+            elif platform:
+                tree_descriptor = f"platform {platform} "
             else:
-                treeDescriptor = ""
+                tree_descriptor = ""
 
-            if useHgSNPlabel:
-                labelType = "representative-SNP"
+            if use_hg_snp_label:
+                label_type = "representative-SNP"
             else:
-                labelType = "YCC"
+                label_type = "YCC"
 
-            Node.errAndLog(
-                "Wrote %stree with %s labels:\n    %s\n\n"
-                % (treeDescriptor, labelType, newickFN)
+            logger.info(
+                f"Wrote {tree_descriptor}tree with {label_type} labels:\n"
+                f"    {newick_fp}\n"
             )
 
-    def buildNewickStringRecursive(
-        self, useHgSNPlabel=False, alignTips=False, platformVersion=None
-    ):
-        "recursively builds Newick string for the subtree rooted at this node"
+    def build_newick_string_recursive(
+        self,
+        use_hg_snplabel: bool = False,
+        align_tips: bool = False,
+        platform: Optional[str] = None,
+    ) -> str:
+        """Build Newick string recursively for the subtree rooted at this node."""
 
-        if not self.isLeaf():
-            childStringList = list()
-            for child in self.childList[::-1]:
-                childString = child.buildNewickStringRecursive(
-                    useHgSNPlabel, alignTips, platformVersion
+        if not self.is_leaf():
+            child_string_list = []
+            for child in self.child_list[::-1]:
+                child_string = child.build_newick_string_recursive(
+                    use_hg_snplabel,
+                    align_tips,
+                    platform,
                 )
-                childStringList.append(childString)
-            treeStringPart1 = "(%s)" % ",".join(childStringList)
-        else:
-            treeStringPart1 = ""
+                child_string_list.append(child_string)
 
-        branchLabel = self.hgSNP if useHgSNPlabel else self.label
-        branchLength = self.getBranchLength(alignTips, platformVersion)
-        if alignTips:
-            branchString = "%s:%d" % (branchLabel, branchLength)
-        elif branchLength is None or (self.isLeaf() and branchLength == 0):
-            branchString = branchLabel
-        elif branchLength > 0:
-            branchString = "%s|%d:%d" % (branchLabel, branchLength, branchLength)
+            children = ",".join(child_string_list)
+            tree_string_part_1 = f"({children})"
         else:
-            branchString = ":0.5"
+            tree_string_part_1 = ""
 
-        treeString = "%s%s" % (treeStringPart1, branchString)
-        return treeString
+        branch_label = self.hg_snp if use_hg_snplabel else self.label
+        branch_length = self.get_branch_length(align_tips, platform)
+        if align_tips:
+            branch_string = f"{branch_label}:{branch_length}"
+        elif branch_length is None or (self.is_leaf() and branch_length == 0):
+            branch_string = branch_label
+        elif branch_length > 0:
+            branch_string = f"{branch_label}|{branch_length}:{branch_length}"
+        else:
+            branch_string = ":0.5"
+
+        tree_string = f"{tree_string_part_1}{branch_string}"
+
+        return tree_string
