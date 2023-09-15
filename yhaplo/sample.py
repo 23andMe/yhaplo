@@ -1,1028 +1,740 @@
-# David Poznik
-# 2016.1.26
-# sample.py
-#
-# Defines two classes:
-# - Sample
-# - Customer (a subclass of Sample)
-# ----------------------------------------------------------------------
-from __future__ import absolute_import
+"""Define Sample class and subclasses specific to various input formats.
 
-import glob
+Classes defined herein include:
+* Sample
+* TextSample
+* VCFSample
+* AblockSample
+
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
 import gzip
+import logging
 import os
-import sys
-import warnings
+import re
 from collections import defaultdict
 from operator import attrgetter
+from typing import Optional
 
-import six
-from six.moves import range
+import pandas as pd
 
-# only used within 23andMe research env
+from yhaplo import node as node_module  # noqa F401
+from yhaplo import snp as snp_module  # noqa F401
+from yhaplo import tree as tree_module  # noqa F401
+from yhaplo.config import IID_TYPE, Config
+from yhaplo.utils.optional_dependencies import check_vcf_dependencies
+from yhaplo.utils.vcf import check_vcf_index
+
 try:
-    import numpy as np
-    import pandas as pd
-    import rtk23.lib.coregen as coregen
+    from pysam import VariantFile
 except ImportError:
     pass
 
-from . import utils
-from .snp import PlatformSNP
+logger = logging.getLogger(__name__)
 
 
-# ----------------------------------------------------------------------
-class Sample(object):
+def call_haplogroups_from_config(config: Config) -> pd.DataFrame:
+    """Call haplogroups from a Config instance.
+
+    Parameters
+    ----------
+    config : Config
+        Yhaplo Config instance.
+
+    Returns
+    -------
+    haplogroup_df : pd.DataFrame
+        DataFrame of haplogroup calling results.
+        Index: Individual identifier.
+        Columns:
+        - hg_snp_obs: Haplogroup using a variant of representative-SNP form.
+               Rather than using one representative SNP per haplogroup,
+               use the most highly ranked SNP this individual was observed
+               to possess in the derived state.
+        - hg_snp: Haplogroup in representative-SNP form (e.g., "Q-M3").
+        - ycc_haplogroup: Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1").
+
     """
-    A sample:
-    - holds a genotype dictionary
-    - knows its haplogroup.
+    if config.run_from_sample_major_txt:
+        TextSample.call_haplogroups(config)
+    elif config.run_from_vcf:
+        VCFSample.call_haplogroups(config)
+    else:
+        logger.info("Mode: No input data\n")
+        tree_module.Tree(config)
+
+    haplogroup_df = Sample.haplogroup_df()
+
+    return haplogroup_df
+
+
+class Sample:
+
+    """Class representing an individual.
+
+    A sample knows its:
+    - Genotypes
+    - Haplogroup, once called
+
     """
 
-    tree = None
-    config = None
-    args = None
-    errAndLog = None
-    numAssigned = 0
-    numRootCalls = 0
-    sampleList = list()
-    prevCalledHaplogroupDict = dict()
+    config: Config
+    args: argparse.Namespace
+    tree: "tree_module.Tree"
+    tree_has_been_set: bool = False
 
-    def __init__(self, ID, sampleIndex=None):
-        self.ID = ID
-        self.sampleIndex = sampleIndex  # for snp-major data
-        self.pos2genoDict = dict()
+    num_assigned = 0
+    num_root_calls = 0
+    sample_list: list[Sample] = []
 
-        self.ancDerCountTupleList = list()
-        self.haplogroupNode = None
-        self.mostDerivedSNP = None
-        self.derSNPlist = None
-        self.ancSNPlist = None
+    def __init__(self, iid: IID_TYPE):
+        """Construct Sample instance and append to `Sample.sample_list`."""
 
-        self.prevCalledHaplogroup = self.config.missingHaplogroup
-        self.prevCalledHaplogroupDFSrank = 0
-        if Sample.config.compareToPrevCalls:
-            self.setPrevCalledHaplogroup()
+        self.iid = iid
+        self.haplogroup_node: Optional["node_module.Node"] = None
+        self.most_derived_snp: Optional["snp_module.SNP"] = None
+        self.der_snp_list: list["snp_module.SNP"]
+        self.anc_snp_list: list["snp_module.SNP"]
+        self.anc_der_count_tuples: list[tuple["node_module.Node", int, int]]
 
-    @property
-    def haplogroup(self):
-        "haplogroup: YCC nomenclature (e.g., Q1a2a1a1)"
+        type(self).sample_list.append(self)
 
-        return self.haplogroupNodeAttribute("haplogroup")
+    def __str__(self) -> str:
+        """Return string representation."""
 
-    @property
-    def hgSNP(self):
-        "haplogroup: representative-SNP form (e.g., Q-M3)"
-
-        return self.haplogroupNodeAttribute("hgSNP")
-
-    @property
-    def hgTrunc(self):
-        "haplogroup: truncated form (e.g., Q1a2a1a1 -> Q)"
-
-        return self.haplogroupNodeAttribute("hgTrunc")
-
-    @property
-    def hgSNPobs(self):
-        """
-        like hgSNP, but rather than one representative SNP per haplogroup,
-        uses the most highly ranked SNP this individual was observed to possess
-        """
-
-        if self.mostDerivedSNP:
-            return self.mostDerivedSNP.hgSNP
-        elif self.haplogroupNode:
-            return Sample.tree.root.haplogroup
-        else:
-            self.prematureHaplogroupAccessError()
-
-    @property
-    def haplogroupDFSrank(self):
-        "depth-first-search ranking of haplogroup node"
-
-        return self.haplogroupNodeAttribute("DFSrank")
-
-    def haplogroupNodeAttribute(self, attribute):
-        "look up attribute of self.haplogroupNode"
-
-        if self.haplogroupNode:
-            return getattr(self.haplogroupNode, attribute)
-        else:
-            self.prematureHaplogroupAccessError()
-
-    def prematureHaplogroupAccessError(self):
-        sys.exit("ERROR. Attempted to access haplogroup before assigned: %s" % self.ID)
-
-    # string representations and output
-    # ----------------------------------------------------------------------
-    def __str__(self):
-        "string representation gets extra information if previous calls exist"
-
-        sampleString = "%-8s %-15s %-15s %-25s" % (
-            self.ID,
-            self.hgSNPobs,
-            self.hgSNP,
-            self.haplogroup,
+        sample_string = (
+            f"{str(self.iid):8s} {self.hg_snp_obs:15s} "
+            f"{self.hg_snp:15s} {self.haplogroup:25s}"
         )
+        return sample_string
 
-        if Sample.config.compareToPrevCalls:
-            prevHgStart = self.prevCalledHaplogroup[: Sample.config.numCharsToCompare]
-            hgStart = self.haplogroup[: Sample.config.numCharsToCompare]
-            matchFlag = "." if prevHgStart == hgStart else "*"
-            sampleString = "%s %-25s %s" % (
-                sampleString,
-                self.prevCalledHaplogroup,
-                matchFlag,
+    # Haplogroup calling
+    # ----------------------------------------------------------------------
+    def call_haplogroup(self) -> None:
+        """Call haplogroup."""
+
+        type(self).num_assigned += 1
+        tree = type(self).tree
+        (
+            path,
+            self.anc_snp_list,
+            self.anc_der_count_tuples,
+        ) = tree.identify_phylogenetic_path(self)
+        self.der_snp_list = path.der_snp_list
+        self.most_derived_snp = path.most_derived_snp
+
+        if self.most_derived_snp:
+            self.haplogroup_node = self.most_derived_snp.node
+        else:
+            type(self).num_root_calls += 1
+            self.haplogroup_node = type(self).tree.root
+
+        try:
+            self.fix_haplogroup_if_artifact()
+        except NotImplementedError:
+            pass
+
+        self.write_real_time_output()
+        self.purge_data()
+
+    def get_genotype(self, position: int) -> str:
+        """Return consensus genotype for position. Subclasses must override."""
+
+        raise NotImplementedError
+
+    def fix_haplogroup_if_artifact(self) -> None:
+        """Fix artifactual haplogroup assignments. Subclasses may override."""
+
+        raise NotImplementedError
+
+    def write_real_time_output(self) -> None:
+        """Write real-time output if requested."""
+
+        args, config = type(self).args, type(self).config
+
+        if args.write_haplogroups_real_time:
+            config.haplogroup_real_time_file.write(
+                f"{str(self)} {self.haplogroup_dfs_rank:5d}\n"
             )
 
-        return sampleString
+        if args.haplogroup_to_list_genotypes_for:
+            config.hg_genos_file.write(f"{self.str_compressed}\n\n")
 
-    def strCompressed(self):
-        return utils.compressWhitespace(str(self))
+    def purge_data(self) -> None:
+        """Clear data structures if no longer needed."""
 
-    def strSimple(self):
-        "string representation with just ID, haplogroup, and hgSNP"
+        args = type(self).args
 
-        return "%-8s %-25s %-15s" % (self.ID, self.haplogroup, self.hgSNP)
+        if not (
+            args.write_der_snps
+            or args.write_der_snps_detail
+            or args.write_haplogroup_paths
+            or args.write_haplogroup_paths_detail
+        ):
+            self.der_snp_list.clear()
 
-    def strForCounts(self):
-        "string representation for anc/der counts output"
+        if not (args.write_anc_snps or args.write_anc_snps_detail):
+            self.anc_snp_list.clear()
 
-        leftPart = "%-8s %s" % (self.ID, self.haplogroup)
-        rightPart = "%s %s" % (self.hgSNPobs, self.hgSNP)
-        if Sample.config.compareToPrevCalls:
-            return "%s %s | %s" % (leftPart, self.prevCalledHaplogroup, rightPart)
+        if not self.args.write_anc_der_counts:
+            self.anc_der_count_tuples.clear()
+
+    # Haplogroup properties
+    # ----------------------------------------------------------------------
+    @property
+    def haplogroup(self) -> str:
+        """Return haplogroup using YCC nomenclature (e.g., "Q1a2a1a1")."""
+
+        if self.haplogroup_node is None:
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
+
+        return self.haplogroup_node.haplogroup
+
+    @property
+    def hg_snp(self) -> str:
+        """Return haplogroup in representative-SNP form (e.g., "Q-M3")."""
+
+        if self.haplogroup_node is None:
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
+
+        return self.haplogroup_node.hg_snp
+
+    @property
+    def hg_trunc(self) -> str:
+        """Return haplogroup in truncated form (e.g., "Q")."""
+
+        if self.haplogroup_node is None:
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
+
+        return self.haplogroup_node.hg_trunc
+
+    @property
+    def hg_snp_obs(self) -> str:
+        """Return haplogroup using a variant of representative-SNP form.
+
+        Rather than using one representative SNP per haplogroup,
+        use the most highly ranked SNP this individual was observed to possess
+        in the derived state.
+
+        """
+        if self.haplogroup_node is None:
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
+
+        if self.most_derived_snp:
+            hg_snp_obs = self.most_derived_snp.hg_snp
+        elif self.haplogroup_node:
+            hg_snp_obs = type(self).tree.root.haplogroup
         else:
-            return "%s | %s" % (leftPart, rightPart)
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
 
-    def strSNPs(self, ancestral):
-        "constructs a string representation with derived or ancestral SNPs"
+        return hg_snp_obs
 
-        if ancestral:
-            snpList = self.ancSNPlist
+    @property
+    def haplogroup_dfs_rank(self) -> int:
+        """Return depth-first-search ranking of haplogroup node."""
+
+        if self.haplogroup_node is None:
+            raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
+
+        haplogroup_dfs_rank = self.haplogroup_node.dfs_rank
+        return haplogroup_dfs_rank
+
+    # String-representation properties and methods
+    # ----------------------------------------------------------------------
+    @property
+    def str_compressed(self) -> str:
+        """Return compressed string representation."""
+
+        str_compressed = re.sub(r"\s+", " ", str(self))
+        return str_compressed
+
+    @property
+    def str_simple(self) -> str:
+        """Return string representation with just iid, haplogroup, and hg_snp."""
+
+        return f"{str(self.iid):8s} {self.haplogroup:25s} {self.hg_snp:15s}"
+
+    @property
+    def str_for_counts(self) -> str:
+        """Return string representation for ancestral/derived counts output."""
+
+        left_part = f"{str(self.iid):8s} {self.haplogroup}"
+        right_part = f"{self.hg_snp_obs} {self.hg_snp}"
+        str_for_counts = f"{left_part} | {right_part}"
+
+        return str_for_counts
+
+    def str_snps(
+        self,
+        allele_state: str = "derived",
+    ) -> str:
+        """Return string representation with derived or ancestral SNPs."""
+
+        if allele_state == "derived":
+            snp_list = self.der_snp_list
+        elif allele_state == "ancestral":
+            snp_list = self.anc_snp_list
         else:
-            snpList = self.derSNPlist
+            raise ValueError(
+                f"allele_state must be 'ancestral' or 'derived', not '{allele_state}'"
+            )
 
-        snpListString = " ".join(snp.strShort() for snp in snpList)
-        return "%s | %s" % (self.strSimple(), snpListString)
+        snp_list_string = " ".join(snp.str_short for snp in snp_list)
+        str_snps = f"{self.str_simple} | {snp_list_string}"
 
-    def strHaplogroupPath(self, include_SNPs=False):
-        "constructs a string representation with haplogroup path"
+        return str_snps
 
-        if self.mostDerivedSNP:
+    def str_haplogroup_path(
+        self,
+        include_snps: bool = False,
+    ) -> str:
+        """Return string representation with haplogroup path."""
+
+        if self.most_derived_snp:
             snp_label_list_dict = defaultdict(list)
-            for snp in self.derSNPlist:
-                snp_label_list_dict[snp.node.haplogroup].append(snp.labelCleaned)
+            for snp in self.der_snp_list:
+                snp_label_list_dict[snp.node.haplogroup].append(snp.label_cleaned)
 
-            path_info_list = list()
-            for node in self.mostDerivedSNP.backTracePath():
+            path_info_list = []
+            for node in self.most_derived_snp.back_trace_path():
                 if node.haplogroup in snp_label_list_dict:
                     snp_label_list = snp_label_list_dict[node.haplogroup]
                     num_snps = len(snp_label_list)
-                    path_info = "%s:%d" % (node.haplogroup, num_snps)
-                    if include_SNPs:
-                        path_info = "%s:%s" % (path_info, ",".join(snp_label_list))
+                    path_info = f"{node.haplogroup}:{num_snps}"
+                    if include_snps:
+                        path_info = f"{path_info}:{','.join(snp_label_list)}"
+
                     path_info_list.append(path_info)
 
             haplogroup_path = " ".join(path_info_list)
         else:
             haplogroup_path = ""
 
-        return "%s | %s" % (self.strSimple(), haplogroup_path)
+        str_haplogroup_path = f"{self.str_simple} | {haplogroup_path}"
+        return str_haplogroup_path
 
-    def realTimeOutput(self):
-        "generate real-time output if requested"
-
-        if Sample.args.writeHaplogroupsRealTime:
-            output = "%s %5d\n" % (str(self), self.haplogroupDFSrank)
-            Sample.config.haplogroupRealTimeFile.write(output)
-
-        if Sample.args.haplogroupToListGenotypesFor:
-            Sample.config.hgGenosFile.write("%s\n\n" % self.strCompressed())
-
-    # previously called haplogroups
+    # Class methods: results
     # ----------------------------------------------------------------------
-    def setPrevCalledHaplogroup(self):
-        """
-        sets previously called haplogroup for testing/comparison.
-        also sets corresponding DFS rank for sorting
-        """
+    @classmethod
+    def haplogroup_df(cls) -> pd.DataFrame:
+        """Return DataFrame of haplogroup calling results.
 
-        if not Sample.prevCalledHaplogroupDict:
-            Sample.importPrevCalledHaplogroups()
-        if self.ID in Sample.prevCalledHaplogroupDict:
-            self.prevCalledHaplogroup = Sample.prevCalledHaplogroupDict[self.ID]
+        Returns
+        -------
+        haplogroup_df : pd.DataFrame
+            DataFrame of haplogroup calling results.
+            Index: Individual identifier.
+            Columns:
+            - hg_snp_obs: Haplogroup using a variant of representative-SNP form.
+                   Rather than using one representative SNP per haplogroup,
+                   use the most highly ranked SNP this individual was observed
+                   to possess in the derived state.
+            - hg_snp: Haplogroup in representative-SNP form (e.g., "Q-M3").
+            - ycc_haplogroup: Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1").
+
+        """
+        haplogroup_df = pd.DataFrame(
+            [
+                (sample.iid, sample.hg_snp_obs, sample.hg_snp, sample.haplogroup)
+                for sample in cls.sample_list
+            ],
+            columns=["iid", "hg_snp_obs", "hg_snp", "ycc_haplogroup"],
+        ).set_index("iid")
+
+        return haplogroup_df
+
+    # Class methods: configuration
+    # ----------------------------------------------------------------------
+    @classmethod
+    def configure(cls, config: Config) -> None:
+        """Configure class.
+
+        Set:
+        - Config instance
+        - Tree instance
+        - Parameters
+
+        """
+        cls.config = config
+        cls.args = cls.config.args
+        if not cls.tree_has_been_set:
+            cls.tree = tree_module.Tree(config)
         else:
-            Sample.errAndLog(
-                "WARNING. No previously called haplogroup for: %s\n" % self.ID
+            logger.info("\nUsing previously contructed tree\n")
+
+        cls.num_assigned = 0
+        cls.num_root_calls = 0
+        cls.sample_list.clear()
+        cls.check_number_of_run_modes()
+
+        if cls.args.write_haplogroups_real_time:
+            logger.info(
+                f"\nWill write haplogroups as they are called:\n"
+                f"    {cls.config.haplogroup_real_time_fp}\n"
+                "Note: This file includes DFS rank, so it can be sorted ex post facto with:\n"
+                f"    sort -nk5 {cls.config.haplogroup_real_time_fp}\n"
             )
 
-        self.setPrevCalledHaplogroupDFSrank()
-
-    @staticmethod
-    def importPrevCalledHaplogroups():
-        """
-        reads file with previously called haplogroups,
-        assuming first col = ID & last col = haplogroup
-        """
-
-        utils.checkFileExistence(
-            Sample.config.prevCalledHgFN, "Previously called haplogroups"
-        )
-        with open(Sample.config.prevCalledHgFN, "r") as prevCalledHgFile:
-            for line in prevCalledHgFile:
-                lineList = line.strip().split()
-                ID, prevCalledHaplogroup = lineList[0], lineList[-1]
-                Sample.prevCalledHaplogroupDict[ID] = prevCalledHaplogroup
-
-        Sample.errAndLog(
-            "%sRead previously called haplogroups:\n    %s\n\n"
-            % (utils.DASHES, Sample.config.prevCalledHgFN)
-        )
-
-    def setPrevCalledHaplogroupDFSrank(self, ignore=False):
-        "sets depth-first search rank of previously called haplogroup"
-
-        hg2nodeDict = Sample.tree.hg2nodeDict
-        if not ignore and self.prevCalledHaplogroup != self.config.missingHaplogroup:
-            haplogroupKey = self.prevCalledHaplogroup
-            while haplogroupKey not in hg2nodeDict and len(haplogroupKey) > 0:
-                haplogroupKey = haplogroupKey[:-1]
-            if haplogroupKey in hg2nodeDict:
-                self.prevCalledHaplogroupDFSrank = hg2nodeDict[haplogroupKey].DFSrank
-
-    # mutaters
-    # ----------------------------------------------------------------------
-    def addGeno(self, position, genotype):
-        """
-        adds one value to the genotype dictionary
-        if a contradiction is encountered, sets value to missing
-        Note: there is no reason to call this method with a missing genotype,
-            this should be the only way missing values enter the dictionary.
-        """
-
-        if position in self.pos2genoDict:
-            if genotype != self.pos2genoDict[position]:
-                self.pos2genoDict[position] = self.config.missingGenotype
+        if config.run_from_sample_major_txt:
+            input_description = f"sample-major text file:\n    {cls.args.data_fp}"
+        elif config.run_from_vcf:
+            input_description = f"variant-major VCF/BCF file:\n    {cls.args.data_fp}"
         else:
-            self.pos2genoDict[position] = genotype
-
-    def appendAncDerCountTuple(self, node, numAncestral, numDerived):
-        "stores results of search path"
-
-        ancDerCountTuple = (node, numAncestral, numDerived)
-        self.ancDerCountTupleList.append(ancDerCountTuple)
-
-    def callHaplogroup(self):
-        "finds path through tree and returns haplogroup"
-
-        Sample.numAssigned += 1
-        path, self.ancSNPlist = Sample.tree.identifyPhylogeneticPath(self)
-        self.derSNPlist = path.derSNPlist
-        self.mostDerivedSNP = path.mostDerivedSNP
-
-        if self.mostDerivedSNP:
-            self.haplogroupNode = self.mostDerivedSNP.node
-        else:
-            Sample.numRootCalls += 1
-            self.haplogroupNode = Sample.tree.root
-
-        self.fixHaplogroupIfArtifact()
-        self.realTimeOutput()
-        self.freeUpMemory()
-
-    def fixHaplogroupIfArtifact(self):
-        "fixes artifactual haplogroup assignments; override as appropriate"
-
-        pass
-
-    def freeUpMemory(self):
-        "free up some memory if possible"
-
-        self.pos2genoDict = None
-        if not (
-            Sample.args.writeDerSNPs
-            or Sample.args.writeDerSNPsDetail
-            or Sample.args.writeHaplogroupPaths
-            or Sample.args.writeHaplogroupPathsDetail
-        ):
-            self.derSNPlist = None
-        if not (Sample.args.writeAncSNPs or Sample.args.writeAncSNPsDetail):
-            self.ancSNPlist = None
-
-    # ----------------------------------------------------------------------
-    # Run: main entry point
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def callHaplogroups(config, tree):
-        "this method is the entry point and is to be called from outside."
-
-        Sample.setTreeConfigAndArgs(config, tree)
-        Sample.testNumberOfRunModes(config)
-
-        if config.runFromSampleMajorTxt:
-            Sample.runFromSampleMajorTxt()
-        elif config.runFromVCF or config.runFromVCF4:
-            Sample.runFromVCF()
-        elif config.runFromAblocks:
-            Customer.runFromAblocks()
-        else:
-            Sample.errAndLog(
-                "%sNo input genotypes specified. Exiting.\n\n" % utils.DASHES
-            )
-
-        config.closeFiles()
-
-    @staticmethod
-    def setTreeConfigAndArgs(config, tree):
-        "enables Sample class to know about the tree instance, config, and args"
-
-        Sample.config = config
-        Sample.args = config.args
-        Sample.errAndLog = config.errAndLog
-        Sample.tree = tree
-
-        if Sample.args.writeHaplogroupsRealTime:
-            Sample.realTimeHaplogroupWritingMessage()
-
-    @staticmethod
-    def realTimeHaplogroupWritingMessage():
-        "emit a message for real-time haplogroup writing"
-
-        Sample.errAndLog(
-            "%sWill write haplogroups as they are called:\n" % utils.DASHES
-            + "    %s\n\n" % Sample.config.haplogroupRealTimeFN
-            + "Note: This file includes DFS rank, so it can be sorted ex post facto with:\n"
-            + "    sort -nk5 %s\n\n" % Sample.config.haplogroupRealTimeFN
-        )
-
-    @staticmethod
-    def testNumberOfRunModes(config):
-        "consistency check the number of run modes"
-
-        numberOfRunModesSelected = (
-            config.runFromSampleMajorTxt
-            + config.runFromVCF
-            + config.runFromVCF4
-            + config.runFromAblocks
-        )
-        if numberOfRunModesSelected > 1:
-            sys.exit(
-                "ERROR. Expecting no more than one run mode\n"
-                + "    %d selected\n" % numberOfRunModesSelected
-            )
-
-    # ----------------------------------------------------------------------
-    # Run option 1: sample-major text data
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def runFromSampleMajorTxt():
-        "run pipeline on sample-major data"
-
-        Sample.processSampleMajorTxtandCallHaplogroups()
-        Sample.sortSampleList()
-        Sample.writeSampleList()
-
-    @staticmethod
-    def processSampleMajorTxtandCallHaplogroups():
-        """
-        reads in sample major data, calling haplogroup for each line.
-        returns list of sample objects with genotype data purged.
-
-        assumed format:
-            row 1    = physical coordinates
-            column 1 = sample ID
-        """
-
-        genoFN = Sample.args.dataFN
-        genoFile, genoReader = utils.getCSVreader(genoFN, delimiter="\t")
-        Sample.errAndLog(
-            "%sReading genotype data:\n    %s\n\n" % (utils.DASHES, genoFN)
-        )
-
-        # determine relevant physical coordinates and corresponding columns
-        allPositionsList = [int(position) for position in six.next(genoReader)[1:]]
-        columnPositionTupleList = list()
-        for column, position in enumerate(allPositionsList):
-            if position in Sample.tree.snpPosSet:
-                columnPositionTupleList.append((column, position))
-
-        # read genotypes, call haplogroups
-        for genoList in genoReader:
-            ID, genoList = genoList[0], genoList[1:]
-            if Sample.args.singleSampleID and ID != Sample.args.singleSampleID:
-                continue
-
-            sample = Sample(ID)
-            for column, position in columnPositionTupleList:
-                genotype = genoList[column]
-                if genotype != Sample.config.missingGenotype:
-                    sample.addGeno(position, genotype)
-
-            sample.callHaplogroup()
-            Sample.sampleList.append(sample)
-
-        genoFile.close()
-
-    # ----------------------------------------------------------------------
-    # Run option 2: snp-major txt data (VCF)
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def runFromVCF():
-        "run pipeline on snp-major data"
-
-        Sample.loadDataFromVCF()
-        if (
-            Sample.args.writeHaplogroupsRealTime
-            or Sample.args.haplogroupToListGenotypesFor
-        ):
-            Sample.sortSampleList(sortByPrevHg=True)
-        for sample in Sample.sampleList:
-            sample.callHaplogroup()
-        Sample.sortSampleList()
-        Sample.writeSampleList()
-
-    @staticmethod
-    def loadDataFromVCF():
-        "constructs list of sample objects, each with a genotype dictionary"
-
-        vcfFN = Sample.args.dataFN
-        vcfFile, vcfReader = utils.getCSVreader(vcfFN, delimiter="\t")
-        Sample.setSampleListFromVCFheader(vcfFile)
-        ref_geno_set = {"0", "0/0"}
-        alt_geno_set = {"1", "1/1"}
-
-        Sample.errAndLog(
-            "%sReading genotype data...\n    %s\n\n" % (utils.DASHES, vcfFN)
-        )
-
-        for lineList in vcfReader:
-            chromosome, position = lineList[0], int(lineList[1])
-            if (
-                chromosome in Sample.config.vcf_chrom_label_set
-                and position in Sample.tree.snpPosSet
-            ):
-                genoList = lineList[Sample.config.vcfStartCol :]
-                for sample in Sample.sampleList:
-                    genotype = genoList[sample.sampleIndex].split(":")[0]
-
-                    if genotype == Sample.config.missingGenotype:
-                        continue
-                    elif Sample.config.runFromVCF:  # as opposed to .vcf4
-                        ref, alt = lineList[3:5]
-                        if genotype in ref_geno_set:
-                            genotype = ref
-                        elif genotype in alt_geno_set:
-                            genotype = alt
-
-                    sample.addGeno(position, genotype)
-
-        vcfFile.close()
-
-    @staticmethod
-    def setSampleListFromVCFheader(vcfFile):
-        """
-        skips over VCF metadata,
-        checks that the next line contains the column names,
-        extracts sample IDs,
-        and construct a list of sample objects
-        """
-
-        for line in vcfFile:
-            if not line.startswith("##"):
-                break
-
-        lineList = line.strip().split("\t")
-        Sample.validateVCFheader(lineList)
-        idList = lineList[Sample.config.vcfStartCol :]
-        for sampleIndex, ID in enumerate(idList):
-            if not Sample.args.singleSampleID or ID == Sample.args.singleSampleID:
-                sample = Sample(ID, sampleIndex)
-                Sample.sampleList.append(sample)
-
-    @staticmethod
-    def validateVCFheader(lineList):
-        "checks that the second element of a list is POS"
-
-        col2label = lineList[1]
-        if col2label != "POS":
-            sys.exit(
-                "ERROR. Invalid VCF. Expected column 2 header to be POS.\n"
-                + "       Instead found: %s" % col2label
-            )
-
-    # sample list manipulation and writing
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def sortSampleList(sortByPrevHg=False):
-        """
-        sorts sample list:
-        1. primarily by haplogroup
-        2. secondarily by ID
-
-        If a previously called haplogroup is available and sortByPrevHg is True,
-        the primary sort uses it. Otherwise, if a newly called haplogroup is
-        available, the primary sort uses that. Otherwise, sorting is by ID only.
-        """
-
-        Sample.sampleList = sorted(Sample.sampleList, key=attrgetter("ID"))
-        if sortByPrevHg and Sample.config.compareToPrevCalls:
-            Sample.sampleList = sorted(
-                Sample.sampleList, key=attrgetter("prevCalledHaplogroupDFSrank")
-            )
-        elif Sample.sampleList[0].haplogroupNode:
-            Sample.sampleList = sorted(
-                Sample.sampleList, key=attrgetter("haplogroupDFSrank")
-            )
-
-    @staticmethod
-    def writeSampleList():
-        "writes haplogroup and other optional data for each sample"
-
-        Sample.reportCounts()
-
-        Sample.errAndLog("%sOutput\n\n" % utils.DASHES)
-
-        if Sample.config.suppressOutputAndLog:
-            Sample.errAndLog("None (suppressed).\n\n")
-        else:
-            Sample.writeHaplogroups()  # uses str(sample)
-
-        if Sample.args.writeAncDerCounts:
-            Sample.writeAncDerCounts()  # uses sample.strForCounts()
-
-        if Sample.args.writeHaplogroupPathsDetail:
-            Sample.writeHaplogroupPaths(
-                include_SNPs=True
-            )  # uses sample.strHaplogroupPath()
-        elif Sample.args.writeHaplogroupPaths:
-            Sample.writeHaplogroupPaths()  # uses sample.strHaplogroupPath()
-
-        if Sample.args.writeDerSNPs:
-            Sample.writeSNPs()  # uses sample.strSNPs(ancestral)
-
-        if Sample.args.writeDerSNPsDetail:
-            Sample.writeSNPsDetail()  # uses sample.strCompressed()
-
-        if Sample.args.writeAncSNPs:
-            Sample.writeSNPs(ancestral=True)
-
-        if Sample.args.writeAncSNPsDetail:
-            Sample.writeSNPsDetail(ancestral=True)
-
-    @staticmethod
-    def reportCounts():
-        "report number assigned and number assigned to root"
-
-        Sample.errAndLog(
-            "%sCalled haplogroups:\n\n" % utils.DASHES
-            + "    %8d assigned\n" % Sample.numAssigned
-            + "    %8d assigned to root haplogroup: %s\n\n"
-            % (Sample.numRootCalls, Sample.tree.root.haplogroup)
-        )
-
-        if Sample.numRootCalls > 0:
-            Sample.warnVariantsOnlyData()
-
-    @staticmethod
-    def warnVariantsOnlyData():
-        "warning for datasets that exclude sites with no variation in the sample"
-
-        Sample.errAndLog(
-            "WARNING. If the dataset does not include fixed reference sites,\n"
-            + "         re-run with alternative root (e.g., with: -r A0-T).\n\n\n"
-        )
-
-    @staticmethod
-    def writeHaplogroups():
-        "writes haplogroup of each sample"
-
-        with open(Sample.config.haplogroupCallsFN, "w") as haplogroupCallsFile:
-            for sample in Sample.sampleList:
-                haplogroupCallsFile.write("%s\n" % str(sample))
-
-        Sample.errAndLog(
-            "Wrote called haplogroups:\n"
-            + "    %s\n\n" % Sample.config.haplogroupCallsFN
-        )
-
-    @staticmethod
-    def writeAncDerCounts():
-        """
-        writes counts of ancestral and derived alleles encountered
-        at each node visited (excluding nodes with zero of each)
-        """
-
-        with open(Sample.config.countsAncDerFN, "w") as countsAncDerFile:
-            for sample in Sample.sampleList:
-                for node, numAncestral, numDerived in sample.ancDerCountTupleList:
-                    if numAncestral > 0 or numDerived > 0:
-                        countsAncDerFile.write(
-                            "%-8s %-20s %3d %3d\n"
-                            % (sample.ID, node.label, numAncestral, numDerived)
-                        )
-
-                countsAncDerFile.write("%s\n\n" % sample.strForCounts())
-
-        Sample.errAndLog(
-            "Wrote counts of ancestral and derived alleles encountered\n"
-            + "at each node visited (excluding nodes with zero of each):\n"
-            + "    %s\n\n" % Sample.config.countsAncDerFN
-        )
-
-    @staticmethod
-    def writeHaplogroupPaths(include_SNPs=False):
-        "writes haplogroup path for each sample"
-
-        with open(Sample.config.haplogroupPathsFN, "w") as haplogroupPathsFile:
-            for sample in Sample.sampleList:
-                path = sample.strHaplogroupPath(include_SNPs)
-                haplogroupPathsFile.write("%s\n" % path)
-
-        snps_included_text = " and a list thereof" if include_SNPs else ""
-        Sample.errAndLog(
-            "Wrote sequences of haplogroups from root to calls,\n"
-            + "with counts of derived SNPs observed%s:\n" % snps_included_text
-            + "    %s\n\n" % Sample.config.haplogroupPathsFN
-        )
-
-    @staticmethod
-    def writeSNPs(ancestral=False):
-        """
-        for each sample, writes list of derived SNPs on path
-        or list of ancestral SNPs encountered in search
-        """
-
-        if ancestral:
-            snpFN = Sample.config.ancSNPsFN
-            typeOfSNPs = "ancestral SNPs encountered in search"
-        else:
-            snpFN = Sample.config.derSNPsFN
-            typeOfSNPs = "derived SNPs on path"
-
-        with open(snpFN, "w") as snpFile:
-            for sample in Sample.sampleList:
-                snpFile.write("%s\n" % sample.strSNPs(ancestral))
-
-        Sample.errAndLog("Wrote lists of %s:\n    %s\n\n" % (typeOfSNPs, snpFN))
-
-    @staticmethod
-    def writeSNPsDetail(ancestral=False):
-        """
-        for each sample, writes detailed information about each
-        derived SNP on path or about each ancestral SNP encountered in search
-        """
-
-        if ancestral:
-            snpDetailFN = Sample.config.ancSNPsDetailFN
-            typeOfSNPs = "ancestral SNP encountered in search"
-        else:
-            snpDetailFN = Sample.config.derSNPsDetailFN
-            typeOfSNPs = "derived SNP on path"
-
-        with open(snpDetailFN, "w") as snpDetailFile:
-            for sample in Sample.sampleList:
-                snpDetailFile.write("%s\n" % sample.strCompressed())
-                snpList = sample.ancSNPlist if ancestral else sample.derSNPlist
-                for snp in snpList:
-                    snpDetailFile.write("%-8s %s\n" % (sample.ID, snp))
-                snpDetailFile.write("\n")
-
-        Sample.errAndLog(
-            "Wrote detailed information about each %s:\n" % typeOfSNPs
-            + "    %s\n\n" % snpDetailFN
-        )
-
-
-# --------------------------------------------------------------------------
-
-
-class Customer(Sample):
-    'a "customer" is any sample whose genotypes are stored as 23andMe ablocks'
-
-    numNoAblock, numNoGenotypes = 0, 0
-    noAblocksFile, noGenotypesFile = None, None
-
-    def __init__(self, customerTuple):
-        self.customerTuple = customerTuple
-        Sample.__init__(self, customerTuple.resid)
-
-    def setPrevCalledHaplogroup(self):
-        """
-        for testing/comparison, sets previously called haplogroup from
-        original 23andMe algorithm. does not set corresponding DFS rank,
-        since the nomenclature has changed substantially
-
-        called from Customer constructor via Sample constructor,
-        if config.compareToPrevCalls
-        """
-
-        self.prevCalledHaplogroup = self.customerTuple.y_haplogroup
-
-    def loadAblockAndCallHaplogroup(self):
-        "loads ablock, reads relevant genotypes, calls haplogroup"
-
-        ablock = type(self).load_ablock(self.ID)
-
-        if ablock is None:
-            Customer.numNoAblock += 1
-            if Customer.noAblocksFile:
-                Customer.noAblocksFile.write("%d\n" % self.ID)
-            return False
-
-        if self.readAblockGenotypes(ablock):
-            self.callHaplogroup()
-            return True
-        else:
-            Customer.numNoGenotypes += 1
-            if Customer.noGenotypesFile:
-                Customer.noGenotypesFile.write("%d\n" % self.ID)
-            return False
+            assert config.iid_to_ablock is not None
+            num_ablocks = len(config.iid_to_ablock)
+            plural_s = "s" if num_ablocks > 1 else ""
+            input_description = f"[{num_ablocks}] 23andMe ablock{plural_s}..."
+
+        logger.info(f"\nGenotypes\n\nLoading genotypes from {input_description}\n")
 
     @classmethod
-    def load_ablock(cls, ID):
+    def check_number_of_run_modes(cls) -> None:
+        """Check the number of run modes.
+
+        Raises
+        ------
+        ValueError
+            When more then one run mode have been selected.
+
         """
-        loads an a ablock
-
-        if a directory has been supplied, ablocks can be bitpacked or .npy.gz.
-        if not, the ablock will be loaded from an ablock dataset.
-        """
-
-        ablock = None
-
-        if cls.config.ablocks_dir:
-            # .npy.gz
-            ablock_fn = os.path.join(
-                cls.config.ablocks_dir, cls.config.ablock_fn_tp.format(ID)
-            )
-            if os.path.isfile(ablock_fn):
-                ablock = np.load(gzip.open(ablock_fn))
-
-            # bitpacked
-            else:
-                bitpacked_ablock_fn = glob.glob(
-                    os.path.join(
-                        cls.config.ablocks_dir,
-                        cls.config.bitpacked_ablock_fn_tp.format(ID),
-                    )
-                ).pop()
-                if os.path.isfile(bitpacked_ablock_fn):
-                    with open(bitpacked_ablock_fn) as bitpacked_ablock_file:
-                        ablock = coregen.ABlockFormat.decompress(
-                            bitpacked_ablock_file.read()
-                        )
-
-        # ablock dataset
-        else:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    ablock = cls.config.ablockDS.load_block(ID)
-                except KeyError:
-                    pass
-
-        return ablock
-
-    def readAblockGenotypes(self, ablock):
-        "pulls phylogenetically informative genotypes from ablock"
-
-        hasGenotypes = False
-        for platformVersion in range(1, Sample.config.maxPlatformVersionPlusOne):
-            if getattr(self.customerTuple, "is_v%d" % platformVersion):
-                hasGenotypes = True
-                platformSNPlist = PlatformSNP.platformSNPlistDict[platformVersion]
-                for platformSNP in platformSNPlist:
-                    genotype = platformSNP.getConsensusGenotypeFromAblock(ablock)
-                    self.addGeno(platformSNP.position, genotype)
-
-        return hasGenotypes
-
-    def fixHaplogroupIfArtifact(self):
-        "fixes artifactual haplogroup assignments"
-
-        for calledHaplogroup, replacementHaplogroup in six.iteritems(
-            Sample.config.ttamHgCallReplacementDict
-        ):
-            if self.haplogroup == calledHaplogroup:
-                self.haplogroupNode = Sample.tree.hg2nodeDict[replacementHaplogroup]
-                break
-
-    # ----------------------------------------------------------------------
-    # Run option 3: sample-major 23andMe ablock data
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def runFromAblocks():
-        "run pipeline on sample-major 23andMe ablock data"
-
-        Customer.openAuxiliaryOutputFiles()
-
-        Sample.errAndLog("%sProcessing 23andMe customer data...\n\n" % utils.DASHES)
-        customerTupleList = Customer.buildCustomerTupleList()
-
-        Sample.errAndLog(
-            "\n%sCalling haplogroups...\n\n" % (utils.DASHES) + " Progress...\n"
+        number_of_run_modes_selected = (
+            cls.config.run_from_sample_major_txt
+            + cls.config.run_from_vcf
+            + cls.config.run_from_ablocks
         )
-        for customerTuple in customerTupleList:
-            customer = Customer(customerTuple)
-            if customer.loadAblockAndCallHaplogroup():
-                Sample.sampleList.append(customer)
-                Customer.emitProgress()
+        if number_of_run_modes_selected > 1:
+            raise ValueError(
+                "Expecting no more than one run mode\n"
+                f"    {number_of_run_modes_selected} selected\n"
+            )
 
-        Customer.closeAuxiliaryFilesAndReportCounts()
-        Sample.sortSampleList()
-        Sample.writeSampleList()
+    # Class methods: class variable mutaters
+    # ----------------------------------------------------------------------
+    @classmethod
+    def sort_sample_list(cls) -> None:
+        """Sort sample list by haplogroup, then by iid."""
 
-    @staticmethod
-    def openAuxiliaryOutputFiles():
-        "open auxiliary output files"
+        cls.sample_list.sort(key=attrgetter("iid"))
+        if cls.sample_list[0].haplogroup_node:
+            cls.sample_list.sort(key=attrgetter("haplogroup_dfs_rank"))
 
-        if not Sample.config.suppressOutputAndLog:
-            Customer.noAblocksFile = open(Sample.config.noAblocksFN, "w")
-            Customer.noGenotypesFile = open(Sample.config.noGenotypesFN, "w")
+    # Class methods: output writers
+    # ----------------------------------------------------------------------
+    @classmethod
+    def write_results(cls) -> None:
+        """Sort samples, write results, and close optional real-time output files."""
+
+        cls.sort_sample_list()
+
+        logger.info(
+            "\nHaplogroups\n\n"
+            f"    {cls.num_assigned:8d} assigned\n"
+            f"    {cls.num_root_calls:8d} assigned to root haplogroup: "
+            f"{cls.tree.root.haplogroup}\n"
+        )
+        if cls.num_root_calls > 0:
+            logger.warning(
+                "WARNING. If the dataset does not include fixed reference sites,\n"
+                "         re-run with alternative root (e.g., with: -r A0-T).\n\n\n"
+            )
+
+        logger.info("\nOutput\n")
+
+        if cls.config.suppress_output:
+            logger.info("None (suppressed).\n")
+        else:  # Use str(sample)
+            cls.write_haplogroups()
+
+        if cls.args.write_anc_der_counts:  # Use sample.str_for_counts
+            cls.write_anc_der_counts()
+
+        if cls.args.write_haplogroup_paths_detail:  # Use sample.str_haplogroup_path()
+            cls.write_haplogroup_paths(include_snps=True)
+        elif cls.args.write_haplogroup_paths:  # Use sample.str_haplogroup_path()
+            cls.write_haplogroup_paths()
+
+        if cls.args.write_der_snps:  # Use sample.str_snps()
+            cls.write_snps(allele_state="derived")
+
+        if cls.args.write_der_snps_detail:  # Use sample.str_compressed
+            cls.write_snps_detail()
+
+        if cls.args.write_anc_snps:  # Use sample.str_snps()
+            cls.write_snps(allele_state="ancestral")
+
+        if cls.args.write_anc_snps_detail:  # Use sample.str_compressed
+            cls.write_snps_detail(ancestral=True)
+
+        cls.config.close_real_time_output_files()
 
     @classmethod
-    def buildCustomerTupleList(cls):
-        "builds a list of CustomerTuple instances"
+    def write_haplogroups(cls) -> None:
+        """Write haplogroup of each sample."""
 
-        if Sample.args.ablockDSname or cls.config.ablocks_dir:
-            customerTupleList = cls.buildCustomerTupleListFromFile()
-        else:
-            customerTupleList = cls.buildCustomerTupleListFromMetadata()
+        with open(cls.config.haplogroup_calls_fp, "w") as haplogroup_calls_file:
+            for sample in cls.sample_list:
+                haplogroup_calls_file.write(f"{sample}\n")
 
-        return customerTupleList
-
-    @staticmethod
-    def buildCustomerTupleListFromFile():
-        """
-        builds a list of CustomerTuple instances from a two-column file.
-
-        column 1: ID
-        column 2: comma-separated list of platforms for this individual
-        column 3: (optional) previous haplogroup call
-
-        example:
-        314159265358979323  1,2,5   R1b1a2a1a
-        """
-
-        utils.checkFileExistence(Sample.args.dataFN, "Sample IDs")
-        Sample.errAndLog("Reading sample IDs:\n    {}\n".format(Sample.args.dataFN))
-
-        customer_tuple_list = list()
-        id_set = set()
-        with open(Sample.args.dataFN) as id_file:
-            for line in id_file:
-                token_list = line.strip().split()
-                if len(token_list) < 2 or len(token_list) > 3:
-                    sys.exit(
-                        "ERROR. When loading ablocks from file or non-default "
-                        + "ablock dataset,\ninput file must have 2 or 3 columns:\n"
-                        + "1. ID\n"
-                        + "2. comma-separated integer platform versions\n"
-                        + "3. (optional) Previous haplogroup"
-                    )
-
-                ID, platform_versions = token_list[:2]
-                prev_haplogroup = (
-                    token_list[2]
-                    if len(token_list) > 2
-                    else Sample.config.missingHaplogroup
-                )
-                id_set.add(ID)
-                tuple_kwargs_dict = {"resid": ID, "y_haplogroup": prev_haplogroup}
-                platform_version_set = set(
-                    [int(i) for i in platform_versions.split(",")]
-                )
-                for i in range(1, Sample.config.maxPlatformVersionPlusOne):
-                    tuple_kwargs_dict["is_v%d" % i] = i in platform_version_set
-
-                customer_tuple = Sample.config.CustomerTuple(**tuple_kwargs_dict)
-                customer_tuple_list.append(customer_tuple)
-
-        Sample.errAndLog("    %8d read\n" % len(customer_tuple_list))
-        Sample.errAndLog("    %8d unique\n\n" % len(id_set))
-
-        return customer_tuple_list
-
-    @staticmethod
-    def buildCustomerTupleListFromMetadata():
-        "builds a list of CustomerTuple instances from customer metadata."
-
-        Sample.errAndLog("Building customer mask ... ")
-        metaDS = Sample.config.customerMetaDS
-        metaColList = Sample.config.customerMetaColList
-        prevHapCol = Sample.config.customerPrevHaplogroupCol
-        metaDF = pd.DataFrame(metaDS.load(metaColList))[metaColList]
-        if Sample.config.compareToPrevCalls:
-            metaDF[prevHapCol] = pd.Series(metaDS.load([prevHapCol])[prevHapCol])
-        else:
-            metaDF[prevHapCol] = Sample.config.missingHaplogroup
-        mask, maskType = Customer.buildCustomerMask(metaDF)
-        metaDF = metaDF[mask]
-
-        customerTupleList = list()
-        for row in metaDF.itertuples():
-            customerTupleList.append(Sample.config.CustomerTuple(*row[1:]))
-
-        Sample.errAndLog(
-            "Done.\n"
-            + "    %8d %s customers to be processed\n"
-            % (len(customerTupleList), maskType)
+        logger.info(
+            f"Wrote called haplogroups:\n    {cls.config.haplogroup_calls_fp}\n"
         )
 
-        return customerTupleList
+    @classmethod
+    def write_anc_der_counts(cls) -> None:
+        """Write counts of ancestral and derived alleles encountered.
 
-    @staticmethod
-    def buildCustomerMask(metaDF):
-        "if resids have been specified, use those. otherwise, use all males."
+        This includes each visited node,
+        other than those with no ancestral or derived alleles.
 
-        residList = Customer.generateResidList()
-        if residList:
-            maskType = "specified"
-            mask = np.in1d(metaDF[Sample.config.customerIDcol], residList)
+        """
+        with open(cls.config.counts_anc_der_fp, "w") as counts_anc_der_file:
+            for sample in cls.sample_list:
+                for node, num_ancestral, num_derived in sample.anc_der_count_tuples:
+                    if num_ancestral > 0 or num_derived > 0:
+                        counts_anc_der_file.write(
+                            f"{str(sample.iid):8s} {node.label:20s} "
+                            f"{num_ancestral:3d} {num_derived:3d}\n"
+                        )
+
+                counts_anc_der_file.write(f"{sample.str_for_counts}\n\n")
+
+        logger.info(
+            "Wrote counts of ancestral and derived alleles encountered:\n"
+            f"    {cls.config.counts_anc_der_fp}\n"
+        )
+
+    @classmethod
+    def write_haplogroup_paths(
+        cls,
+        include_snps: bool = False,
+    ) -> None:
+        """Write haplogroup path for each sample."""
+
+        with open(cls.config.haplogroup_paths_fp, "w") as haplogroup_paths_file:
+            for sample in cls.sample_list:
+                path = sample.str_haplogroup_path(include_snps)
+                haplogroup_paths_file.write(f"{path}\n")
+
+        logger.info(
+            "Wrote paths with counts of derived SNPs observed:\n"
+            f"    {cls.config.haplogroup_paths_fp}\n"
+        )
+
+    @classmethod
+    def write_snps(
+        cls,
+        allele_state: str = "derived",
+    ) -> None:
+        """Write list of derived or ancestral alleles encountered.
+
+        Repeat for each sample.
+
+        """
+        if allele_state == "derived":
+            snp_fp = cls.config.der_snps_fp
+            type_of_snps = "derived SNPs on path"
+        elif allele_state == "ancestral":
+            snp_fp = cls.config.anc_snps_fp
+            type_of_snps = "ancestral SNPs encountered in search"
         else:
-            maskType = "male"
-            sexDF = pd.DataFrame(
-                Sample.config.customerMetaDS.load(Sample.config.customerSexColList)
+            raise ValueError(
+                f"allele_state must be 'ancestral' or 'derived', not '{allele_state}'"
             )
-            mask = np.ones(len(sexDF), dtype=bool)
-            for column in sexDF.columns:
-                mask = mask & (sexDF[column] == "M")
 
-        return mask, maskType
+        with open(snp_fp, "w") as snp_file:
+            for sample in cls.sample_list:
+                snp_file.write(f"{sample.str_snps(allele_state)}\n")
 
-    @staticmethod
-    def generateResidList():
+        logger.info(f"Wrote lists of {type_of_snps}:\n    {snp_fp}\n")
+
+    @classmethod
+    def write_snps_detail(
+        cls,
+        ancestral: bool = False,
+    ) -> None:
+        """Write detailed information about derived or ancestral alleles observed.
+
+        Repeat for each sample.
+
         """
-        4 possibilities:
-            residList specified at config instantiation
-            -a -s RESID           -> a single research ID has been specified
-            -i FILENAME.resid.txt -> read research IDs from file
-            -a                    -> return empty list to indicate no subsetting
-        """
+        if ancestral:
+            snp_detail_fp = cls.config.anc_snps_detail_fp
+            type_of_snps = "ancestral SNP encountered"
+        else:
+            snp_detail_fp = cls.config.der_snps_detail_fp
+            type_of_snps = "derived SNP on path"
 
-        residList = list()
-        if Sample.config.residList:
-            residList = Sample.config.residList
-            Sample.errAndLog(
-                "Research ID list supplied.\n"
-                + "    %8d resids (%d unique)\n\n"
-                % (len(residList), len(set(residList)))
-            )
-        elif Sample.args.singleSampleID:
-            resid = Customer.generateResid(Sample.args.singleSampleID)
-            residList = [resid]
-            Sample.errAndLog("Will call haplogroup for:\n    %d\n\n" % resid)
-        elif Sample.args.dataFN:
-            utils.checkFileExistence(Sample.args.dataFN, "Research IDs")
-            Sample.errAndLog("Reading research IDs:\n    %s\n" % Sample.args.dataFN)
-            with open(Sample.args.dataFN, "r") as residFile:
-                for line in residFile:
-                    ID = line.strip().split()[0]
-                    residList.append(Customer.generateResid(ID))
+        with open(snp_detail_fp, "w") as snp_detail_file:
+            for sample in cls.sample_list:
+                snp_detail_file.write(f"{sample.str_compressed}\n")
+                snp_list = sample.anc_snp_list if ancestral else sample.der_snp_list
+                for snp in snp_list:
+                    snp_detail_file.write(f"{str(sample.iid):8s} {snp}\n")
 
-            Sample.errAndLog("    %8d read\n" % len(residList))
-            Sample.errAndLog("    %8d unique\n\n" % len(set(residList)))
+                snp_detail_file.write("\n")
 
-        return residList
+        logger.info(
+            f"Wrote detailed information about each {type_of_snps}:\n"
+            f"    {snp_detail_fp}\n"
+        )
 
-    @staticmethod
-    def generateResid(ID):
-        "converts ID to integer, exiting gracefully if not possible"
+
+class TextSample(Sample):
+
+    """Class representing an individual whose data are in a sample-major text file.
+
+    Expected input format:
+    - Row 1: Physical coordinates
+    - Column 1: Individual identifiers
+
+    """
+
+    position_to_column_index: dict[int, int]
+
+    def __init__(
+        self,
+        iid: IID_TYPE,
+        genotypes: list[str],
+    ):
+        """Construct TextSample instance."""
+
+        super(TextSample, self).__init__(iid)
+        self.genotypes = genotypes
+
+    def get_genotype(self, position: int) -> str:
+        """Return genotype for position."""
 
         try:
-            resid = int(ID)
-        except ValueError:
-            sys.exit("\nERROR. Cannot convert ID to integer: %s" % ID)
+            genotype = self.genotypes[type(self).position_to_column_index[position]]
+        except KeyError:
+            genotype = Config.missing_genotype
 
-        return resid
+        return genotype
 
-    @staticmethod
-    def emitProgress():
-        "emit a message indicating how many haplogroups have been assigned thus far"
+    def purge_data(self) -> None:
+        """Clear genotype data and other data structures if no longer needed."""
+
+        super(TextSample, self).purge_data()
+        self.genotypes.clear()
+
+    @classmethod
+    def call_haplogroups(cls, config: Config) -> None:
+        """Call haplogroups from sample-major text file."""
+
+        logger.info("Mode: Sample-major text\n")
+        cls.configure(config)
+        geno_file = (
+            open(cls.args.data_fp, "r")
+            if os.path.splitext(cls.args.data_fp)[1] != ".gz"
+            else gzip.open(cls.args.data_fp, "rt")
+        )
+        geno_reader = csv.reader(geno_file, delimiter="\t")
+        cls.position_to_column_index = {
+            position: column_index
+            for column_index, position in enumerate(map(int, next(geno_reader)[1:]))
+            if position in cls.tree.snp_pos_set
+        }
+        for genotypes in geno_reader:
+            iid, genotypes = genotypes[0], genotypes[1:]
+            if cls.args.single_sample_id is None or iid == cls.args.single_sample_id:
+                text_sample = cls(iid, genotypes)
+                text_sample.call_haplogroup()
+
+        geno_file.close()
+
+        cls.write_results()
+
+
+class VCFSample(Sample):
+
+    """Class representing an individual whose data are in a VCF/BCF file."""
+
+    def __init__(self, iid: IID_TYPE):
+        """Construct VCFSample instance."""
+
+        super(VCFSample, self).__init__(iid)
+        self.position_to_genotype: dict[int, str] = {}
+
+    def put_genotype(self, position: int, genotype: str) -> None:
+        """Store one genotype."""
+
+        self.position_to_genotype[position] = genotype
+
+    def get_genotype(self, position: int) -> str:
+        """Return genotype for position."""
+
+        genotype = self.position_to_genotype.get(position, Config.missing_genotype)
+
+        return genotype
+
+    @classmethod
+    def call_haplogroups(cls, config: Config) -> None:
+        """Call haplogroups from variant-major VCF/BCF file."""
+
+        logger.info("Mode: VCF\n")
+        cls.configure(config)
+        cls.load_data_from_vcf()
 
         if (
-            Sample.numAssigned in Sample.config.callingProgressEarlySet
-            or Sample.numAssigned % Sample.config.callingProgressInterval == 0
+            cls.args.write_haplogroups_real_time
+            or cls.args.haplogroup_to_list_genotypes_for
         ):
-            Sample.errAndLog("    %8d haplogroups assigned\n" % Sample.numAssigned)
+            cls.sort_sample_list()
 
-    @staticmethod
-    def closeAuxiliaryFilesAndReportCounts():
-        "close auxiliary files and report counts"
+        for vcf_sample in cls.sample_list:
+            vcf_sample.call_haplogroup()
 
-        utils.closeFiles([Customer.noAblocksFile, Customer.noGenotypesFile])
+        cls.write_results()
 
-        messageA = (
-            "\n    %8d resid(s) ignored | could not load ablock:\n"
-            % Customer.numNoAblock
-        )
-        messageB = "             %s\n" % Sample.config.noAblocksFN
-        messageC = (
-            "    %8d resid(s) ignored | no genotypes:\n" % Customer.numNoGenotypes
-        )
-        messageD = "             %s\n\n" % Sample.config.noGenotypesFN
+    @classmethod
+    def load_data_from_vcf(cls) -> None:
+        """Load data from VCF."""
 
-        if Sample.config.suppressOutputAndLog:
-            Sample.errAndLog(messageA + messageC + "\n")
-        else:
-            Sample.errAndLog(messageA + messageB + messageC + messageD)
+        check_vcf_dependencies()
+        check_vcf_index(cls.args.data_fp)
+
+        with VariantFile(cls.args.data_fp) as variant_file:
+            iids = list(variant_file.header.samples)
+            if cls.args.single_sample_id is None:
+                for iid in iids:
+                    cls(iid)
+            else:
+                if cls.args.single_sample_id in iids:
+                    cls(cls.args.single_sample_id)
+                else:
+                    raise ValueError(
+                        f"{cls.args.single_sample_id} "
+                        f"not present in {cls.args.data_fp}"
+                    )
+
+            chromosome_set = set(variant_file.header.contigs.keys())
+            y_chromosome_set = chromosome_set.intersection(Config.vcf_chrom_label_set)
+            if len(y_chromosome_set) == 1:
+                chromosome = y_chromosome_set.pop()
+            else:
+                raise ValueError(
+                    f"VCF must include exactly one contig with a label in: "
+                    f"{sorted(Config.vcf_chrom_label_set)}\n"
+                    f"Observed: {chromosome_set}"
+                )
+
+            for variant_record in variant_file.fetch(chromosome):
+                if variant_record.pos in cls.tree.snp_pos_set:
+                    for vcf_sample in cls.sample_list:
+                        alleles = variant_record.samples[vcf_sample.iid].alleles
+                        if len(alleles) > 1:
+                            raise ValueError(
+                                "More than one allele observed:\n"
+                                f"IID: {vcf_sample.iid}\n"
+                                f"Position: {variant_record.pos}\n"
+                                f"Alleles: {alleles}"
+                            )
+
+                        genotype = alleles[0]
+                        if genotype is not None:
+                            assert isinstance(vcf_sample, cls)
+                            vcf_sample.put_genotype(variant_record.pos, genotype)

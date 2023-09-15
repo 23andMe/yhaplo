@@ -1,5 +1,9 @@
-import os
+"""Yhaplo."""
 
-version_fn = os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.txt")
+import warnings
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = open(version_fn).readline().strip()
+try:
+    __version__ = version(__package__)
+except PackageNotFoundError:
+    warnings.warn(f"{__package__} version unavailable. Is it installed?", Warning)

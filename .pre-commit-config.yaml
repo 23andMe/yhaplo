@@ -1,17 +1,34 @@
 default_stages: [commit, merge-commit]
+fail_fast: true
 repos:
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.0
-    hooks:
-      - id: flake8
-        types: [file, python]
-        args: [--select, "F401,F841"]  # Check for unused imports and variables
-  - repo: https://github.com/pycqa/isort
-    rev: 5.8.0
+  - repo: git@github.com:PyCQA/isort.git
+    rev: 5.12.0
     hooks:
       - id: isort
-  - repo: https://github.com/psf/black
-    rev: 20.8b1
+  - repo: git@github.com:psf/black.git
+    rev: 23.7.0
     hooks:
       - id: black
-        language_version: python3
+  - repo: git@github.com:pre-commit/pre-commit-hooks.git
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: pretty-format-json
+      - id: trailing-whitespace
+        exclude: haplogroups.*.txt|isogg_tree/|isogg.[0-9.]*.txt
+  - repo: git@github.com:PyCQA/flake8.git
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+  - repo: git@github.com:PyCQA/pydocstyle.git
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        additional_dependencies: [tomli]
+        exclude: tests/
+  - repo: git@github.com:pre-commit/mirrors-mypy.git
+    rev: v1.5.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-PyYAML]
