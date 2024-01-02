@@ -18,7 +18,7 @@ import os
 import re
 from collections import defaultdict
 from operator import attrgetter
-from typing import Optional
+from typing import Literal, Optional, Union
 
 import pandas as pd
 
@@ -54,7 +54,7 @@ def call_haplogroups_from_config(config: Config) -> pd.DataFrame:
         - hg_snp_obs: Haplogroup using a variant of representative-SNP form.
                Rather than using one representative SNP per haplogroup,
                use the most highly ranked SNP this individual was observed
-               to possess in the derived state.
+               to carry in the derived state.
         - hg_snp: Haplogroup in representative-SNP form (e.g., "Q-M3").
         - ycc_haplogroup: Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1").
 
@@ -85,7 +85,6 @@ class Sample:
     config: Config
     args: argparse.Namespace
     tree: "tree_module.Tree"
-    tree_has_been_set: bool = False
 
     num_assigned = 0
     num_root_calls = 0
@@ -217,7 +216,7 @@ class Sample:
         """Return haplogroup using a variant of representative-SNP form.
 
         Rather than using one representative SNP per haplogroup,
-        use the most highly ranked SNP this individual was observed to possess
+        use the most highly ranked SNP this individual was observed to carry
         in the derived state.
 
         """
@@ -242,6 +241,32 @@ class Sample:
 
         haplogroup_dfs_rank = self.haplogroup_node.dfs_rank
         return haplogroup_dfs_rank
+
+    @property
+    def haplogroup_dict(self) -> dict[str, Union[str, int]]:
+        """Return dictionary with various representations of the haplogroup call.
+
+        Returns
+        -------
+        haplogroup_dict : dict[str, str | int]
+            Keys:
+            - "iid": Individual identifier.
+            - "hg_snp_obs": Haplogroup using a variant of representative-SNP form.
+                   Rather than using one representative SNP per haplogroup,
+                   use the most highly ranked SNP this individual was observed
+                   to carry in the derived state.
+            - "hg_snp": Haplogroup in representative-SNP form (e.g., "Q-M3").
+            - "ycc_haplogroup": Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1").
+
+        """
+        haplogroup_dict = {
+            "iid": self.iid,
+            "hg_snp_obs": self.hg_snp_obs,
+            "hg_snp": self.hg_snp,
+            "ycc_haplogroup": self.haplogroup,
+        }
+
+        return haplogroup_dict
 
     # String-representation properties and methods
     # ----------------------------------------------------------------------
@@ -268,9 +293,11 @@ class Sample:
 
         return str_for_counts
 
+    # String-representation methods
+    # ----------------------------------------------------------------------
     def str_snps(
         self,
-        allele_state: str = "derived",
+        allele_state: Literal["derived", "ancestral"] = "derived",
     ) -> str:
         """Return string representation with derived or ancestral SNPs."""
 
@@ -280,7 +307,7 @@ class Sample:
             snp_list = self.anc_snp_list
         else:
             raise ValueError(
-                f"allele_state must be 'ancestral' or 'derived', not '{allele_state}'"
+                f'allele_state must be "ancestral" or "derived", not "{allele_state}"'
             )
 
         snp_list_string = " ".join(snp.str_short for snp in snp_list)
@@ -332,7 +359,7 @@ class Sample:
             - hg_snp_obs: Haplogroup using a variant of representative-SNP form.
                    Rather than using one representative SNP per haplogroup,
                    use the most highly ranked SNP this individual was observed
-                   to possess in the derived state.
+                   to carry in the derived state.
             - hg_snp: Haplogroup in representative-SNP form (e.g., "Q-M3").
             - ycc_haplogroup: Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1").
 
@@ -353,18 +380,22 @@ class Sample:
     def configure(cls, config: Config) -> None:
         """Configure class.
 
-        Set:
-        - Config instance
-        - Tree instance
-        - Parameters
+        This method will:
+        - Store a Config instance
+        - Store command-line arguments
+        - Build and store a Tree instance, if not already present
+        - Clear the sample list
+        - Run some error checking
+        - Log some information
 
         """
         cls.config = config
         cls.args = cls.config.args
-        if not cls.tree_has_been_set:
+        if not hasattr(cls, "tree"):
             cls.tree = tree_module.Tree(config)
         else:
-            logger.info("\nUsing previously contructed tree\n")
+            logger.info("Tree: Previously constructed\n")
+            logger.info("Variants: Previously loaded\n")
 
         cls.num_assigned = 0
         cls.num_root_calls = 0
@@ -442,11 +473,8 @@ class Sample:
                 "         re-run with alternative root (e.g., with: -r A0-T).\n\n\n"
             )
 
-        logger.info("\nOutput\n")
-
-        if cls.config.suppress_output:
-            logger.info("None (suppressed).\n")
-        else:  # Use str(sample)
+        if not cls.config.suppress_output:  # Use str(sample)
+            logger.info("\nOutput\n")
             cls.write_haplogroups()
 
         if cls.args.write_anc_der_counts:  # Use sample.str_for_counts
@@ -496,7 +524,7 @@ class Sample:
                 for node, num_ancestral, num_derived in sample.anc_der_count_tuples:
                     if num_ancestral > 0 or num_derived > 0:
                         counts_anc_der_file.write(
-                            f"{str(sample.iid):8s} {node.label:20s} "
+                            f"{str(sample.iid):8s} {node.label:25s} "
                             f"{num_ancestral:3d} {num_derived:3d}\n"
                         )
 
@@ -527,7 +555,7 @@ class Sample:
     @classmethod
     def write_snps(
         cls,
-        allele_state: str = "derived",
+        allele_state: Literal["derived", "ancestral"] = "derived",
     ) -> None:
         """Write list of derived or ancestral alleles encountered.
 
@@ -542,7 +570,7 @@ class Sample:
             type_of_snps = "ancestral SNPs encountered in search"
         else:
             raise ValueError(
-                f"allele_state must be 'ancestral' or 'derived', not '{allele_state}'"
+                f'allele_state must be "ancestral" or "derived", not "{allele_state}"'
             )
 
         with open(snp_fp, "w") as snp_file:

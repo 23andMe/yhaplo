@@ -62,11 +62,6 @@ fi
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}ISOGG Parser\n${NO_COLOR}"
-echo Skipping.
-echo -e "\n"
-
-
 echo -e "${BOLD_CYAN}Tree Plotter\n${NO_COLOR}"
 yhaplo_plot_tree -n ${nwk_fp} | tee ${tree_drawing_fp}
 echo -e "\n"

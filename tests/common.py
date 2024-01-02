@@ -1,7 +1,5 @@
 import os
 
-import pandas as pd
-
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
 FIXTURES_INPUT_DIR = os.path.join(FIXTURES_DIR, "input")
 FIXTURES_OUTPUT_DIR = os.path.join(FIXTURES_DIR, "output")
@@ -39,13 +37,3 @@ HAPLOGROUPS_1000Y_ONE_FP = os.path.join(
     FIXTURES_OUTPUT_DIR,
     "haplogroups.HG01938.txt",
 )
-
-
-def load_haplogroup_df(filepath):
-    df = pd.read_csv(
-        filepath,
-        delim_whitespace=True,
-        names=["iid", "hg_snp_obs", "hg_snp", "ycc_haplogroup"],
-    ).set_index("iid")
-
-    return df

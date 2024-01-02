@@ -2,7 +2,6 @@
 
 Classes defined herein include:
 * SNP
-* PlatformSNP
 * DroppedMarker
 
 """
@@ -21,7 +20,7 @@ import yaml
 from yhaplo import node as node_module  # noqa F401
 from yhaplo import tree as tree_module  # noqa F401
 from yhaplo.config import Config
-from yhaplo.utils.loaders import DataFile, load_data, load_data_lines
+from yhaplo.utils.loaders import DataFile, load_data, load_data_lines, load_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,8 @@ class SNP:
     """
 
     tree: "tree_module.Tree"
+    pos_to_block_indexes: dict[int, list[int]] = {}
+    platform_to_pos_set: dict[str, set[int]] = {}
 
     def __init__(
         self,
@@ -137,7 +138,7 @@ class SNP:
     def is_on_platform(self, platform: str) -> bool:
         """Return True if this SNP is on the supplied 23andMe platform."""
 
-        is_on_platform = self.position in PlatformSNP.platform_to_pos_set[platform]
+        is_on_platform = self.position in type(self).platform_to_pos_set[platform]
         return is_on_platform
 
     def back_trace_path(self) -> list["node_module.Node"]:
@@ -184,7 +185,8 @@ class SNP:
         """
         cls.tree = tree
         if tree.config.run_from_ablocks or tree.args.write_platform_trees:
-            PlatformSNP.set_class_variables()
+            cls.pos_to_block_indexes = load_pos_to_block_indexes()
+            cls.platform_to_pos_set = build_platform_to_pos_set()
 
     @classmethod
     def is_a_preferred_name(cls, name: str) -> bool:
@@ -241,67 +243,6 @@ def parse_snp_label(
     return label_letters_rank, label_letters, label_number
 
 
-class PlatformSNP:
-
-    """Class representing a platform SNP.
-
-    A PlatformSNP instance knows its:
-    - Position
-    - Block indexes
-
-    """
-
-    pos_to_block_indexes: dict[int, list[int]] = {}
-    platform_to_pos_set: dict[str, set[int]] = {}
-
-    def __init__(
-        self,
-        position: int,
-        ablock_index_list: list[int],
-    ):
-        self.position = position
-        self.ablock_index_list = ablock_index_list
-
-    @classmethod
-    def set_class_variables(cls) -> None:
-        """Set class variables."""
-
-        cls.pos_to_block_indexes = load_pos_to_block_indexes()
-        cls.platform_to_pos_set = build_platform_to_pos_set()
-
-    @classmethod
-    def build_platform_to_platform_snps(cls) -> dict[str, list[PlatformSNP]]:
-        """Build mapping from platform to PlatformSNPs.
-
-        Note: This method is no longer in use.
-
-        """
-        logger.info("Building mapping from platform version to PlatformSNPs...")
-
-        if not cls.pos_to_block_indexes:
-            cls.set_class_variables()
-
-        platform_to_platform_snps = {}
-        for platform in Config.platforms:
-            platform_snps = []
-            unknown_positions_set = set()
-            for position in cls.platform_to_pos_set[platform]:
-                try:
-                    ablock_index_list = cls.pos_to_block_indexes[position]
-                    platform_snp = cls(position, ablock_index_list)
-                    platform_snps.append(platform_snp)
-                except KeyError:
-                    unknown_positions_set.add(position)
-
-            platform_to_platform_snps[platform] = platform_snps
-            logger.info(
-                f"{platform}: {len(platform_snps):5d} Platform SNPs, "
-                f"{len(unknown_positions_set)} positions with unknown block indexes"
-            )
-
-        return platform_to_platform_snps
-
-
 def load_pos_to_block_indexes() -> dict[int, list[int]]:
     """Load mapping from physical position to block indexes."""
 
@@ -314,9 +255,9 @@ def load_pos_to_block_indexes() -> dict[int, list[int]]:
     )
     logger.info(
         "Loaded mapping from physical position to block indexes\n"
-        f"    {num_positions:6d} positions: "
+        f"{num_positions:7d} positions: "
         f"{Config.pos_to_block_indexes_data_file.filename}\n"
-        f"    {num_block_indexes:6d} block indexes\n\n"
+        f"{num_block_indexes:7d} ablock indexes\n"
     )
 
     return pos_to_block_indexes
@@ -335,19 +276,53 @@ def build_platform_to_pos_set() -> dict[str, set[int]]:
             f"Platform {platform} SNP positions",
             ttam_only=True,
         )
-        pos_set = set(
-            int(line.strip().split()[0])
-            for line in load_data_lines(platform_pos_data_file)
+        pos_set = load_position_set(platform_pos_data_file)
+
+        platform_pos_exclude_data_file = DataFile(
+            Config.platform_pos_data_subdir,
+            Config.platform_qc_exclude_data_filename_tp.format(platform=platform),
+            f"Platform {platform} SNP QC exclusions table",
+            ttam_only=True,
         )
+        try:
+            exclude_df = load_dataframe(platform_pos_exclude_data_file)
+            exclude_pos_set = set(exclude_df["position"])
+            pos_set -= exclude_pos_set
+            logger.info(
+                f"{platform}: {len(exclude_df):5d} QC exclusions loaded: "
+                f"{platform_pos_exclude_data_file.filename}\n"
+                f"{platform}: {len(exclude_pos_set):5d} unique positions to exclude\n"
+                f"{platform}: {len(pos_set):5d} unique positions remain"
+            )
+        except FileNotFoundError:
+            pass
+
         platform_to_pos_set[platform] = pos_set
-        logger.info(
-            f"{platform}: {len(pos_set):5d} unique positions loaded: "
-            f"{platform_pos_data_file.filename}"
-        )
 
     logger.info("")
 
     return platform_to_pos_set
+
+
+def load_position_set(
+    data_file: DataFile,
+    log: bool = False,
+) -> set[int]:
+    """Load set of positions from first column of Yhaplo data file."""
+
+    pos_set = set(
+        map(
+            lambda line: int(line.strip().split()[0]),
+            load_data_lines(data_file, log=log),
+        )
+    )
+    platform = data_file.description.split()[1]
+    logger.info(
+        f"{platform}: {len(pos_set):5d} unique positions loaded: "
+        f"{data_file.filename}"
+    )
+
+    return pos_set
 
 
 class DroppedMarker:

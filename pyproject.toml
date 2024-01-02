@@ -5,36 +5,39 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-
 [project]
 name = "yhaplo"
+description = "Y-chromosome haplogroup caller"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE.txt"}
 authors = [
     {name = "Population Genetics R&D"},
     {email = "popgen.rd@23andme.com"},
 ]
+
 dependencies = [
     "numpy",
     "pandas",
     "pyyaml",
 ]
-description = "Y-chromosome haplogroup caller"
+
 dynamic = ["version"]
-license = {text = "LICENSE.txt"}
-readme = "README.md"
-requires-python = ">=3.9"
 
 [project.optional-dependencies]
-dev = [
-    "ipykernel",
-    "ipython",
-    "pytest",
-    "setuptools_scm",
+vcf = [
+    "pysam",
 ]
 plot = [
     "biopython",
 ]
-vcf = [
-    "pysam",
+dev = [
+    "yhaplo[vcf,plot]",
+    "ipykernel",
+    "ipython",
+    "pytest",
+    "setuptools_scm",
+    "tabulate",
 ]
 
 [project.scripts]
@@ -43,7 +46,10 @@ yhaplo_convert_to_genos = "yhaplo.cli.convert_to_genos:main"
 yhaplo_plot_tree = "yhaplo.cli.plot_tree:main"
 
 [project.urls]
-homepage = "https://github.com/23andMe/yhaplo"
+Homepage = "https://github.com/23andMe/yhaplo"
+Documentation = "https://github.com/23andMe/yhaplo/blob/master/yhaplo_manual.pdf"
+Repository = "https://github.com/23andMe/yhaplo.git"
+Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 
 [tool.setuptools_scm]
 write_to = "yhaplo/_version.py"
@@ -51,7 +57,6 @@ write_to = "yhaplo/_version.py"
 [tool.isort]
 profile = "black"
 filter_files = true
-known_first_party = ["logic"]  # aws/logic/ includes logic for flow
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -69,11 +74,6 @@ ignore = "D107,D202,D211,D213"
 match_dir = "(?!tests|\\.).*"
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    # ttam.coregen: https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
-    "ignore:Deprecated call to `pkg_resources.declare_namespace",
-    "ignore:pkg_resources is deprecated as an API",
-]
 norecursedirs = [
     ".*",
     "build",
@@ -83,13 +83,13 @@ norecursedirs = [
 legacy_tox_ini = """
 [tox]
 envlist = py39, py310, py311
+
 [testenv]
 commands =
     pytest
 sitepackages = false
 deps =
-    pysam
     pytest
 extras =
-    ttam
+    vcf
 """

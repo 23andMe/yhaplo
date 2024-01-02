@@ -4,10 +4,11 @@ import argparse
 import logging
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from yhaplo._version import __version__
 from yhaplo.api.command_line_args import get_command_line_arg_defaults
@@ -15,6 +16,7 @@ from yhaplo.utils.loaders import DataFile
 
 DASHED_LINE = "-" * 72 + "\n"
 IID_TYPE = Union[int, str]
+ABLOCK_TYPE = NDArray[np.uint8]
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ class Config:
     newick_semantic_token_string = "(),:;"  # Used in regex
     alleles_string = "A C G T D I"  # Allowable alleles
     snp_label_letters_rank_string = "M P V L CTS AF B F Page U PF Z SK"
-    superfluous_snp_text_list = ["IMS-", "-null"]  # Stripped out of snp names
+    superfluous_snp_text_list = ["IMS-", "-null"]  # Stripped out of SNP names
     multi_char_hg_trunc_string = (
         "A00 A0-T A0 A1 A1a A1b A1b1 BT CT DE CF GHIJK HIJK IJK IJ LT NO"
     )
@@ -72,37 +74,25 @@ class Config:
     )
 
     # Variant data
-    isogg_data_file = DataFile(
-        "variants",
-        f"isogg.{isogg_date}.txt",
-        "ISOGG SNP data",
-    )
-    isogg_corrections_data_files = [
-        DataFile("variants", "isogg.correct.coordinate.txt"),
-        DataFile("variants", "isogg.correct.polarize.txt"),
-    ]
-    isogg_omit_data_files = [
+    isogg_data_file = DataFile("variants", f"isogg.{isogg_date}.txt", "ISOGG SNP data")
+    isogg_correct_name_data_file = DataFile("variants", "isogg.correct.name.txt")
+    isogg_corrections_data_file_dict = {
+        "mutation": DataFile("variants", "isogg.correct.mutation.txt"),
+        "position": DataFile("variants", "isogg.correct.position.txt"),
+    }
+    isogg_omit_name_data_file = DataFile("variants", "isogg.omit.name.txt")
+    isogg_omit_pos_str_mutation_data_files = [
         DataFile("variants", "isogg.omit.bad.txt"),
         DataFile("variants", "isogg.omit.bad.23andMe.txt"),
         DataFile("variants", "isogg.omit.branch.conflict.txt"),
         DataFile("variants", "isogg.omit.branch.conflict.23andMe.v5.txt"),
     ]
-    isogg_multi_allelic_data_file = DataFile(
-        "variants",
-        "isogg.multiallelic.txt",
-    )
+    isogg_multiallelic_data_file = DataFile("variants", "isogg.multiallelic.txt")
     isogg_rep_snp_data_file = DataFile(
-        "variants",
-        "representative.SNPs.isogg.2015_tree.txt",
+        "variants", "representative.SNPs.isogg.2015_tree.txt"
     )
-    other_rep_snp_data_file = DataFile(
-        "variants",
-        "representative.SNPs.additional.txt",
-    )
-    preferred_snp_names_data_file = DataFile(
-        "variants",
-        "preferred.snp_names.txt",
-    )
+    other_rep_snp_data_file = DataFile("variants", "representative.SNPs.additional.txt")
+    preferred_snp_names_data_file = DataFile("variants", "preferred.snp_names.txt")
 
     # 23andMe: Block data
     pos_to_block_indexes_data_file = DataFile(
@@ -115,6 +105,7 @@ class Config:
     # 23andMe: Platform positions
     platform_pos_data_subdir = "platform"
     platform_pos_data_filename_tp = "{platform}.b37.positions.txt"
+    platform_qc_exclude_data_filename_tp = "{platform}.b37.qc.exclude.txt"
 
     # Example input files
     # ----------------------------------------------------------------------
@@ -150,7 +141,7 @@ class Config:
     cleaned_isogg_fn = f"isogg.snps.cleaned.{isogg_date}.txt"
     unique_isogg_fn = f"isogg.snps.unique.{isogg_date}.txt"
     dropped_isogg_fn = f"isogg.snps.dropped.{isogg_date}.txt"
-    multi_allelic_found_fn = "multiallelic.pos"
+    multiallelic_found_fn = "multiallelic.pos"
 
     # Haplogroup calls, log, optional files, 23andMe auxiliary files
     log_fn_tp = "log.{fn_label}.txt"
@@ -167,8 +158,13 @@ class Config:
     def __init__(
         self,
         command_line_args: Optional[argparse.Namespace] = None,
-        iid_to_ablock: Optional[Mapping[IID_TYPE, Union[bytes, np.ndarray]]] = None,
-        iid_to_platforms: Optional[Mapping[IID_TYPE, str]] = None,
+        iid_to_ablock: Optional[
+            Mapping[
+                IID_TYPE,
+                Union[bytes, NDArray[np.uint8]],
+            ]
+        ] = None,
+        iid_to_platforms: Optional[Mapping[IID_TYPE, Union[str, Iterable[str]]]] = None,
         suppress_output: bool = False,
         out_dir: Optional[str] = None,
         all_aux_output: bool = False,
@@ -180,11 +176,12 @@ class Config:
         ----------
         command_line_args : argparse.Namespace | None, optional
             Command-line arguments.
-        iid_to_ablock : Mapping[IID_TYPE, bytes | np.ndarray] | None, optional
+        iid_to_ablock : Mapping[IID_TYPE, bytes | ABLOCK_TYPE] | None, optional
             Mapping of individual identifier to 23andMe ablock.
-        iid_to_platforms : Mapping[IID_TYPE, str] | None, optional
-            Mapping of individual identifier to comma-separated string of
-            23andMe platforms, each starting with "v".
+        iid_to_platforms : Mapping[IID_TYPE, str | Iterable[str]] | None, optional
+            Mapping of individual identifier to 23andMe genotyping platforms,
+            each starting with "v". Values can be a comma-separated string
+            or an iterable of strings.
         suppress_output : bool, optional
             When True, do not generate output files.
         out_dir : str | None, optional
@@ -359,8 +356,8 @@ class Config:
         self.dropped_isogg_fp = self.construct_phylo_out_path(
             type(self).dropped_isogg_fn
         )
-        self.multi_allelic_found_fp = self.construct_phylo_out_path(
-            type(self).multi_allelic_found_fn
+        self.multiallelic_found_fp = self.construct_phylo_out_path(
+            type(self).multiallelic_found_fn
         )
 
         if self.args:

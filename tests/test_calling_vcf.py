@@ -7,10 +7,10 @@ from tests.common import (
     HAPLOGROUPS_1000Y_ALL_FP,
     HAPLOGROUPS_1000Y_ONE_FP,
     HAPLOGROUPS_1000Y_SUBSET_FP,
-    load_haplogroup_df,
 )
 from yhaplo.api.call_haplogroups import call_haplogroups
 from yhaplo.api.command_line_args import get_command_line_arg_defaults
+from yhaplo.utils.loaders import load_haplogroup_df
 
 
 def test_vcf_input_1000y_single_sample():

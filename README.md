@@ -1,4 +1,4 @@
-# `yhaplo` | Identifying Y-Chromosome Haplogroups
+# Yhaplo | Identifying Y-Chromosome Haplogroups
 
 [![python](
 https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](
@@ -50,8 +50,6 @@ To learn more about the software, please see the manual, [`yhaplo_manual.pdf`](
 
 For an overiew of command-line options, install the package and run `yhaplo --help`.
 
-For 23andMe-specific documentation, see [`README.23andMe.md`](./README.23andMe.md).
-
 
 ## Installation
 
@@ -74,19 +72,22 @@ pip install --editable .  # Update version number
 ### Optional dependencies
 
 To include optional dependencies for various features:
-* `pip install --editable .[dev]` Includes development tools (e.g., `pytest`)
-* `pip install --editable .[plot]` Enables tree plotting
-* `pip install --editable .[ttam]` Enables running on 23andMe ablocks
 * `pip install --editable .[vcf]` Enables running on VCF/BCF input
+* `pip install --editable .[plot]` Enables tree plotting
+* `pip install --editable .[dev]` Includes all optional dependencies,
+  as well as development tools (e.g., `pytest`)
 
 To install multiple optional features, use a comma-separated list. For example:
 ```sh
-pip install --editable .[dev,plot,vcf]
+pip install --editable .[vcf,plot]
 ```
 
-### Test run
 
-To run on example data:
+## Testing
+
+### Running on example data
+
+To run on example text data:
 ```sh
 yhaplo --example_text
 ```
@@ -94,6 +95,18 @@ yhaplo --example_text
 The `--example_text` option tells `yhaplo` to run on a subset of 1000 Genomes data
 in sample-major text format. It also sets the <nobr>`--all_aux_output`</nobr> flag
 to produce all auxiliary output.
+
+Similarly, to run on example VCF data:
+```sh
+yhaplo --example_vcf
+```
+
+### Unit tests
+
+To run unit tests:
+```sh
+make test
+```
 
 
 ## Caveats
@@ -173,10 +186,14 @@ Additional commands include:
 
 ### Package data
 
-#### `yhaplo/data/tree/`
-`y.tree.primary.DATE.nwk` Primary structure of the Y-chromosome tree
+#### Tree
 
-#### `yhaplo/data/variants/`
+The primary structure of the Y-chromosome tree is stored in
+`yhaplo/data/tree/y.tree.primary.DATE.nwk`.
+
+#### Variants
+
+Variant metadata are stored in `yhaplo/data/variants/`:
 * `isogg.DATE.txt` Phylogenetically informative SNPs scraped directly from the ISOGG website.<br>
   `yhaplo` resolves errors and formatting inconsistencies and emits cleaned versions:
   `isogg.snps.cleaned.DATE.txt`, `isogg.snps.unique.DATE.txt`.<br>
@@ -191,35 +208,41 @@ Additional commands include:
 
 ### Classes
 
-#### `tree.py`
-`Tree`
+#### Trees
+
+The `Tree` class is defined in `tree.py`. It:
 * Parses a Newick file to build primary tree
 * Parses ISOGG table to add SNPs to nodes and grow tree
 * Finds the derived path leading from the root to an individual
 * Knows root, depth, haplogroup-to-node mappings, etc.
 
-#### `node.py`
-`Node`
+#### Nodes
+
+The `Node` class is defined in `node.py`. It:
 * Represents a phylogenetic branch
 * Knows parent, children, SNPs, etc.
 
-#### `snp.py`
+#### SNPs
+
+The `SNP` class and related classes are defined in `snp.py`:
 * `SNP` Knows position, ancestral and derived alleles, node, etc.
-* `PlatformSNP` Knows position and 23andMe ablock index
-* `DroppedMarker` Represents a marker not used for classification
 
-#### `sample.py`
+#### Samples
+
+The `Sample` class and its subclasses are defined in `sample.py`:
 * `Sample` Knows genotypes and haplogroup of an individual
-  * `TextSample` Subclass for sample-major text input
-  * `VCFSample` Subclass for VCF/BCF input
-  * `AblockSample` Subclass for 23andMe ablock input
+* `TextSample` Subclass for sample-major text input
+* `VCFSample` Subclass for VCF/BCF input
 
-#### `path.py`
-`Path` Path through a tree; stores:
+#### Paths
+
+The `Path` class is defined in `path.py`. It represents a ath through a tree and stores:
 * The next node to visit
 * A list of SNPs observed in the derived state
 * The most derived SNP observed
 * The number of ancestral alleles encountered
 
-#### `config.py`
-`Config` Container for parameters, command-line options, and filenames
+#### Configuration
+
+The `Config` class is defined in `config.py`.
+It is a container for parameters, command-line options, and filenames.
