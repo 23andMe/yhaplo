@@ -1358,7 +1358,6 @@
        R1b1a2a1a2b1c1b1a1 S7409
       R1b1a2a1a2b1c1b1a1a FGC5007
        R1b1a2a1a2b1c1b1a2 CTS8125
-      R1b1a2a1a2b1c1b1a2a CTS11381
          R1b1a2a1a2b1c1b2 L654.1
         R1b1a2a1a2b1c1b2a S42
        R1b1a2a1a2b1c1b2a1 CTS7197

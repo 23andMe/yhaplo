@@ -1,0 +1,3 @@
+incorrect_name  name            haplogroup                position mutation
+PF5328          PH5328          C1b2                      23081529 C->T
+Z18064.1td>     Z18064.1        R1b1a2a1a2c1b1b1a1b       19078678 C->T

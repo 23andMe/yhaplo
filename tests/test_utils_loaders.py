@@ -1,11 +1,22 @@
 import pytest
 
 from yhaplo.config import Config
-from yhaplo.utils.loaders import DataFile, TtamFileNotFoundError, load_data
+from yhaplo.utils.loaders import (
+    DataFile,
+    TtamFileNotFoundError,
+    load_data,
+    load_dataframe,
+)
 
 
 def test_load_data():
-    load_data(Config.primary_tree_data_file)
+    tree_str = load_data(Config.primary_tree_data_file).strip()
+    assert tree_str.startswith("(") and tree_str.endswith(";")
+
+
+def test_load_dataframe():
+    df = load_dataframe(Config.isogg_correct_name_data_file)
+    assert df.columns[0] == "incorrect_name"
 
 
 def test_load_data_missing():

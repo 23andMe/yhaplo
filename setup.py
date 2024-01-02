@@ -1,4 +1,4 @@
-"""Specify packages and package data."""
+"""Specify package code and data for yhaplo."""
 
 from setuptools import find_packages, setup
 

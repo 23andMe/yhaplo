@@ -11,7 +11,7 @@ from yhaplo import path as path_module  # noqa F401
 from yhaplo import sample as sample_module  # noqa F401
 from yhaplo import snp as snp_module  # noqa F401
 from yhaplo.config import Config
-from yhaplo.utils.loaders import load_data, load_data_lines
+from yhaplo.utils.loaders import load_data, load_data_lines, load_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,10 @@ class Tree:
         self.snp_name_set: set[str] = set()
         self.preferred_snp_name_set: set[str] = set()
         self.representative_snp_name_set: set[str] = set()
-        self.multi_allelic_old_pos_set: set[int] = set()
-        self.multi_allelic_new_pos_set: set[int] = set()
-        self.isogg_omit_set: set[tuple[str, str]] = set()
+        self.multiallelic_old_pos_set: set[int] = set()
+        self.multiallelic_new_pos_set: set[int] = set()
+        self.isogg_omit_name_set: set[str] = set()
+        self.isogg_omit_pos_str_mutation_set: set[tuple[str, str]] = set()
         self.isogg_correction_dict: dict[str, tuple[str, str, str]] = {}
         self.isogg_counts_dict: dict[str, int] = defaultdict(int)
         self.num_snps_corrected = 0
@@ -430,23 +431,27 @@ class Tree:
         snp_module.SNP.set_class_variables(self)
         self.load_preferred_snp_name_set()
         self.load_representative_snp_name_set()
-        self.load_isogg_multi_allelic_pos_set()
-        self.load_isogg_omit_set()
+        self.load_isogg_multiallelic_pos_set()
+        self.load_isogg_omit_name_set()
+        self.load_isogg_omit_pos_str_mutation_set()
         self.load_isogg_corrections()
         self.load_and_parse_isogg_table()
         self.set_depth_first_node_list()
-        self.sort_snplists_and_set_representatives()
+        self.sort_snp_lists_and_set_representatives()
         self.log_isogg_counts()
         self.write_unique_snp_table()
         self.write_newick()
-        self.check_multi_allelics()
+        self.check_multiallelics()
 
     def load_preferred_snp_name_set(self) -> None:
         """Load preferred SNP names.
 
         Presence on this list is the primary selection criterion for SNP labels.
 
-        Set self.preferred_snp_name_set.
+        Sets
+        ----
+        self.preferred_snp_name_set : set[str]
+            Set of preferred SNP names.
 
         """
         for line in load_data_lines(self.config.preferred_snp_names_data_file):
@@ -462,7 +467,10 @@ class Tree:
     def load_representative_snp_name_set(self) -> None:
         """Load the names of SNPs deemed representative for their respective lineages.
 
-        Set self.representative_snp_name_set.
+        Sets
+        ----
+        self.representative_snp_name_set : set[str]
+            Set of names of SNPs deemed representative for their respective lineages.
 
         """
         counts_dict: dict[str, int] = defaultdict(int)
@@ -497,39 +505,74 @@ class Tree:
             f"{len(self.representative_snp_name_set):6d} Total SNP names\n"
         )
 
-    def load_isogg_multi_allelic_pos_set(self) -> None:
-        """Load list of positions to exclude due to multiple alleles.
+    def load_isogg_multiallelic_pos_set(self) -> None:
+        """Load set of positions to exclude due to multiple alleles.
 
-        Set self.multi_allelic_old_pos_set.
+        Sets
+        ----
+        self.multiallelic_old_pos_set : set[int]
+            Set of positions to exclude due to multiple alleles.
 
         """
-        for line in load_data_lines(self.config.isogg_multi_allelic_data_file):
+        for line in load_data_lines(self.config.isogg_multiallelic_data_file):
             position = int(line.strip())
-            self.multi_allelic_old_pos_set.add(position)
+            self.multiallelic_old_pos_set.add(position)
 
-    def load_isogg_omit_set(self) -> None:
-        """Load list of SNPs to omit from ISOGG database.
+    def load_isogg_omit_name_set(self) -> None:
+        """Load SNPs to omit from ISOGG database based on name.
 
-        Set self.isogg_omit_set.
+        Sets
+        ----
+        self.isogg_omit_name_set : set[str]
+            Set of SNP names to omit.
 
         """
-        for isogg_omit_data_file in self.config.isogg_omit_data_files:
-            for line in load_data_lines(isogg_omit_data_file):
+        for line in load_data_lines(self.config.isogg_omit_name_data_file):
+            name = line.strip().split()[0]
+            self.isogg_omit_name_set.add(name)
+
+    def load_isogg_omit_pos_str_mutation_set(self) -> None:
+        """Load SNPs to omit from ISOGG database based on position and mutation.
+
+        Sets
+        ----
+        self.isogg_omit_pos_str_mutation_set : set[tuple[str, str]]
+            Set of (position_str, mutation) tuples representing SNPs to omit.
+
+        """
+        for data_file in self.config.isogg_omit_pos_str_mutation_data_files:
+            for line in load_data_lines(data_file):
                 line_list = line.strip().split()
                 if len(line_list) > 0 and line_list[0] != "#":
                     position_str, mutation = line_list[2:4]
-                    self.isogg_omit_set.add((position_str, mutation))
+                    self.isogg_omit_pos_str_mutation_set.add((position_str, mutation))
 
     def load_isogg_corrections(self) -> None:
         """Load SNPs to correct from ISOGG database.
 
-        Set self.isogg_correction_dict.
+        Sets
+        ----
+        self.name_correction_df : pd.DataFrame
+            DataFrame of SNPs whose names were incorrect in ISOGG table.
+            Index: incorrect_name
+            Columns: name, haplogroup, position, mutation
+        self.isogg_correction_dict : dict[str, tuple[str, str, str]]
+            Maps SNP name to a tuple of haplogroup, position, and mutation.
+            Either position or mutation (or both) are corrections from the ISOGG table.
 
         """
-        for isogg_corrections_data_file in self.config.isogg_corrections_data_files:
-            for line in load_data_lines(isogg_corrections_data_file):
+        logger.info("\nISOGG Corrections\n")
+
+        data_file = self.config.isogg_correct_name_data_file
+        self.name_correction_df = load_dataframe(data_file).set_index("incorrect_name")
+        logger.info(f"{len(self.name_correction_df):6d} {data_file.filename}")
+
+        for data_file in self.config.isogg_corrections_data_file_dict.values():
+            num_corrections = 0
+            for line in load_data_lines(data_file):
                 line_list = line.strip().split()
                 if len(line_list) > 0 and line_list[0] != "#":
+                    num_corrections += 1
                     haplogroup, position_str, mutation, aliases = line_list[1:5]
                     for alias in aliases.split(","):
                         self.isogg_correction_dict[alias] = (
@@ -537,6 +580,13 @@ class Tree:
                             position_str,
                             mutation,
                         )
+
+            logger.info(f"{num_corrections:6d} {data_file.filename}")
+
+        total_corrections = len(self.name_correction_df) + len(
+            self.isogg_correction_dict
+        )
+        logger.info(f"\n{total_corrections:6d} total corrections, including aliases\n")
 
     def load_and_parse_isogg_table(self) -> None:
         """Load and parse ISOGG table."""
@@ -566,6 +616,18 @@ class Tree:
             name, haplogroup, _, _, position_str, mutation = line_list
 
             # Apply corrections
+            try:
+                snp_ser = self.name_correction_df.loc[name]
+                if (
+                    snp_ser["haplogroup"],
+                    snp_ser["position"],
+                    snp_ser["mutation"],
+                ) == (haplogroup, int(position_str), mutation):
+                    name = snp_ser["name"]
+                    self.num_snps_corrected += 1
+            except KeyError:
+                pass
+
             if name in self.isogg_correction_dict:
                 haplogroup, position_str, mutation = self.isogg_correction_dict[name]
                 self.num_snps_corrected += 1
@@ -645,7 +707,7 @@ class Tree:
                         ancestral not in old_snp.allele_set
                         or derived not in old_snp.allele_set
                     ):
-                        self.multi_allelic_new_pos_set.add(position)
+                        self.multiallelic_new_pos_set.add(position)
 
                 # Typical behavior
                 snp = snp_module.SNP(name, haplogroup, position, ancestral, derived)
@@ -666,14 +728,14 @@ class Tree:
         for dropped_marker in dropped_marker_list:
             dropped_marker.add_to_node()
 
-    def sort_snplists_and_set_representatives(self) -> None:
+    def sort_snp_lists_and_set_representatives(self) -> None:
         """Sort SNPs by priority ranking and select the best representative.
 
         Repeat for each Node.
 
         """
         if not self.depth_first_node_list:
-            self.set_depth_first_node_list
+            self.set_depth_first_node_list()
 
         for node in self.depth_first_node_list:
             node.priority_sort_snp_list_and_set_hg_snp()
@@ -685,15 +747,17 @@ class Tree:
         counts_dict = self.isogg_counts_dict
         num_alt_names = counts_dict["retained"] - counts_dict["unique"]
         correction_fps_str = ("\n" + " " * 12).join(
-            [
+            [config.isogg_correct_name_data_file.filename]
+            + [
                 isogg_corrections_data_file.filename
-                for isogg_corrections_data_file in config.isogg_corrections_data_files
+                for isogg_corrections_data_file in config.isogg_corrections_data_file_dict.values()
             ]
         )
         omit_fps_str = ("\n" + " " * 18).join(
-            [
+            [config.isogg_omit_name_data_file.filename]
+            + [
                 isogg_omit_data_file.filename
-                for isogg_omit_data_file in config.isogg_omit_data_files
+                for isogg_omit_data_file in config.isogg_omit_pos_str_mutation_data_files
             ]
         )
 
@@ -708,7 +772,7 @@ class Tree:
             "or otherwise problematic",
             f"        {counts_dict['non_snp']:5d} Non-SNPs",
             f"        {counts_dict['multiallelic']:5d} Excluded as multiallelic "
-            f"based on: {config.isogg_multi_allelic_data_file.filename}",
+            f"based on: {config.isogg_multiallelic_data_file.filename}",
             f"        {counts_dict['duplicated_names']:5d} Duplicated names",
             f"        {counts_dict['omitted']:5d} Explicitly excluded based on:\n"
             f"                  {omit_fps_str}",
@@ -794,7 +858,7 @@ class Tree:
             logger.info(f"\nERROR. Invalid position: {position}\n")
             return True, False
 
-        if position in self.multi_allelic_old_pos_set:
+        if position in self.multiallelic_old_pos_set:
             self.isogg_counts_dict["multiallelic"] += 1
             return True, True
 
@@ -802,26 +866,29 @@ class Tree:
             self.isogg_counts_dict["duplicated_names"] += 1
             return True, False
 
-        if (position_str, mutation) in self.isogg_omit_set:
+        if (
+            name in self.isogg_omit_name_set
+            or (position_str, mutation) in self.isogg_omit_pos_str_mutation_set
+        ):
             self.isogg_counts_dict["omitted"] += 1
             return True, False
 
         return False, True
 
-    def check_multi_allelics(self) -> None:
+    def check_multiallelics(self) -> None:
         """Check for mutliallelic variants and write list to file."""
 
-        if not self.config.suppress_output and len(self.multi_allelic_new_pos_set) > 0:
-            with open(self.config.multi_allelic_found_fp, "w") as out_file:
-                for position in sorted(list(self.multi_allelic_new_pos_set)):
+        if not self.config.suppress_output and len(self.multiallelic_new_pos_set) > 0:
+            with open(self.config.multiallelic_found_fp, "w") as out_file:
+                for position in sorted(list(self.multiallelic_new_pos_set)):
                     out_file.write(f"{position:8d}\n")
 
-            num_multiallelic = len(self.multi_allelic_new_pos_set)
+            num_multiallelic = len(self.multiallelic_new_pos_set)
             logger.info(
                 f"\n*** Detected {num_multiallelic} multiallelic positions. ***\n\n"
                 "Please do the following and then re-run:\n"
-                f"    cat {self.config.multi_allelic_found_fp}"
-                f" >> {self.config.isogg_multi_allelic_data_file.filename}\n\n"
+                f"    cat {self.config.multiallelic_found_fp}"
+                f" >> {self.config.isogg_multiallelic_data_file.filename}\n\n"
             )
 
     def find_or_create_node(self, haplogroup: str) -> "node_module.Node":

@@ -1,6 +1,10 @@
+# Make variables
+#----------------------------------------------------------------------
 BOLD_CYAN = \033[1;36m
+BOLD_GREEN := \033[1;32m
 GREEN = \033[0;32m
 NO_COLOR = \033[0m
+
 
 ## General
 # ----------------------------------------------------------------------
@@ -25,11 +29,8 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	$(MAKE) dev-install
 	$(MAKE) init-hooks
 
-dev-install: optional_deps := dev,plot,vcf
-dev-install: ttam_deps := ,ttam
-dev-install: optional_deps := $(if $(findstring ttam.yhaplo,$(CURDIR)),$(addsuffix $(ttam_deps),$(optional_deps)),$(optional_deps))
-dev-install:  ## Install package as editable, with optional dependencies
-	pip install --editable .[$(optional_deps)]
+dev-install:  ## Install package as editable, with all optional dependencies
+	pip install --editable .[dev]
 	python -m ipykernel install --user --name $(ENV_NAME) --display-name $(PACKAGE_NAME)
 
 
@@ -55,6 +56,6 @@ lint: run-hooks-all  ## Alias for run-hooks-all
 ## Testing
 # ----------------------------------------------------------------------
 test:  ## Run unit tests
-	pytest --verbose
+	pytest
 
 
