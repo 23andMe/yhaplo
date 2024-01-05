@@ -272,7 +272,7 @@ def build_platform_to_pos_set() -> dict[str, set[int]]:
     for platform in Config.platforms:
         platform_pos_data_file = DataFile(
             Config.platform_pos_data_subdir,
-            Config.platform_pos_data_filename_tp.format(platform=platform),
+            Config.platform_pos_fn_tp.format(platform=platform),
             f"Platform {platform} SNP positions",
             ttam_only=True,
         )
@@ -280,7 +280,7 @@ def build_platform_to_pos_set() -> dict[str, set[int]]:
 
         platform_pos_exclude_data_file = DataFile(
             Config.platform_pos_data_subdir,
-            Config.platform_qc_exclude_data_filename_tp.format(platform=platform),
+            Config.platform_qc_exclude_fn_tp.format(platform=platform),
             f"Platform {platform} SNP QC exclusions table",
             ttam_only=True,
         )

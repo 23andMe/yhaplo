@@ -104,8 +104,8 @@ class Config:
 
     # 23andMe: Platform positions
     platform_pos_data_subdir = "platform"
-    platform_pos_data_filename_tp = "{platform}.b37.positions.txt"
-    platform_qc_exclude_data_filename_tp = "{platform}.b37.qc.exclude.txt"
+    platform_pos_fn_tp = "{platform}.b37.positions.txt"
+    platform_qc_exclude_fn_tp = "{platform}.b37.qc.exclude.txt"
 
     # Example input files
     # ----------------------------------------------------------------------
