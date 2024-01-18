@@ -26,14 +26,27 @@ logger = logging.getLogger(__name__)
 
 
 class SNP:
-
     """Class representing a SNP.
 
-    A SNP instance knows its:
-    - Names
-    - Haplogroup
-    - Position
-    - Ancestral and derived alleles
+    Attributes
+    ----------
+    name_list : list[str]
+        SNP names.
+    haplogroup : str
+        Haplogroup the SNP is associated with.
+    position : int
+        GRCh37 physical position.
+    ancestral : str
+        Ancestral allele.
+    derived : str
+        Derived allele.
+
+    is_representative : bool
+        Indicator as to whether this SNP should be used to represent the haplogroup.
+    allele_set : set[str]
+        Set of ancestral and derived alleles.
+    node : Node
+        Node associated with the haplogroup the SNP is associated with.
 
     """
 
@@ -49,6 +62,22 @@ class SNP:
         ancestral: str,
         derived: str,
     ):
+        """Instantiate SNP.
+
+        Parameters
+        ----------
+        name : str
+            SNP name.
+        haplogroup : str
+            Haplogroup the SNP is associated with.
+        position : int
+            Physical position.
+        ancestral : str
+            Ancestral allele.
+        derived : str
+            Derived allele.
+
+        """
         if type(self).tree is None:
             raise RuntimeError(
                 "Before instantiating, call: "
@@ -326,13 +355,21 @@ def load_position_set(
 
 
 class DroppedMarker:
-
     """Class representing a marker not used for classification.
 
     Such a marker may be useful for node labeling. Examples:
     - Non-SNPs
     - Multiallelic SNPs
     - SNPs not meeting ISOGG quality guidelines
+
+    Parameters
+    ----------
+    name : str
+        Marker name.
+    haplogroup : str
+        Haplogroup the marker is associated with.
+    tree : Tree
+        Y-chromosome tree.
 
     """
 

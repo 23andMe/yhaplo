@@ -73,12 +73,23 @@ def call_haplogroups_from_config(config: Config) -> pd.DataFrame:
 
 
 class Sample:
-
     """Class representing an individual.
 
-    A sample knows its:
-    - Genotypes
-    - Haplogroup, once called
+    Attributes
+    ----------
+    iid : IID_TYPE
+        Individual identifier.
+    haplogroup_node : Node | None
+        Node corresponding to haplogroup, once called.
+    most_derived_snp : SNP | None
+        Most derived SNP observed
+    der_snp_list : list[SNP]
+        List of SNPs observed in the derived state.
+    anc_snp_list: list[SNP]
+        List of SNPs observed in the ancestral state.
+    anc_der_count_tuples : list[tuple[Node, int, int]]
+        List of tuples, each of which includes a node and counts of SNPs observed
+        in the ancestral and derived states.
 
     """
 
@@ -91,8 +102,14 @@ class Sample:
     sample_list: list[Sample] = []
 
     def __init__(self, iid: IID_TYPE):
-        """Construct Sample instance and append to `Sample.sample_list`."""
+        """Instantiate Sample.
 
+        Parameters
+        ----------
+        iid : IID_TYPE
+            Individual identifier.
+
+        """
         self.iid = iid
         self.haplogroup_node: Optional["node_module.Node"] = None
         self.most_derived_snp: Optional["snp_module.SNP"] = None
@@ -612,12 +629,16 @@ class Sample:
 
 
 class TextSample(Sample):
-
     """Class representing an individual whose data are in a sample-major text file.
 
     Expected input format:
     - Row 1: Physical coordinates
     - Column 1: Individual identifiers
+
+    Attributes
+    ----------
+    genotypes : list[str]
+        List of genotypes.
 
     """
 
@@ -628,8 +649,16 @@ class TextSample(Sample):
         iid: IID_TYPE,
         genotypes: list[str],
     ):
-        """Construct TextSample instance."""
+        """Instantiate TextSample.
 
+        Parameters
+        ----------
+        iid : IID_TYPE
+            Individual identifier.
+        genotypes : list[str]
+            List of genotypes.
+
+        """
         super(TextSample, self).__init__(iid)
         self.genotypes = genotypes
 
@@ -678,12 +707,24 @@ class TextSample(Sample):
 
 
 class VCFSample(Sample):
+    """Class representing an individual whose data are in a VCF/BCF file.
 
-    """Class representing an individual whose data are in a VCF/BCF file."""
+    Attributes
+    ----------
+    position_to_genotype : dict[int, str]
+        Maps position to genotype.
+
+    """
 
     def __init__(self, iid: IID_TYPE):
-        """Construct VCFSample instance."""
+        """Instantiate VCFSample.
 
+        Parameters
+        ----------
+        iid : IID_TYPE
+            Individual identifier.
+
+        """
         super(VCFSample, self).__init__(iid)
         self.position_to_genotype: dict[int, str] = {}
 

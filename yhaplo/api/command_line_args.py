@@ -197,14 +197,14 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         nargs=2,
         dest="mrca_haplogroup_list",
         metavar=("haplogroup1", "haplogroup2"),
-        help="Output mrca of two haplogroups",
+        help="Output MRCA of two haplogroups",
     )
     group.add_argument(
         "-sq",
         "--snp_query",
-        dest="query_snp_name",
-        metavar="snp_name",
-        help="List phylogenetic path for a query SNP",
+        dest="query_snp_names",
+        metavar="snp_names",
+        help="List phylogenetic path for each SNP in comma-separated list",
     )
     group.add_argument(
         "-pt",
@@ -282,7 +282,6 @@ def get_command_line_arg_defaults() -> argparse.Namespace:
 
 
 class RawTextWithDefaultsHelpFormatter(argparse.RawDescriptionHelpFormatter):
-
     """Help message formatter that retains formatting and adds defaults.
 
     Combines argparse.RawTextHelpFormatter and argparse.ArgumentDefaultsHelpFormatter.

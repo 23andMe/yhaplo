@@ -3,7 +3,29 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
-## [2.1.0] - 2024-01
+## [2.1.4] - 2024-01-29
+
+### Added
+- Support for querying multiple SNPs from the command line
+- Support for generating aligned-tip Newick representations of subtrees
+- Support for node lookup by SNP-based haplogroup label
+- `Node` methods:
+  - `Node.iter_depth_first`
+  - `Node.iter_breath_first`
+  - `Node.remove_children`
+- `tree.get_bounded_subtree` function
+
+### Changed
+- `Tree` constructor's `Config` parameter is now optional
+- `Node.is_root` and `Node.is_leaf` are now properties
+
+### Fixed
+- Output format of `--snp_query` option
+
+[2.1.4]: https://github.com/23andMe/yhaplo/compare/2.1.0...2.1.4
+
+
+## [2.1.0] - 2024-01-12
 
 This release improves haplogroup calling by identifying and correcting various errors in
 the ISOGG variant metadata and, internally, by pruning poorly performing v5 SNPs.
