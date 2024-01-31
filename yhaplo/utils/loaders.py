@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataFile:
-
     """Attributes of a yhaplo data file.
 
     data_subdir : str
@@ -50,7 +49,6 @@ class DataFile:
 
 
 class TtamFileNotFoundError(FileNotFoundError):
-
     """Exception indicating that an unfound data file is not publicly available."""
 
     def __init__(
@@ -118,7 +116,7 @@ def load_dataframe(
     """
     try:
         with as_file(files(data_file.package).joinpath(data_file.filename)) as path:
-            df = pd.read_csv(path, delim_whitespace=True, header=header)
+            df = pd.read_csv(path, sep=r"\s+", header=header)
 
     except (FileNotFoundError, ModuleNotFoundError):
         if data_file.ttam_only:
@@ -157,7 +155,7 @@ def load_haplogroup_df(haplogroup_fp: str) -> pd.DataFrame:
     """
     haplogroup_df = pd.read_csv(
         haplogroup_fp,
-        delim_whitespace=True,
+        sep=r"\s+",
         names=["iid", "hg_snp_obs", "hg_snp", "ycc_haplogroup"],
     ).set_index("iid")
 
@@ -183,7 +181,7 @@ def load_yhaplo_unique_snps(unique_fp: str) -> pd.DataFrame:
     """
     unique_df = pd.read_csv(
         unique_fp,
-        delim_whitespace=True,
+        sep=r"\s+",
         header=None,
         names=SNP_TABLE_COL_NAMES,
     ).astype(SNP_TABLE_DTYPE_DICT)

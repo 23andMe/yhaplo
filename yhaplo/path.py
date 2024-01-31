@@ -11,14 +11,18 @@ from yhaplo import snp as snp_module  # noqa F401
 
 
 class Path:
-
     """Class representing a path through a haplogroup tree.
 
-    Instances store:
-    - The next node to visit
-    - A list of SNPs observed in the derived state
-    - The most derived SNP observed
-    - The number of ancestral alleles encountered.
+    Attributes
+    ----------
+    node : Node
+        The next node to visit.
+    der_snp_list : list[SNP]
+        List of SNPs observed in the derived state.
+    most_derived_snp : SNP | None
+        The most derived SNP observed.
+    num_ancestral : int
+        The number of ancestral alleles encountered.
 
     """
 
@@ -26,6 +30,14 @@ class Path:
         self,
         node: "node_module.Node",
     ):
+        """Instantiate Path.
+
+        Parameters
+        ----------
+        node : Node
+            The next node to visit.
+
+        """
         self.node = node
         self.der_snp_list: list["snp_module.SNP"] = []
         self.most_derived_snp: Optional["snp_module.SNP"] = None

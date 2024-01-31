@@ -65,12 +65,14 @@ ignore_missing_imports = true
 # D107 Missing docstring in __init__
 # D202 No blank lines allowed after function docstring
 #      Ignoring allows blank lines after one-line docstrings.
+# D203 1 blank line required before class docstring
+#      Conflicts with black 24.
 # D211 No blank lines allowed before class docstring
 #      Contradicts D203.
 # D213 Multi-line docstring summary should start at the second line
 #      Contradicts D212.
 #      https://github.com/PyCQA/pydocstyle/issues/242#issuecomment-288166773
-ignore = "D107,D202,D211,D213"
+ignore = "D107,D202,D203,D211,D213"
 match_dir = "(?!tests|\\.).*"
 
 [tool.pytest.ini_options]

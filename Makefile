@@ -1,17 +1,18 @@
 # Make variables
 #----------------------------------------------------------------------
-BOLD_CYAN = \033[1;36m
+CYAN := \033[0;36m
+GREEN := \033[0;32m
+BOLD_CYAN := \033[1;36m
 BOLD_GREEN := \033[1;32m
-GREEN = \033[0;32m
-NO_COLOR = \033[0m
+NO_COLOR := \033[0m
 
 
 ## General
 # ----------------------------------------------------------------------
 help:  ## Print this help message
 	@egrep -h '(\s|^)##\s' $(MAKEFILE_LIST) \
-	| sed -E "s/^## (.*)/\n$$(printf "${BOLD_CYAN}")\1$$(printf "${NO_COLOR}")/g" \
-	| awk 'BEGIN {FS = ":.*?## "}; {printf "${GREEN}%-25s${NO_COLOR} %s\n", $$1, $$2}'
+	| sed -E "s/^## (.*)/\n$$(printf "${BOLD_GREEN}")\1$$(printf "${NO_COLOR}")/g" \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "${CYAN}%-25s${NO_COLOR} %s\n", $$1, $$2}'
 	@echo
 
 

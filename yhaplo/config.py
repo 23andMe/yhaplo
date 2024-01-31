@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class Config:
-
     """Yhaplo configuration class.
 
     This class is a container for parameters, constants, filenames, etc.

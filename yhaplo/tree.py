@@ -17,19 +17,68 @@ logger = logging.getLogger(__name__)
 
 
 class Tree:
-
     """Class representing a haplogroup tree.
 
-    A tree has single Node instance (the root) as well as a dictionary
-    that maps haplogroup labels to node instances.
+    Attributes
+    ----------
+    root : Node
+        Root node.
+    config : Config
+        Yhaplo configuration.
+    args : argparse.Namespace
+        Command-line arguments or defaults.
+    haplogroup_to_node : dict[str, Node]
+        Maps haplogroup labels (YCC or SNP-based) to nodes.
+    depth_first_node_list : list[Node]
+        List of nodes in depth-first order.
+    max_depth : int
+        Maximum depth of tree.
+
+    snp_dict : dict[Union[str, tuple[str, int], int], SNP]
+        Maps SNP names, positions, and (haplogroup, position) tuples to SNPs.
+    snp_list : list[SNP]
+        List of SNPs
+    snp_pos_set : set[int]
+        Set of SNP physical positions.
+    snp_name_set : set[str]
+        Set of SNP names.
+    preferred_snp_name_set : set[str]
+        Set of preferred SNP names.
+    representative_snp_name_set : set[str]
+        Set of names of "representative" SNPs.
+
+    isogg_omit_name_set : set[str]
+        Set of SNP names to omit from ISOGG variant metadata.
+    isogg_omit_pos_str_mutation_set : set[tuple[str, str]]
+        Set of (position_str, mutation) tuples representing SNPs to omit.
+    isogg_correction_dict : dict[str, tuple[str, str, str]]
+        Maps SNP name to a tuple of haplogroup, position, and mutation.
+        Either position or mutation (or both) are corrections from the ISOGG table.
+    isogg_counts_dict : dict[str, int]
+        Counts of various categories of ISOGG SNPs.
+    num_snps_corrected : int
+        Number of SNPs corrected, as compared to ISOGG raw data.
+    multiallelic_old_pos_set : set[int]
+        Set of positions to exclude due to multiple alleles.
+    multiallelic_new_pos_set : set[int]
+        Set of positions found to have multiple alleles.
+
     """
 
     def __init__(
         self,
-        config: Config,
+        config: Optional[Config] = None,
     ):
-        self.config = config
-        self.args = config.args
+        """Instantiate Tree.
+
+        Parameters
+        ----------
+        config : Config | None, optional
+            Configuration. If None, use default configuration.
+
+        """
+        self.config = config if config is not None else Config()
+        self.args = self.config.args
 
         self.max_depth = 0
         self.haplogroup_to_node: dict[str, "node_module.Node"] = {}
@@ -85,7 +134,7 @@ class Tree:
     def set_depth_first_node_list(self) -> None:
         """Build Node list from depth-first pre-order traversal."""
 
-        self.depth_first_node_list = self.root.get_depth_first_node_list()
+        self.depth_first_node_list = [node for node in self.root.iter_depth_first()]
         for dfs_rank, node in enumerate(self.depth_first_node_list):
             node.set_dfs_rank(dfs_rank)
 
@@ -100,10 +149,12 @@ class Tree:
             self.write_depth_first_pre_order()
         if self.args.write_tree_table:
             self.write_tree_table()
+
         if self.args.mrca_haplogroup_list:
-            self.query_mrca()
-        if self.args.query_snp_name:
-            self.query_snp_path()
+            self.query_mrca(*self.args.mrca_haplogroup_list)
+        if self.args.query_snp_names:
+            for query_snp_name in self.args.query_snp_names.split(","):
+                self.query_snp_path(query_snp_name)
 
     def write_breadth_first(self) -> None:
         """Write bread-first traversal in pipe/dot format."""
@@ -114,7 +165,8 @@ class Tree:
             else self.config.bf_tree_fp
         )
         with open(bf_tree_fp, "w") as bf_tree_file:
-            self.root.write_breadth_first_traversal(bf_tree_file)
+            for node in self.root.iter_breadth_first():
+                bf_tree_file.write(f"{node.str_dot_pipe_depth}\n")
 
         logger.info(f"Wrote breadth-first tree traveral:\n    {bf_tree_fp}\n")
 
@@ -128,7 +180,7 @@ class Tree:
         )
         with open(df_tree_fp, "w") as df_tree_file:
             for node in self.depth_first_node_list:
-                df_tree_file.write(node.str_dot_pipe_depth + "\n")
+                df_tree_file.write(f"{node.str_dot_pipe_depth}\n")
 
         logger.info(f"Wrote depth-first tree traveral:\n    {df_tree_fp}\n")
 
@@ -144,16 +196,17 @@ class Tree:
 
         logger.info(f"Wrote tree table:\n    {tree_table_fp}\n")
 
-    def query_mrca(self) -> None:
-        """Write MRCA of two haplogroups."""
+    def query_mrca(self, haplogroup1: str, haplogroup2: str) -> None:
+        """Write MRCA of two haplogroups.
 
-        mrca_haplogroup_list = self.args.mrca_haplogroup_list
-        if not isinstance(mrca_haplogroup_list, list) or len(mrca_haplogroup_list) != 2:
-            raise ValueError(
-                f"mrca expects a list of 2 haplogroups, not this: {mrca_haplogroup_list}\n"
-            )
+        Parameters
+        ----------
+        haplogroup1 : str
+            Haplogroup label.
+        haplogroup2 : str
+            Haplogroup label.
 
-        haplogroup1, haplogroup2 = mrca_haplogroup_list
+        """
         node1 = self.haplogroup_to_node[haplogroup1]
         node2 = self.haplogroup_to_node[haplogroup2]
         mrca = node1.mrca(node2)
@@ -164,20 +217,30 @@ class Tree:
             f"MRCA: {mrca.haplogroup}\n"
         )
 
-    def query_snp_path(self) -> None:
-        """List phylogenetic path for a query SNP."""
+    def query_snp_path(self, query_snp_name: str) -> None:
+        """List phylogenetic path for a query SNP.
 
-        query_name = self.args.query_snp_name
-        logger.info(f"\nSNP Query: {query_name}\n\n")
-        snp = self.snp_dict.get(query_name, None)
+        Parameters
+        ----------
+        query_snp_name : str
+            Name of SNP to query.
+
+        """
+        logger.info(f"\nSNP Query: {query_snp_name}\n")
+        snp = self.snp_dict.get(query_snp_name)
 
         if snp:
             for node in snp.back_trace_path():
-                logger.info(node.str_simple + "\n")
-            if snp.label != query_name:
-                logger.info(f"\nNote: {query_name} is an alias of {snp.label}.\n")
+                logger.info(node.str_simple)
+
+            if query_snp_name != snp.label:
+                logger.info(f"\nNote: {query_snp_name} is an alias of {snp.label}.\n")
+            elif not node.hg_snp.endswith(query_snp_name):
+                logger.info(
+                    f"\nNote: {query_snp_name} is on the {node.hg_snp} branch.\n"
+                )
         else:
-            logger.info("Not found.\n")
+            logger.info(f'No SNPs found with the name "{query_snp_name}"\n')
 
         logger.info("")
 
@@ -248,7 +311,7 @@ class Tree:
         The stopping condition is a disjunction of three atomic conditions.
         The first is trivial:
 
-        a. node.is_leaf()
+        a. node.is_leaf
            We cannot go any further.
 
         The following table enumerates possible cases for the other two
@@ -293,7 +356,7 @@ class Tree:
             anc_der_count_tuples.append((path.node, num_ancestral, num_derived))
 
             if (
-                path.node.is_leaf()
+                path.node.is_leaf
                 or (num_ancestral > self.config.args.anc_stop_thresh)
                 or (
                     num_ancestral == self.config.args.anc_stop_thresh
@@ -924,3 +987,36 @@ def verify_newick_token(observed: str, expected: str) -> None:
             f"Expected this token: {expected}\n"
             f"Got this one:        {observed}\n"
         )
+
+
+def get_bounded_subtree(
+    root_haplogroup: str,
+    target_haplogroup: str,
+) -> "node_module.Node":
+    """Generate a bounded subtree.
+
+    Set the root node to correspond to `root_haplogroup`.
+    Prune children of the target node and children of all nodes not on a direct path
+    from the root to the target.
+
+    Parameters
+    ----------
+    root_haplogroup : str
+        Haplogroup corresponding to the root of the subtree.
+    target_haplogroup : str
+        Haplogroup corresponding to the target node.
+
+    Returns
+    -------
+    root_node : Node
+        Subtree root node.
+
+    """
+    tree = Tree()
+    root_node = tree.haplogroup_to_node[root_haplogroup]
+    target_node = tree.haplogroup_to_node[target_haplogroup]
+    for node in root_node.iter_depth_first():
+        if node is target_node or node is not node.mrca(target_node):
+            node.remove_children()
+
+    return root_node

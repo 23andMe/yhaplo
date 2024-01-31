@@ -5,8 +5,11 @@ from __future__ import annotations
 import argparse
 import logging
 from collections import deque
+from collections.abc import Iterator
 from operator import attrgetter
-from typing import Optional, TextIO
+from typing import Optional, Union
+
+import numpy as np
 
 from yhaplo import sample as sample_module  # noqa F401
 from yhaplo import snp as snp_module  # noqa F401
@@ -17,16 +20,36 @@ logger = logging.getLogger(__name__)
 
 
 class Node:
-
     """Class representing one node of a haplogroup tree.
 
     Each node represents the branch that leads to it.
 
-    A node knows its:
-    - Parent
-    - Depth
-    - Children
-    - Diagnostic SNPs
+    Attributes
+    ----------
+    parent : Node | None
+        Parent node. None for the root node.
+    depth : int
+        Number of edges between this node and the root node.
+    child_list : list[Node]
+        List of descendant nodes.
+    snp_list : list[SNP]
+        SNPs associated with the branch incident upon this node.
+
+    haplogroup : str
+        YCC haplogroup name (e.g., "R1b1c").
+    label : str
+        YCC haplogroup name, including alternative names (e.g., "P/K2b2").
+    hg_trunc : str
+        Truncated haplogroup (e.g., "R").
+    hg_snp : str
+        Haplogroup with representative SNP (e.g., "R-V88").
+
+    dropped_marker_list : list[DroppedMarker]
+        List of dropped markers.
+    branch_length : float | None
+        Branch length.
+    dfs_rank : int
+        Rank in depth-first listing of all nodes.
 
     """
 
@@ -37,28 +60,38 @@ class Node:
 
     def __init__(
         self,
-        parent: Optional[Node],
+        parent: Union[Node, None],
         tree: Optional["tree_module.Tree"] = None,
     ):
+        """Instantiate Node.
+
+        Parameters
+        ----------
+        parent : Node | None
+            Parent node. None for the root node.
+        tree : Tree | None, optional
+            Required for root node and ignored otherwise.
+            Tree to which the root node belongs.
+
+        """
         self.parent = parent
         if parent is None:
             if tree is not None:
                 type(self).set_tree_config_and_args(tree)
-                self.depth = 0
             else:
-                raise ValueError(
-                    "A tree instance must be supplied when instantiating a root node."
-                )
+                raise ValueError("Root node requires a tree instance")
+
+            self.depth = 0
         else:
             parent.add_child(self)
             self.depth = parent.depth + 1
             if self.depth > type(self).tree.max_depth:
                 type(self).tree.max_depth = self.depth
 
-        self.haplogroup: str = ""  # YCC haplogroup name (e.g., "R1b1c")
-        self.label: str = ""  # YCC including alt names (e.g., "P/K2b2")
-        self.hg_trunc: str = ""  # Truncated haplogroup (e.g., "R")
-        self.hg_snp: str = ""  # Haplogroup with representative SNP (e.g., "R-V88")
+        self.haplogroup: str = ""
+        self.label: str = ""
+        self.hg_trunc: str = ""
+        self.hg_snp: str = ""
         self.child_list: list[Node] = []
         self.snp_list: list["snp_module.SNP"] = []
         self.dropped_marker_list: list["snp_module.DroppedMarker"] = []
@@ -102,6 +135,24 @@ class Node:
 
     # Other properties
     # ----------------------------------------------------------------------
+    @property
+    def is_root(self) -> bool:
+        """Whether or not the Node is the root of the tree."""
+
+        return self.parent is None
+
+    @property
+    def is_leaf(self) -> bool:
+        """Whether or not the Node is a leaf."""
+
+        return self.num_children == 0
+
+    @property
+    def num_children(self) -> int:
+        """Return number of children."""
+
+        return len(self.child_list)
+
     @property
     def tree_table_data(self) -> tuple[str, str, str, str, str]:
         """Return a tuple of data summarizing the node.
@@ -171,20 +222,25 @@ class Node:
     # Setters and mutaters
     # ----------------------------------------------------------------------
     def set_label(self, label: str) -> None:
-        """Set label, haplogroup, and hg_trunc."""
+        """Set label, haplogroup, and hg_trunc.
 
+        Also, add tree.haplogroup_to_node entry mapping haplogroup label to node.
+
+        """
         self.label = label
         label_list = label.split("/")
 
-        if self.is_root():
-            self.haplogroup = self.hg_trunc = self.config.root_haplogroup
-            type(self).tree.haplogroup_to_node[self.haplogroup] = self
+        if self.is_root:
+            label = self.config.root_haplogroup
+            self.haplogroup = label
+            self.hg_trunc = label
+            label_list = [label]
         else:
             self.haplogroup = label_list[0]
             self.hg_trunc = type(self).truncate_haplogroup_label(self.haplogroup)
 
-        for key in label_list:
-            type(self).tree.haplogroup_to_node[key] = self
+        for label in label_list:
+            type(self).tree.haplogroup_to_node[label] = self
 
     def set_branch_length(self, branch_length: float) -> None:
         """Set branch length."""
@@ -217,9 +273,11 @@ class Node:
         The standard form incudes the truncated haplogroup label
         and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
 
+        Also, add tree.haplogroup_to_node entry mapping hg_snp to node.
+
         """
         # Root: no markers
-        if self.is_root():
+        if self.is_root:
             self.hg_snp = self.haplogroup
 
         # Normal case
@@ -238,7 +296,7 @@ class Node:
         # No markers to use
         else:
             if self.parent is not None and self.parent.hg_snp:
-                symbol = "*" if self.is_leaf() else "+"
+                symbol = "*" if self.is_leaf else "+"
                 self.hg_snp = self.parent.hg_snp + symbol
 
                 # Uniquify if necessary
@@ -258,37 +316,46 @@ class Node:
                 self.hg_snp = self.haplogroup
 
         type(self).hg_snp_set.add(self.hg_snp)
+        type(self).tree.haplogroup_to_node[self.hg_snp] = self
 
     # Queries
     # ----------------------------------------------------------------------
-    def is_root(self) -> bool:
-        """Return a Boolean indicating whether or not the Node is root."""
-
-        return self.parent is None
-
-    def is_leaf(self) -> bool:
-        """Return a Boolean indicating whether or not the Node is a leaf."""
-
-        return len(self.child_list) == 0
-
     def get_branch_length(
         self,
         align_tips: bool = False,
+        subtree_max_depth: Optional[int] = None,
         platform: Optional[str] = None,
     ) -> Optional[float]:
-        """Get branch length."""
+        """Get branch length.
 
-        if self.branch_length:
+        Parameters
+        ----------
+        align_tips : bool, optional
+            When True, set internal branch lengths to one and leaf branch lengths
+            in such a manner as to align the tips of the tree.
+        subtree_max_depth : int | None, optional
+            Maximum depth of subtree. Used to set leaf branch lengths when aligning tips.
+            Default to maximum depth of full tree.
+        platform : str | None, optional
+            23andMe platform to use for computing branch length.
+
+        Returns
+        -------
+        branch_length : float | None
+            Branch length.
+
+        """
+        if self.branch_length is not None:
             branch_length = self.branch_length
-        elif align_tips and self.is_leaf():
-            branch_length = type(self).tree.max_depth - self.depth + 1
+        elif align_tips and self.is_leaf:
+            subtree_max_depth = subtree_max_depth or type(self).tree.max_depth
+            branch_length = subtree_max_depth - self.depth + 1
         elif align_tips:
             branch_length = 1
         elif platform:
-            branch_length = 0
-            for snp in self.snp_list:
-                if snp.is_on_platform(platform):
-                    branch_length += 1
+            branch_length = np.sum(
+                [snp.is_on_platform(platform) for snp in self.snp_list]
+            )
         else:
             branch_length = None
 
@@ -339,7 +406,7 @@ class Node:
 
         return anc_snp_list, der_snp_list
 
-    # Children
+    # Children methods
     # ----------------------------------------------------------------------
     def add_child(self, child: Node) -> None:
         """Append a child to the child list."""
@@ -369,12 +436,6 @@ class Node:
 
         return current_node
 
-    @property
-    def num_children(self) -> int:
-        """Return number of children."""
-
-        return len(self.child_list)
-
     def bifurcate(self) -> tuple[Node, Node]:
         """Split a node and return the two children."""
 
@@ -399,54 +460,53 @@ class Node:
 
         self.child_list.reverse()
 
+    def remove_children(self) -> None:
+        """Make this node a leaf by purging children."""
+
+        self.child_list.clear()
+
     # Tree traversals
     # ----------------------------------------------------------------------
-    def write_breadth_first_traversal(self, bf_tree_file: TextIO) -> None:
-        """Write breadth-first traversal."""
+    def iter_depth_first(self) -> Iterator[Node]:
+        """Traverse tree depth first, pre order."""
 
-        bf_tree_file.write(self.str_dot_pipe_depth + "\n")
+        yield self
+        for child in self.child_list:
+            for node in child.iter_depth_first():
+                yield node
+
+    def iter_breadth_first(self) -> Iterator[Node]:
+        """Traverse tree breadth first."""
+
+        yield self
         node_deque = deque(self.child_list)
         while node_deque:
             node = node_deque.popleft()
-            bf_tree_file.write(node.str_dot_pipe_depth + "\n")
             node_deque.extend(node.child_list)
-
-    def get_depth_first_node_list(self) -> list[Node]:
-        """Conduct depth-first pre-order traversal."""
-
-        depth_first_node_list = [self]
-        self.traverse_depth_first_pre_order_recursive(depth_first_node_list)
-
-        return depth_first_node_list
-
-    def traverse_depth_first_pre_order_recursive(
-        self,
-        depth_first_node_list: list[Node],
-    ) -> None:
-        """Append each node in depth-first pre order, recursively."""
-
-        for child in self.child_list:
-            depth_first_node_list.append(child)
-            child.traverse_depth_first_pre_order_recursive(depth_first_node_list)
+            yield node
 
     def mrca(self, other_node: Node) -> Node:
         """Return the most recent common ancestor of this node and another."""
 
-        if self.depth < other_node.depth:
-            higher_node, lower_node = self, other_node
+        if self.depth > other_node.depth:
+            lower_node, higher_node = self, other_node
         else:
-            higher_node, lower_node = other_node, self
+            lower_node, higher_node = other_node, self
 
-        while higher_node.depth < lower_node.depth:
+        # Get to same level of tree
+        while lower_node.depth > higher_node.depth:
             assert lower_node.parent is not None
             lower_node = lower_node.parent
-        while lower_node != higher_node:
-            assert lower_node.parent is not None
-            assert higher_node.parent is not None
-            lower_node = lower_node.parent
-            higher_node = higher_node.parent
 
-        return higher_node
+        # Move up one branch at a time
+        node_a, node_b = lower_node, higher_node
+        while node_a is not node_b:
+            assert node_a.parent is not None
+            assert node_b.parent is not None
+            node_a = node_a.parent
+            node_b = node_b.parent
+
+        return node_a
 
     # Writing tree to file in Newick format
     # ----------------------------------------------------------------------
@@ -460,15 +520,13 @@ class Node:
         """Write Newick string for the subtree rooted at this node."""
 
         if not type(self).config.suppress_output:
+            newick = self.build_newick(
+                use_hg_snp_label=use_hg_snp_label,
+                align_tips=align_tips,
+                platform=platform,
+            )
             with open(newick_fp, "w") as out_file:
-                out_file.write(
-                    self.build_newick_string_recursive(
-                        use_hg_snp_label,
-                        align_tips,
-                        platform,
-                    )
-                    + ";\n"
-                )
+                out_file.write(newick + "\n")
 
             if align_tips:
                 tree_descriptor = "aligned "
@@ -487,40 +545,106 @@ class Node:
                 f"    {newick_fp}\n"
             )
 
-    def build_newick_string_recursive(
+    def build_newick(
         self,
-        use_hg_snplabel: bool = False,
+        use_hg_snp_label: bool = False,
         align_tips: bool = False,
         platform: Optional[str] = None,
     ) -> str:
-        """Build Newick string recursively for the subtree rooted at this node."""
+        """Build Newick string for the subtree rooted at this node.
 
-        if not self.is_leaf():
+        Parameters
+        ----------
+        use_hg_snp_label : bool, optional
+            Use SNP-based haplogroup labels rather than YCC haplogroup labels.
+        align_tips : bool, optional
+            When True, set branch lengths to align the tips of the tree.
+        platform : str | None, optional
+            23andMe platform to use for computing branch lengths.
+
+        Returns
+        -------
+        newick : str
+            Newick representation of the tree.
+
+        """
+        subtree_max_depth = (
+            self.tree.max_depth
+            if self.is_root
+            else np.max([node.depth for node in self.iter_depth_first()])
+        )
+        newick = (
+            self.build_newick_recursive(
+                use_hg_snp_label=use_hg_snp_label,
+                align_tips=align_tips,
+                subtree_max_depth=subtree_max_depth,
+                platform=platform,
+            )
+            + ";"
+        )
+
+        return newick
+
+    def build_newick_recursive(
+        self,
+        use_hg_snp_label: bool = False,
+        align_tips: bool = False,
+        subtree_max_depth: Optional[int] = None,
+        platform: Optional[str] = None,
+    ) -> str:
+        """Build Newick string recursively for the subtree rooted at this node.
+
+        Parameters
+        ----------
+        use_hg_snp_label : bool, optional
+            Use SNP-based haplogroup labels rather than YCC haplogroup labels.
+        align_tips : bool, optional
+            When True, set branch lengths to align the tips of the tree.
+        subtree_max_depth : int | None, optional
+            Maximum depth of subtree. Used to set leaf branch lengths when aligning tips.
+            Default to maximum depth of full tree.
+        platform : str | None, optional
+            23andMe platform to use for computing branch lengths.
+
+        Returns
+        -------
+        tree_string : str
+            Component of Newick representation of the tree.
+
+        """
+        subtree_max_depth = subtree_max_depth or type(self).tree.max_depth
+
+        if not self.is_leaf:
             child_string_list = []
             for child in self.child_list[::-1]:
-                child_string = child.build_newick_string_recursive(
-                    use_hg_snplabel,
-                    align_tips,
-                    platform,
+                child_string = child.build_newick_recursive(
+                    use_hg_snp_label=use_hg_snp_label,
+                    align_tips=align_tips,
+                    subtree_max_depth=subtree_max_depth,
+                    platform=platform,
                 )
                 child_string_list.append(child_string)
 
             children = ",".join(child_string_list)
-            tree_string_part_1 = f"({children})"
+            children_string = f"({children})"
         else:
-            tree_string_part_1 = ""
+            children_string = ""
 
-        branch_label = self.hg_snp if use_hg_snplabel else self.label
-        branch_length = self.get_branch_length(align_tips, platform)
+        branch_label = self.hg_snp if use_hg_snp_label else self.label
+        branch_length = self.get_branch_length(
+            align_tips=align_tips,
+            subtree_max_depth=subtree_max_depth,
+            platform=platform,
+        )
         if align_tips:
             branch_string = f"{branch_label}:{branch_length}"
-        elif branch_length is None or (self.is_leaf() and branch_length == 0):
+        elif branch_length is None or (self.is_leaf and branch_length == 0):
             branch_string = branch_label
         elif branch_length > 0:
             branch_string = f"{branch_label}|{branch_length}:{branch_length}"
         else:
             branch_string = ":0.5"
 
-        tree_string = f"{tree_string_part_1}{branch_string}"
+        tree_string = f"{children_string}{branch_string}"
 
         return tree_string

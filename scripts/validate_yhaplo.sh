@@ -36,10 +36,12 @@ echo -e "\n${BOLD_CYAN}Removed${NO_COLOR}: ${GREEN}${output_dir}\n\n${NO_COLOR}"
 
 echo -e "${BOLD_CYAN}Text Input${NO_COLOR}\n"
 yhaplo --example_text \
+    --hg_genos Q \
     --breadth_first \
     --depth_first \
     --depth_first_table \
-    --hg_genos Q
+    --mrca Q J \
+    --snp_query L1335,S730,S530,foo
 echo -e "\n"
 
 
