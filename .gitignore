@@ -12,7 +12,6 @@ __pycache__/
 .minio.sys
 .mypy_cache
 .pytest_cache
-.tox
 
 # Distribution & packaging
 #----------------------------------
@@ -24,7 +23,6 @@ wheels/
 .eggs/
 *.egg
 *.egg-info/
-_version.py
 
 # Editors & IDEs
 #----------------------------------

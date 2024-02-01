@@ -119,14 +119,22 @@ class Sample:
 
         type(self).sample_list.append(self)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         """Return string representation."""
 
-        sample_string = (
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f'iid={str(self.iid)}, hg_snp_obs="{self.hg_snp_obs}", '
+            f'hg_snp="{self.hg_snp}", haplogroup="{self.haplogroup}">'
+        )
+
+    def __str__(self) -> str:
+        """Return printable string representation."""
+
+        return (
             f"{str(self.iid):8s} {self.hg_snp_obs:15s} "
             f"{self.hg_snp:15s} {self.haplogroup:25s}"
         )
-        return sample_string
 
     # Haplogroup calling
     # ----------------------------------------------------------------------

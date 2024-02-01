@@ -10,7 +10,7 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from yhaplo._version import __version__
+from yhaplo import __version__
 from yhaplo.api.command_line_args import get_command_line_arg_defaults
 from yhaplo.utils.loaders import DataFile
 
@@ -215,6 +215,11 @@ class Config:
         self.log_welcome_message()
         if self.suppress_output:
             self.override_output_generating_args()
+
+    def __repr__(self) -> str:
+        """Return string representation."""
+
+        return f"<{__name__}.{self.__class__.__name__}: command_line_args={self.args}>"
 
     def set_params_general(
         self,

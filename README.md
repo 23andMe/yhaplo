@@ -1,7 +1,7 @@
 # Yhaplo | Identifying Y-Chromosome Haplogroups
 
 [![python](
-https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](
+https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](
 https://docs.python.org)
 [![style](
 https://img.shields.io/badge/style-black-blue.svg)](

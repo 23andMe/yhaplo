@@ -100,8 +100,16 @@ class Node:
 
     # String representations
     # ----------------------------------------------------------------------
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         """Return string representation."""
+
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f'label="{self.label}", hg_snp="{self.hg_snp}">'
+        )
+
+    def __str__(self) -> str:
+        """Return printable string representation."""
 
         return self.str_simple
 
@@ -516,14 +524,32 @@ class Node:
         use_hg_snp_label: bool = False,
         align_tips: bool = False,
         platform: Optional[str] = None,
+        rotate: bool = False,
     ) -> None:
-        """Write Newick string for the subtree rooted at this node."""
+        """Write Newick representation of the subtree rooted at this node.
 
+        Parameters
+        ----------
+        newick_fp : str
+            File path to which to write Newick representation.
+        use_hg_snp_label : bool, optional
+            Use SNP-based haplogroup labels rather than YCC haplogroup labels.
+        align_tips : bool, optional
+            When True, set branch lengths to align the tips of the tree.
+        platform : str | None, optional
+            23andMe platform to use for computing branch lengths.
+        rotate : bool, optional
+            Rotate nodes. By default, branches will be ordered top to bottom.
+            Rotating nodes orders branches bottom to top, which is left to right
+            when an image is rotated 90 degrees to the right.
+
+        """
         if not type(self).config.suppress_output:
             newick = self.build_newick(
                 use_hg_snp_label=use_hg_snp_label,
                 align_tips=align_tips,
                 platform=platform,
+                rotate=rotate,
             )
             with open(newick_fp, "w") as out_file:
                 out_file.write(newick + "\n")
@@ -550,6 +576,7 @@ class Node:
         use_hg_snp_label: bool = False,
         align_tips: bool = False,
         platform: Optional[str] = None,
+        rotate: bool = False,
     ) -> str:
         """Build Newick string for the subtree rooted at this node.
 
@@ -561,6 +588,10 @@ class Node:
             When True, set branch lengths to align the tips of the tree.
         platform : str | None, optional
             23andMe platform to use for computing branch lengths.
+        rotate : bool, optional
+            Rotate nodes. By default, branches will be ordered top to bottom.
+            Rotating nodes orders branches bottom to top, which is left to right
+            when an image is rotated 90 degrees to the right.
 
         Returns
         -------
@@ -568,17 +599,14 @@ class Node:
             Newick representation of the tree.
 
         """
-        subtree_max_depth = (
-            self.tree.max_depth
-            if self.is_root
-            else np.max([node.depth for node in self.iter_depth_first()])
-        )
+        subtree_max_depth = np.max([node.depth for node in self.iter_depth_first()])
         newick = (
             self.build_newick_recursive(
                 use_hg_snp_label=use_hg_snp_label,
                 align_tips=align_tips,
                 subtree_max_depth=subtree_max_depth,
                 platform=platform,
+                rotate=rotate,
             )
             + ";"
         )
@@ -591,6 +619,7 @@ class Node:
         align_tips: bool = False,
         subtree_max_depth: Optional[int] = None,
         platform: Optional[str] = None,
+        rotate: bool = False,
     ) -> str:
         """Build Newick string recursively for the subtree rooted at this node.
 
@@ -605,6 +634,10 @@ class Node:
             Default to maximum depth of full tree.
         platform : str | None, optional
             23andMe platform to use for computing branch lengths.
+        rotate : bool, optional
+            Rotate nodes. By default, branches will be ordered top to bottom.
+            Rotating nodes orders branches bottom to top, which is left to right
+            when an image is rotated 90 degrees to the right.
 
         Returns
         -------
@@ -613,23 +646,27 @@ class Node:
 
         """
         subtree_max_depth = subtree_max_depth or type(self).tree.max_depth
-
-        if not self.is_leaf:
-            child_string_list = []
-            for child in self.child_list[::-1]:
-                child_string = child.build_newick_recursive(
-                    use_hg_snp_label=use_hg_snp_label,
-                    align_tips=align_tips,
-                    subtree_max_depth=subtree_max_depth,
-                    platform=platform,
+        child_list = self.child_list if not rotate else self.child_list[::-1]
+        children_string = (
+            (
+                "("
+                + ",".join(
+                    [
+                        child.build_newick_recursive(
+                            use_hg_snp_label=use_hg_snp_label,
+                            align_tips=align_tips,
+                            subtree_max_depth=subtree_max_depth,
+                            platform=platform,
+                            rotate=rotate,
+                        )
+                        for child in child_list
+                    ]
                 )
-                child_string_list.append(child_string)
-
-            children = ",".join(child_string_list)
-            children_string = f"({children})"
-        else:
-            children_string = ""
-
+                + ")"
+            )
+            if not self.is_leaf
+            else ""
+        )
         branch_label = self.hg_snp if use_hg_snp_label else self.label
         branch_length = self.get_branch_length(
             align_tips=align_tips,

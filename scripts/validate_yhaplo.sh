@@ -40,7 +40,7 @@ yhaplo --example_text \
     --breadth_first \
     --depth_first \
     --depth_first_table \
-    --mrca Q J \
+    --mrca Q-M3 R-V88 \
     --snp_query L1335,S730,S530,foo
 echo -e "\n"
 

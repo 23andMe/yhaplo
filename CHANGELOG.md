@@ -3,6 +3,32 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
+## [Unreleased]
+
+No unreleased changes
+
+[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.6..HEAD
+
+
+## [2.1.6] - 2024-02-07
+
+### Added
+- Python 3.12 support
+- `__str__` and `__repr__` methods
+- SNP-based haplogroup in MRCA output
+
+### Changed
+- Newick representation is now unrotated by default
+
+### Removed
+- `setuptools_scm`-generated version file
+
+### Fixed
+- When generating Newick representation, recalculate maximum depth to support pruned trees
+
+[2.1.6]: https://github.com/23andMe/yhaplo/compare/2.1.4..2.1.6
+
+
 ## [2.1.4] - 2024-01-29
 
 ### Added
