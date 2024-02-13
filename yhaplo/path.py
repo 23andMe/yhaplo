@@ -88,16 +88,23 @@ class Path:
         self.num_anc_since_push_through = other.num_anc_since_push_through
         self.num_der_since_push_through = other.num_der_since_push_through
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         """Return string representation."""
 
-        str_ = (
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f"num_ancestral={self.num_ancestral}, num_derived={self.num_derived}, "
+            f'node_string="{self.node_string}", snp_string="{self.snp_string}">'
+        )
+
+    def __str__(self) -> str:
+        """Return printable string representation."""
+
+        return (
             f"{self.num_ancestral} {self.num_derived}\n"
             f"{self.node_string}\n"
             f"{self.snp_string}"
         )
-
-        return str_
 
     # Properties
     # ----------------------------------------------------------------------

@@ -108,14 +108,22 @@ class SNP:
         ) = parse_snp_label(label, Config.snp_label_letters_rank_dict)
         self.label_cleaned = clean_snp_label(label)
 
-    def __str__(self) -> str:
-        """Return medium-length string representation."""
+    def __repr__(self) -> str:
+        """Return string representation."""
 
-        str_ = (
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f'label="{self.label}", node.label="{self.node.label}", position={self.position}, '
+            f'mutation="{self.ancestral}->{self.derived}">'
+        )
+
+    def __str__(self) -> str:
+        """Return printable string representation."""
+
+        return (
             f"{self.label:15s} {self.node.label:25s} {self.position:8d} "
             f"{self.ancestral}->{self.derived}"
         )
-        return str_
 
     @property
     def str_with_all_names(self) -> str:
@@ -382,6 +390,14 @@ class DroppedMarker:
         self.name = clean_snp_label(name)
         self.haplogroup = haplogroup
         self.tree = tree
+
+    def __repr__(self) -> str:
+        """Return string representation."""
+
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f'name="{self.name}", haplogroup="{self.haplogroup}">'
+        )
 
     def add_to_node(self) -> bool:
         """Add this dropped marker to the corresponding node, if it exists."""

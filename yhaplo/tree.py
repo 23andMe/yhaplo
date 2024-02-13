@@ -110,6 +110,15 @@ class Tree:
         self.set_search_root()
         self.write_optional_traversal_output()
 
+    def __repr__(self) -> str:
+        """Return string representation."""
+
+        return (
+            f"<{__name__}.{self.__class__.__name__}: "
+            f"{len(self.depth_first_node_list)} nodes, {len(self.snp_list)} SNPs, "
+            f"max_depth={self.max_depth}>"
+        )
+
     # Setters
     # ----------------------------------------------------------------------
     def set_search_root(self) -> None:
@@ -212,9 +221,9 @@ class Tree:
         mrca = node1.mrca(node2)
         logger.info(
             "\nMRCA Query\n\n"
-            f"Haplogroup 1: {node1.haplogroup}\n"
-            f"Haplogroup 2: {node2.haplogroup}\n"
-            f"MRCA: {mrca.haplogroup}\n"
+            f"Haplogroup 1: {node1.haplogroup} ({node1.hg_snp})\n"
+            f"Haplogroup 2: {node2.haplogroup} ({node2.hg_snp})\n"
+            f"MRCA: {mrca.haplogroup} ({mrca.hg_snp})\n"
         )
 
     def query_snp_path(self, query_snp_name: str) -> None:
@@ -292,12 +301,19 @@ class Tree:
         the phylogenetic path leading from the root to the most terminal branch
         representing a Sample's haplogroup.
 
+        Parameters
+        ----------
+        sample : Sample
+            Sample instance.
+
         Returns
         -------
         best_path : Path
             The best phylogenetic path.
         anc_snp_full_list : list[SNP]
             List of SNPs observed in the ancestral state.
+        anc_der_count_tuples : list[tuple[Node, int, int]]
+            List of (node, num_ancestral, num_derived) tuples.
 
         Notes
         -----
@@ -983,7 +999,7 @@ def verify_newick_token(observed: str, expected: str) -> None:
 
     if observed != expected:
         raise ValueError(
-            "Malformed newick file.\n"
+            "Malformed Newick file.\n"
             f"Expected this token: {expected}\n"
             f"Got this one:        {observed}\n"
         )

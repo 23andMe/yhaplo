@@ -1,8 +1,5 @@
 [build-system]
-requires = [
-    "setuptools>=61.0",
-    "setuptools_scm[toml]>=6.2",
-]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -52,7 +49,6 @@ Repository = "https://github.com/23andMe/yhaplo.git"
 Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 
 [tool.setuptools_scm]
-write_to = "yhaplo/_version.py"
 
 [tool.isort]
 profile = "black"
@@ -80,18 +76,3 @@ norecursedirs = [
     ".*",
     "build",
 ]
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py39, py310, py311
-
-[testenv]
-commands =
-    pytest
-sitepackages = false
-deps =
-    pytest
-extras =
-    vcf
-"""
