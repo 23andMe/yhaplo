@@ -4,7 +4,6 @@ Classes defined herein include:
 * Sample
 * TextSample
 * VCFSample
-* AblockSample
 
 """
 

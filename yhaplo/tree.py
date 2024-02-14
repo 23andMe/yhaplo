@@ -239,6 +239,7 @@ class Tree:
         snp = self.snp_dict.get(query_snp_name)
 
         if snp:
+            logger.info(f"{snp.info}\n")
             for node in snp.back_trace_path():
                 logger.info(node.str_simple)
 
