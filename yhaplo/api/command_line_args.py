@@ -92,8 +92,8 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         action="store_true",
         help="Generate all auxiliary output.\n"
         "Equivalent to these seven options:\n"
-        "--ancDerCounts --haplogroupPaths --haplogroupPathsDetail\n"
-        "--derSNPs --derSNPsDetail --ancSNPs --ancSNPsDetail",
+        "--anc_der_counts --haplogroup_paths --haplogroup_paths_detail\n"
+        "--der_snps --der_snps_detail --anc_snps --anc_snps_detail",
     )
     group.add_argument(
         "-c",
@@ -204,7 +204,8 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "--snp_query",
         dest="query_snp_names",
         metavar="snp_names",
-        help="List phylogenetic path for each SNP in comma-separated list",
+        help="For each SNP in comma-separated list, output properties\n"
+        "and the phylogenetic path to the haplogroup it is associated with",
     )
     group.add_argument(
         "-pt",

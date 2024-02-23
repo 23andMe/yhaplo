@@ -126,6 +126,21 @@ class SNP:
         )
 
     @property
+    def info(self) -> str:
+        """Return multiline summary of SNP."""
+
+        names = [name for name in self.name_list if name != self.label]
+        aliases_str = ", ".join(names) if names else "None"
+        info = (
+            f"Name: {self.label}\n"
+            f"YCC haplogroup: {self.node.label}\n"
+            f"GRCh37 position: {self.position:,}\n"
+            f"Mutation: {self.ancestral}->{self.derived}\n"
+            f"Aliases: {aliases_str}"
+        )
+        return info
+
+    @property
     def str_with_all_names(self) -> str:
         """Return long string representation.
 
@@ -133,8 +148,8 @@ class SNP:
         plus a comma-separated list of names.
 
         """
-        names = ",".join(self.name_list)
-        str_with_all_names = f"{str(self)}     {names}"
+        names_str = ",".join(self.name_list)
+        str_with_all_names = f"{str(self)}     {names_str}"
         return str_with_all_names
 
     @property

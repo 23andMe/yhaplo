@@ -7,7 +7,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 No unreleased changes
 
-[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.6..HEAD
+[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.7..HEAD
+
+
+## [2.1.7] - 2024-02-23
+
+### Added
+- `SNP.info` property, called from `Tree.query_snp_path`
+
+[2.1.7]: https://github.com/23andMe/yhaplo/compare/2.1.6..2.1.7
 
 
 ## [2.1.6] - 2024-02-07
@@ -73,7 +81,7 @@ and faster processing of most input types.
 - BCF support
 - Automated tests
 - Optional dependencies
-- `Sample` subclasses: `TextSample`, `VCFSample`, `AblockSample`
+- `Sample` subclasses: `TextSample`, `VCFSample`
 - `CHANGELOG.md`
 
 ### Changed
