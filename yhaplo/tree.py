@@ -161,9 +161,12 @@ class Tree:
 
         if self.args.mrca_haplogroup_list:
             self.query_mrca(*self.args.mrca_haplogroup_list)
+        if self.args.query_haplogroups:
+            for haplogroup in self.args.query_haplogroups.split(","):
+                self.query_haplogroup(haplogroup)
         if self.args.query_snp_names:
-            for query_snp_name in self.args.query_snp_names.split(","):
-                self.query_snp_path(query_snp_name)
+            for snp_name in self.args.query_snp_names.split(","):
+                self.query_snp_path(snp_name)
 
     def write_breadth_first(self) -> None:
         """Write bread-first traversal in pipe/dot format."""
@@ -226,31 +229,50 @@ class Tree:
             f"MRCA: {mrca.haplogroup} ({mrca.hg_snp})\n"
         )
 
-    def query_snp_path(self, query_snp_name: str) -> None:
+    def query_haplogroup(self, haplogroup: str) -> None:
+        """List phylogenetic path for a query haplogroup.
+
+        Parameters
+        ----------
+        haplogroup : str
+            Name of haplogroup to query.
+
+        """
+        logger.info(f"\nHaplogroup Query: {haplogroup}\n")
+        haplogroup_node = self.haplogroup_to_node.get(haplogroup)
+
+        if haplogroup_node:
+            for node in haplogroup_node.back_trace_path():
+                logger.info(node.str_simple)
+
+        else:
+            logger.info(f'Haplogroup "{haplogroup}" not found')
+
+        logger.info("")
+
+    def query_snp_path(self, snp_name: str) -> None:
         """List phylogenetic path for a query SNP.
 
         Parameters
         ----------
-        query_snp_name : str
+        snp_name : str
             Name of SNP to query.
 
         """
-        logger.info(f"\nSNP Query: {query_snp_name}\n")
-        snp = self.snp_dict.get(query_snp_name)
+        logger.info(f"\nSNP Query: {snp_name}\n")
+        snp = self.snp_dict.get(snp_name)
 
         if snp:
             logger.info(f"{snp.info}\n")
             for node in snp.back_trace_path():
                 logger.info(node.str_simple)
 
-            if query_snp_name != snp.label:
-                logger.info(f"\nNote: {query_snp_name} is an alias of {snp.label}.\n")
-            elif not node.hg_snp.endswith(query_snp_name):
-                logger.info(
-                    f"\nNote: {query_snp_name} is on the {node.hg_snp} branch.\n"
-                )
+            if snp_name != snp.label:
+                logger.info(f"\nNote: {snp_name} is an alias of {snp.label}.")
+            elif not node.hg_snp.endswith(snp_name):
+                logger.info(f"\nNote: {snp_name} is on the {node.hg_snp} branch.")
         else:
-            logger.info(f'No SNPs found with the name "{query_snp_name}"\n')
+            logger.info(f'No SNP found with the name "{snp_name}"')
 
         logger.info("")
 

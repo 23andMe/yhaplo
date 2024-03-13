@@ -197,7 +197,17 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         nargs=2,
         dest="mrca_haplogroup_list",
         metavar=("haplogroup1", "haplogroup2"),
-        help="Output MRCA of two haplogroups",
+        help="Output MRCA of two haplogroups.\n"
+        'Haplogroups may be YCC (e.g., "E1b") or SNP-based (e.g., "Q-M3").',
+    )
+    group.add_argument(
+        "-hq",
+        "--haplogroup_query",
+        dest="query_haplogroups",
+        metavar="haplogroups",
+        help="For each haplogroup in comma-separated list,\n"
+        "output phylogenetic path from the root.\n"
+        'Haplogroups may be YCC (e.g., "E1b") or SNP-based (e.g., "Q-M3").',
     )
     group.add_argument(
         "-sq",
@@ -205,7 +215,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         dest="query_snp_names",
         metavar="snp_names",
         help="For each SNP in comma-separated list, output properties\n"
-        "and the phylogenetic path to the haplogroup it is associated with",
+        "and the phylogenetic path of the associated haplogroup",
     )
     group.add_argument(
         "-pt",

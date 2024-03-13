@@ -3,11 +3,12 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
-## [Unreleased]
+## [2.1.8]
 
-No unreleased changes
+### Added
+- `--haplogroup_query` option
 
-[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.7..HEAD
+[2.1.8]: https://github.com/23andMe/yhaplo/compare/2.1.7..2.1.8
 
 
 ## [2.1.7] - 2024-02-23
