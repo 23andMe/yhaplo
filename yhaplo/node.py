@@ -56,7 +56,7 @@ class Node:
     tree: "tree_module.Tree"
     config: Config
     args: argparse.Namespace
-    hg_snp_set: set[str] = set()
+    hg_snp_set: set[str]
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class Node:
         self.parent = parent
         if parent is None:
             if tree is not None:
-                type(self).set_tree_config_and_args(tree)
+                type(self).set_class_variables(tree)
             else:
                 raise ValueError("Root node requires a tree instance")
 
@@ -204,12 +204,13 @@ class Node:
     # Class methods
     # ----------------------------------------------------------------------
     @classmethod
-    def set_tree_config_and_args(cls, tree: "tree_module.Tree") -> None:
+    def set_class_variables(cls, tree: "tree_module.Tree") -> None:
         """Set tree, config, and args."""
 
         cls.tree = tree
         cls.config = tree.config
         cls.args = tree.args
+        cls.hg_snp_set = set()
 
     @classmethod
     def truncate_haplogroup_label(cls, haplogroup: str) -> str:
@@ -308,14 +309,12 @@ class Node:
                 self.hg_snp = self.parent.hg_snp + symbol
 
                 # Uniquify if necessary
-                if self.hg_snp in type(self).hg_snp_set:
-                    i = 1
-                    hg_snp_uniqe = f"{self.hg_snp}{i}"
-                    while hg_snp_uniqe in type(self).hg_snp_set:
-                        i += 1
-                        hg_snp_uniqe = f"{self.hg_snp}{i}"
+                original_hg_snp = self.hg_snp
+                i = 0
+                while self.hg_snp in type(self).hg_snp_set:
+                    i += 1
+                    self.hg_snp = f"{original_hg_snp}{i}"
 
-                    self.hg_snp = hg_snp_uniqe
             else:
                 logger.warning(
                     "WARNING. Attempted to set star label, "
