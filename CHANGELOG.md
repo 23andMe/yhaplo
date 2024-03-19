@@ -3,6 +3,14 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
+## [2.1.9]
+
+### Fixed
+- `Node.hg_snp` values would drift upon repeated `Tree` instantiation
+
+[2.1.9]: https://github.com/23andMe/yhaplo/compare/2.1.8..2.1.9
+
+
 ## [2.1.8]
 
 ### Added
