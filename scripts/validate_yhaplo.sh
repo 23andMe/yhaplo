@@ -41,7 +41,7 @@ yhaplo --example_text \
     --depth_first \
     --depth_first_table \
     --mrca Q-M3 R-V88 \
-    --haplogroup_query E1b,Q-M3,foo \
+    --haplogroup_query E1b1,Q-M3,foo \
     --snp_query L1335,S730,S530,foo
 echo -e "\n"
 

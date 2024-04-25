@@ -3,6 +3,14 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
+## [2.1.10]
+
+### Added
+- List SNPs associated with a given queried haplogroup
+
+[2.1.10]: https://github.com/23andMe/yhaplo/compare/2.1.9..2.1.10
+
+
 ## [2.1.9]
 
 ### Fixed

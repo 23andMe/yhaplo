@@ -242,8 +242,13 @@ class Tree:
         haplogroup_node = self.haplogroup_to_node.get(haplogroup)
 
         if haplogroup_node:
+            logger.info("Descent\n------")
             for node in haplogroup_node.back_trace_path():
                 logger.info(node.str_simple)
+
+            logger.info("\nSNPs\n----")
+            for snp in haplogroup_node.snp_list:
+                logger.info(snp)
 
         else:
             logger.info(f'Haplogroup "{haplogroup}" not found')
