@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Sequence
-from typing import Optional
 
 from yhaplo import node as node_module  # noqa F401
 from yhaplo import snp as snp_module  # noqa F401
@@ -28,7 +27,7 @@ class Path:
 
     def __init__(
         self,
-        node: "node_module.Node",
+        node: node_module.Node,
     ):
         """Instantiate Path.
 
@@ -39,8 +38,8 @@ class Path:
 
         """
         self.node = node
-        self.der_snp_list: list["snp_module.SNP"] = []
-        self.most_derived_snp: Optional["snp_module.SNP"] = None
+        self.der_snp_list: list[snp_module.SNP] = []
+        self.most_derived_snp: snp_module.SNP | None = None
         self.num_ancestral = 0
         self.init_push_through_vars()
 
@@ -51,8 +50,8 @@ class Path:
         one ancestral allele and no derived alleles.
 
         """
-        self.node_when_pushed_through: Optional["node_module.Node"] = None
-        self.most_derived_snp_when_pushed_through: Optional["snp_module.SNP"] = None
+        self.node_when_pushed_through: node_module.Node | None = None
+        self.most_derived_snp_when_pushed_through: snp_module.SNP | None = None
         self.num_anc_since_push_through = 0
         self.num_der_since_push_through = 0
 
@@ -155,7 +154,7 @@ class Path:
         )
         return better_than
 
-    def fork(self, node_list: Sequence["node_module.Node"]) -> deque[Path]:
+    def fork(self, node_list: Sequence[node_module.Node]) -> deque[Path]:
         """Fork path.
 
         Returns
@@ -195,8 +194,8 @@ class Path:
 
     def update_with_branch_assessment(
         self,
-        anc_snp_list: Sequence["snp_module.SNP"],
-        der_snp_list: Sequence["snp_module.SNP"],
+        anc_snp_list: Sequence[snp_module.SNP],
+        der_snp_list: Sequence[snp_module.SNP],
     ) -> None:
         """Update with branch assessment.
 
@@ -220,7 +219,7 @@ class Path:
     # Class methods
     # ----------------------------------------------------------------------
     @classmethod
-    def create_path_deque(cls, node_list: Sequence["node_module.Node"]) -> deque[Path]:
+    def create_path_deque(cls, node_list: Sequence[node_module.Node]) -> deque[Path]:
         """Return a deque of paths, each corresponding to one node in node_list."""
 
         path_deque: deque[Path] = deque()

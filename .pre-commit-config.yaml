@@ -1,14 +1,17 @@
 default_stages: [commit, merge-commit]
 fail_fast: true
 repos:
+  - repo: git@github.com:astral-sh/ruff-pre-commit.git
+    rev: v0.4.3
+    hooks:
+      - id: ruff
+        types_or: [ python, pyi, jupyter ]
+        args: [ --fix, --unsafe-fixes ]
+      - id: ruff-format
   - repo: git@github.com:PyCQA/isort.git
     rev: 5.13.2
     hooks:
       - id: isort
-  - repo: git@github.com:psf/black.git
-    rev: 24.1.0
-    hooks:
-      - id: black
   - repo: git@github.com:pre-commit/pre-commit-hooks.git
     rev: v4.5.0
     hooks:
@@ -18,16 +21,6 @@ repos:
         exclude: .*.ipynb
       - id: trailing-whitespace
         exclude: tests/fixtures/output/haplogroups\..*\.txt|data/variants/isogg\.[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.txt
-  - repo: git@github.com:PyCQA/flake8.git
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-  - repo: git@github.com:PyCQA/pydocstyle.git
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
-        additional_dependencies: [tomli]
-        exclude: tests/
   - repo: git@github.com:pre-commit/mirrors-mypy.git
     rev: v1.8.0
     hooks:

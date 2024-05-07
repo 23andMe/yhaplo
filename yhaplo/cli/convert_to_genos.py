@@ -66,7 +66,7 @@ def read_map(
     position_list = []
     index_list = []
     index = 0
-    with open(map_fp, "r") as map_file:
+    with open(map_fp) as map_file:
         for line in map_file:
             chromosome, _, _, position = line.strip().split()
             if chromosome in CHROMOSOME_SET:
@@ -89,7 +89,7 @@ def process_ped(
 
     diploid_index_list = [2 * i for i in index_list]
     num_individuals, num_female = 0, 0
-    with open(ped_fp, "r") as in_file:
+    with open(ped_fp) as in_file:
         for line in in_file:
             line_list = line.strip().split()
             sex = line_list[4]
@@ -129,7 +129,7 @@ def convert_ttam(
     out_fp = os.path.join(OUT_DIR, f"{ID}.genos.txt")
     geno_tuple_list = []
     num_non_y, num_het_or_no_call = 0, 0
-    with open(in_fp, "r") as in_file:
+    with open(in_fp) as in_file:
         for line in in_file:
             if line[0] == "#" or line[:4] == "rsid":
                 continue

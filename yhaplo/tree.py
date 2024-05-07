@@ -382,7 +382,8 @@ class Tree:
 
         b. Row 4: num_ancestral >= 3
            num_derived == 0: Compelling evidence to stop.
-           num_derived >= 1: The sample's lineage probably diverges from the known tree here.
+           num_derived >= 1: The sample's lineage probably diverges
+                             from the known tree here.
 
         c. Row 3: num_ancestral == 2 and num_derived == 0
            It is safe to assume that this path will not yield fruit.
@@ -710,8 +711,8 @@ class Tree:
             isogg_out_file = None
             isogg_drop_out_file = None
         else:
-            isogg_out_file = open(self.config.cleaned_isogg_fp, "w")
-            isogg_drop_out_file = open(self.config.dropped_isogg_fp, "w")
+            isogg_out_file = open(self.config.cleaned_isogg_fp, "w")  # noqa SIM115
+            isogg_drop_out_file = open(self.config.dropped_isogg_fp, "w")  # noqa SIM115
 
         dropped_marker_list = []
         for line in load_data_lines(self.config.isogg_data_file, log=True)[1:]:
@@ -863,15 +864,15 @@ class Tree:
         correction_fps_str = ("\n" + " " * 12).join(
             [config.isogg_correct_name_data_file.filename]
             + [
-                isogg_corrections_data_file.filename
-                for isogg_corrections_data_file in config.isogg_corrections_data_file_dict.values()
+                data_file.filename
+                for data_file in config.isogg_corrections_data_file_dict.values()
             ]
         )
         omit_fps_str = ("\n" + " " * 18).join(
             [config.isogg_omit_name_data_file.filename]
             + [
-                isogg_omit_data_file.filename
-                for isogg_omit_data_file in config.isogg_omit_pos_str_mutation_data_files
+                data_file.filename
+                for data_file in config.isogg_omit_pos_str_mutation_data_files
             ]
         )
 

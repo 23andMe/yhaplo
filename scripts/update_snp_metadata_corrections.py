@@ -21,6 +21,7 @@ $ git log --oneline \
 $ git revert <commit shas>
 
 """
+
 import logging
 import os
 import subprocess
@@ -57,7 +58,8 @@ DEFAULT_INPUT_DICT = {
 # Steps to generate:
 # 1. Download 1000 Genomes Y-chromosome data:
 #    https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/chrY/
-#        ALL.chrY_10Mbp_mask.glia_freebayes_maxLikGT_siteQC.20130502.60555_biallelic_snps.vcf.gz
+#        ALL.chrY_10Mbp_mask.glia_freebayes_maxLikGT_siteQC.20130502.
+#        60555_biallelic_snps.vcf.gz
 # 2. Convert to BCF: 1000Y.all.bcf.
 # 3. Call haplogroups with yhaplo.
 DATA_DIR = "data"
@@ -845,12 +847,12 @@ def run_bcftools(
             shell=True,
             check=True,
         ).stdout
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as error:
         raise RuntimeError(
             "Unable to run bcftools command.\n"
             f"    {bcftools_cmd}\n"
             f"    Check bcftools installation and availability of BCF file."
-        )
+        ) from error
 
     if bcfools_output:
         bcftools_df = pd.DataFrame(

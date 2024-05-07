@@ -54,7 +54,14 @@ run-hooks:  ## Run hooks
 run-hooks-all:  ## Run hooks on all files
 	pre-commit run --all-files
 
+
+## Linting
+# ----------------------------------------------------------------------
 lint: run-hooks-all  ## Alias for run-hooks-all
+
+ruff:  ## Run Ruff linting and formatting, fixing violations
+	ruff check --fix --unsafe-fixes
+	ruff format
 
 
 ## Testing

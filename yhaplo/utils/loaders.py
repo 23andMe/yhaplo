@@ -56,7 +56,7 @@ class TtamFileNotFoundError(FileNotFoundError):
         data_file: DataFile,
         package: str,
     ):
-        super(TtamFileNotFoundError, self).__init__(
+        super().__init__(
             f'Failed to load "{data_file.filename}" from {package}.\n'
             f"{data_file.description} file only available internally at 23andMe.\n"
         )
@@ -86,9 +86,9 @@ def load_data(
     """
     try:
         data = files(data_file.package).joinpath(data_file.filename).read_text()
-    except (FileNotFoundError, ModuleNotFoundError):
+    except (FileNotFoundError, ModuleNotFoundError) as error:
         if data_file.ttam_only:
-            raise TtamFileNotFoundError(data_file, data_file.package)
+            raise TtamFileNotFoundError(data_file, data_file.package) from error
         else:
             raise
 
@@ -118,9 +118,9 @@ def load_dataframe(
         with as_file(files(data_file.package).joinpath(data_file.filename)) as path:
             df = pd.read_csv(path, sep=r"\s+", header=header)
 
-    except (FileNotFoundError, ModuleNotFoundError):
+    except (FileNotFoundError, ModuleNotFoundError) as error:
         if data_file.ttam_only:
-            raise TtamFileNotFoundError(data_file, data_file.package)
+            raise TtamFileNotFoundError(data_file, data_file.package) from error
         else:
             raise
 
