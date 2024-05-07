@@ -9,7 +9,10 @@ $ look_up_seq_genotypes.py E1b1b1b 7317593
    1244 haplogroups loaded: data/haplogroups.1000Y.all.txt
      19 with a haplogroup in clade E1b1b1b
 
-bcftools view --regions Y:7317593 --samples HG01699,HG02317,HG02798,HG01088,HG01104,HG01161,HG01680,HG02150,NA19676,NA19759,NA19792,HG01110,HG01250,HG01325,HG01112,HG01455,NA19311,NA19331,NA19334 data/1000Y.all.bcf | bcftools query --format '%POS %REF %ALT [%GT]'
+bcftools view --regions Y:7317593 --samples HG01699,HG02317,HG02798,HG01088,HG01104,\
+HG01161,HG01680,HG02150,NA19676,NA19759,NA19792,HG01110,HG01250,HG01325,HG01112,\
+HG01455,NA19311,NA19331,NA19334 data/1000Y.all.bcf \
+| bcftools query --format '%POS %REF %ALT [%GT]'
 
          ref alt  num_ref  num_alt  num_miss
 position
@@ -185,12 +188,12 @@ def run_bcftools(
             shell=True,
             check=True,
         ).stdout
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as error:
         raise RuntimeError(
             "Unable to run bcftools command.\n"
             f"    {bcftools_cmd}\n"
             f"    Check bcftools installation and availability of BCF file."
-        )
+        ) from error
 
     if bcfools_output:
         bcftools_df = pd.DataFrame(

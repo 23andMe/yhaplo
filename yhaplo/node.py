@@ -7,7 +7,6 @@ import logging
 from collections import deque
 from collections.abc import Iterator
 from operator import attrgetter
-from typing import Optional, Union
 
 import numpy as np
 
@@ -53,15 +52,15 @@ class Node:
 
     """
 
-    tree: "tree_module.Tree"
+    tree: tree_module.Tree
     config: Config
     args: argparse.Namespace
     hg_snp_set: set[str]
 
     def __init__(
         self,
-        parent: Union[Node, None],
-        tree: Optional["tree_module.Tree"] = None,
+        parent: Node | None,
+        tree: tree_module.Tree | None = None,
     ):
         """Instantiate Node.
 
@@ -93,9 +92,9 @@ class Node:
         self.hg_trunc: str = ""
         self.hg_snp: str = ""
         self.child_list: list[Node] = []
-        self.snp_list: list["snp_module.SNP"] = []
-        self.dropped_marker_list: list["snp_module.DroppedMarker"] = []
-        self.branch_length: Optional[float] = None
+        self.snp_list: list[snp_module.SNP] = []
+        self.dropped_marker_list: list[snp_module.DroppedMarker] = []
+        self.branch_length: float | None = None
         self.dfs_rank: int = 0
 
     # String representations
@@ -190,13 +189,13 @@ class Node:
         return tree_table_row
 
     @property
-    def most_highly_ranked_snp(self) -> "snp_module.SNP":
+    def most_highly_ranked_snp(self) -> snp_module.SNP:
         """Return the most highly ranked SNP."""
 
         return self.snp_list[0]
 
     @property
-    def most_highly_ranked_dropped_marker(self) -> "snp_module.DroppedMarker":
+    def most_highly_ranked_dropped_marker(self) -> snp_module.DroppedMarker:
         """Return the most highly ranked dropped marker."""
 
         return self.dropped_marker_list[0]
@@ -204,7 +203,7 @@ class Node:
     # Class methods
     # ----------------------------------------------------------------------
     @classmethod
-    def set_class_variables(cls, tree: "tree_module.Tree") -> None:
+    def set_class_variables(cls, tree: tree_module.Tree) -> None:
         """Set tree, config, and args."""
 
         cls.tree = tree
@@ -261,14 +260,14 @@ class Node:
 
         self.dfs_rank = dfs_rank
 
-    def add_snp(self, snp: "snp_module.SNP") -> None:
+    def add_snp(self, snp: snp_module.SNP) -> None:
         """Append a SNP to the SNP list."""
 
         self.snp_list.append(snp)
 
     def add_dropped_marker(
         self,
-        dropped_marker: "snp_module.DroppedMarker",
+        dropped_marker: snp_module.DroppedMarker,
     ) -> None:
         """Append a dropped marker to the list."""
 
@@ -330,9 +329,9 @@ class Node:
     def get_branch_length(
         self,
         align_tips: bool = False,
-        subtree_max_depth: Optional[int] = None,
-        platform: Optional[str] = None,
-    ) -> Optional[float]:
+        subtree_max_depth: int | None = None,
+        platform: str | None = None,
+    ) -> float | None:
         """Get branch length.
 
         Parameters
@@ -341,7 +340,8 @@ class Node:
             When True, set internal branch lengths to one and leaf branch lengths
             in such a manner as to align the tips of the tree.
         subtree_max_depth : int | None, optional
-            Maximum depth of subtree. Used to set leaf branch lengths when aligning tips.
+            Maximum depth of subtree.
+            Used to set leaf branch lengths when aligning tips.
             Default to maximum depth of full tree.
         platform : str | None, optional
             23andMe platform to use for computing branch length.
@@ -383,8 +383,8 @@ class Node:
 
     def assess_genotypes(
         self,
-        sample: "sample_module.Sample",
-    ) -> tuple[list["snp_module.SNP"], list["snp_module.SNP"]]:
+        sample: sample_module.Sample,
+    ) -> tuple[list[snp_module.SNP], list[snp_module.SNP]]:
         """Assess an individual's genotypes with respect to self.snp_list.
 
         Returns
@@ -479,8 +479,7 @@ class Node:
 
         yield self
         for child in self.child_list:
-            for node in child.iter_depth_first():
-                yield node
+            yield from child.iter_depth_first()
 
     def iter_breadth_first(self) -> Iterator[Node]:
         """Traverse tree breadth first."""
@@ -522,7 +521,7 @@ class Node:
         newick_fp: str,
         use_hg_snp_label: bool = False,
         align_tips: bool = False,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         rotate: bool = False,
     ) -> None:
         """Write Newick representation of the subtree rooted at this node.
@@ -560,10 +559,7 @@ class Node:
             else:
                 tree_descriptor = ""
 
-            if use_hg_snp_label:
-                label_type = "representative-SNP"
-            else:
-                label_type = "YCC"
+            label_type = "representative-SNP" if use_hg_snp_label else "YCC"
 
             logger.info(
                 f"Wrote {tree_descriptor}tree with {label_type} labels:\n"
@@ -574,7 +570,7 @@ class Node:
         self,
         use_hg_snp_label: bool = False,
         align_tips: bool = False,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         rotate: bool = False,
     ) -> str:
         """Build Newick string for the subtree rooted at this node.
@@ -616,8 +612,8 @@ class Node:
         self,
         use_hg_snp_label: bool = False,
         align_tips: bool = False,
-        subtree_max_depth: Optional[int] = None,
-        platform: Optional[str] = None,
+        subtree_max_depth: int | None = None,
+        platform: str | None = None,
         rotate: bool = False,
     ) -> str:
         """Build Newick string recursively for the subtree rooted at this node.
@@ -629,7 +625,8 @@ class Node:
         align_tips : bool, optional
             When True, set branch lengths to align the tips of the tree.
         subtree_max_depth : int | None, optional
-            Maximum depth of subtree. Used to set leaf branch lengths when aligning tips.
+            Maximum depth of subtree.
+            Used to set leaf branch lengths when aligning tips.
             Default to maximum depth of full tree.
         platform : str | None, optional
             23andMe platform to use for computing branch lengths.

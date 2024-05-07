@@ -10,6 +10,7 @@ Classes defined herein include:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import gzip
 import logging
@@ -17,7 +18,7 @@ import os
 import re
 from collections import defaultdict
 from operator import attrgetter
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import pandas as pd
 
@@ -28,10 +29,8 @@ from yhaplo.config import IID_TYPE, Config
 from yhaplo.utils.optional_dependencies import check_vcf_dependencies
 from yhaplo.utils.vcf import check_vcf_index
 
-try:
+with contextlib.suppress(ImportError):
     from pysam import VariantFile
-except ImportError:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ class Sample:
 
     config: Config
     args: argparse.Namespace
-    tree: "tree_module.Tree"
+    tree: tree_module.Tree
 
     num_assigned = 0
     num_root_calls = 0
@@ -110,11 +109,11 @@ class Sample:
 
         """
         self.iid = iid
-        self.haplogroup_node: Optional["node_module.Node"] = None
-        self.most_derived_snp: Optional["snp_module.SNP"] = None
-        self.der_snp_list: list["snp_module.SNP"]
-        self.anc_snp_list: list["snp_module.SNP"]
-        self.anc_der_count_tuples: list[tuple["node_module.Node", int, int]]
+        self.haplogroup_node: node_module.Node | None = None
+        self.most_derived_snp: snp_module.SNP | None = None
+        self.der_snp_list: list[snp_module.SNP]
+        self.anc_snp_list: list[snp_module.SNP]
+        self.anc_der_count_tuples: list[tuple[node_module.Node, int, int]]
 
         type(self).sample_list.append(self)
 
@@ -156,10 +155,8 @@ class Sample:
             type(self).num_root_calls += 1
             self.haplogroup_node = type(self).tree.root
 
-        try:
+        with contextlib.suppress(NotImplementedError):
             self.fix_haplogroup_if_artifact()
-        except NotImplementedError:
-            pass
 
         self.write_real_time_output()
         self.purge_data()
@@ -267,7 +264,7 @@ class Sample:
         return haplogroup_dfs_rank
 
     @property
-    def haplogroup_dict(self) -> dict[str, Union[str, int]]:
+    def haplogroup_dict(self) -> dict[str, str | int]:
         """Return dictionary with various representations of the haplogroup call.
 
         Returns
@@ -430,7 +427,8 @@ class Sample:
             logger.info(
                 f"\nWill write haplogroups as they are called:\n"
                 f"    {cls.config.haplogroup_real_time_fp}\n"
-                "Note: This file includes DFS rank, so it can be sorted ex post facto with:\n"
+                "Note: This file includes DFS rank, so it can be sorted "
+                "ex post facto with:\n"
                 f"    sort -nk5 {cls.config.haplogroup_real_time_fp}\n"
             )
 
@@ -666,7 +664,7 @@ class TextSample(Sample):
             List of genotypes.
 
         """
-        super(TextSample, self).__init__(iid)
+        super().__init__(iid)
         self.genotypes = genotypes
 
     def get_genotype(self, position: int) -> str:
@@ -682,7 +680,7 @@ class TextSample(Sample):
     def purge_data(self) -> None:
         """Clear genotype data and other data structures if no longer needed."""
 
-        super(TextSample, self).purge_data()
+        super().purge_data()
         self.genotypes.clear()
 
     @classmethod
@@ -692,7 +690,7 @@ class TextSample(Sample):
         logger.info("Mode: Sample-major text\n")
         cls.configure(config)
         geno_file = (
-            open(cls.args.data_fp, "r")
+            open(cls.args.data_fp)  # noqa SIM115
             if os.path.splitext(cls.args.data_fp)[1] != ".gz"
             else gzip.open(cls.args.data_fp, "rt")
         )
@@ -732,7 +730,7 @@ class VCFSample(Sample):
             Individual identifier.
 
         """
-        super(VCFSample, self).__init__(iid)
+        super().__init__(iid)
         self.position_to_genotype: dict[int, str] = {}
 
     def put_genotype(self, position: int, genotype: str) -> None:

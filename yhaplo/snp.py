@@ -50,7 +50,7 @@ class SNP:
 
     """
 
-    tree: "tree_module.Tree"
+    tree: tree_module.Tree
     pos_to_block_indexes: dict[int, list[int]] = {}
     platform_to_pos_set: dict[str, set[int]] = {}
 
@@ -113,7 +113,8 @@ class SNP:
 
         return (
             f"<{__name__}.{self.__class__.__name__}: "
-            f'label="{self.label}", node.label="{self.node.label}", position={self.position}, '
+            f'label="{self.label}", node.label="{self.node.label}", '
+            f"position={self.position}, "
             f'mutation="{self.ancestral}->{self.derived}">'
         )
 
@@ -193,7 +194,7 @@ class SNP:
         is_on_platform = self.position in type(self).platform_to_pos_set[platform]
         return is_on_platform
 
-    def back_trace_path(self) -> list["node_module.Node"]:
+    def back_trace_path(self) -> list[node_module.Node]:
         """Return the backtrace path (node list) for the corresponding node."""
 
         back_trace_path = self.node.back_trace_path()
@@ -227,7 +228,7 @@ class SNP:
     @classmethod
     def set_class_variables(
         cls,
-        tree: "tree_module.Tree",
+        tree: tree_module.Tree,
     ) -> None:
         """Set class variables.
 
@@ -400,7 +401,7 @@ class DroppedMarker:
         self,
         name: str,
         haplogroup: str,
-        tree: "tree_module.Tree",
+        tree: tree_module.Tree,
     ):
         self.name = clean_snp_label(name)
         self.haplogroup = haplogroup

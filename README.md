@@ -3,21 +3,6 @@
 [![python](
 https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](
 https://docs.python.org)
-[![style](
-https://img.shields.io/badge/style-black-blue.svg)](
-https://github.com/psf/black)
-[![imports](
-https://img.shields.io/badge/imports-isort-blue.svg)](
-https://pycqa.github.io/isort)
-[![docs](
-https://img.shields.io/badge/docs-pydocstyle-blue.svg)](
-https://github.com/PyCQA/pydocstyle)
-[![format](
-https://img.shields.io/badge/format-flake8-blue.svg)](
-https://flake8.pycqa.org/en/latest/index.html)
-[![mypy](
-https://img.shields.io/badge/annotations-mypy-blue.svg)](
-https://github.com/python/mypy)
 
 David Poznik, 23andMe
 

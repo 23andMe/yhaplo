@@ -268,12 +268,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         help="Restrict to a single sample",
     )
 
-    if set_defaults:
-        # Set default values for all options and arguments
-        args = parser.parse_args([])
-    else:
-        # Read options and arguments from from sys.argv[1:]
-        args = parser.parse_args()
+    args = parser.parse_args([]) if set_defaults else parser.parse_args()
 
     return args
 
@@ -304,10 +299,9 @@ class RawTextWithDefaultsHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
     def _get_help_string(self, action):
         help_message = action.help
-        if "%(default)" not in action.help:
-            if action.default is not argparse.SUPPRESS:
-                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-                if action.option_strings or action.nargs in defaulting_nargs:
-                    help_message += "\n(default: %(default)s)"
+        if "%(default)" not in action.help and action.default is not argparse.SUPPRESS:
+            defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+            if action.option_strings or action.nargs in defaulting_nargs:
+                help_message += "\n(default: %(default)s)"
 
         return help_message

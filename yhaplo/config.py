@@ -399,7 +399,7 @@ class Config:
                 self.haplogroup_real_time_fp = self.construct_out_path(
                     type(self).haplogroup_real_time_fn_tp
                 )
-                self.haplogroup_real_time_file = open(
+                self.haplogroup_real_time_file = open(  # noqa SIM115
                     self.haplogroup_real_time_fp, "w", 1
                 )
 
@@ -407,7 +407,7 @@ class Config:
                 self.hg_genos_fp = self.construct_out_path(
                     type(self).hg_genos_fn_tp
                 ).format(haplogroup=self.args.haplogroup_to_list_genotypes_for)
-                self.hg_genos_file = open(self.hg_genos_fp, "w", 1)
+                self.hg_genos_file = open(self.hg_genos_fp, "w", 1)  # noqa SIM115
 
     def construct_out_path(self, fn_tp: str) -> str:
         """Return an output file path, given a filename template."""
@@ -471,11 +471,9 @@ class Config:
         if self.args.haplogroup_to_list_genotypes_for:
             self.hg_genos_file.close()
             logger.info(
-                (
-                    "Wrote genotypes at SNPs associated with haplogroup "
-                    f"{self.args.haplogroup_to_list_genotypes_for}:\n"
-                    f"    {self.hg_genos_fp}\n"
-                )
+                "Wrote genotypes at SNPs associated with haplogroup "
+                f"{self.args.haplogroup_to_list_genotypes_for}:\n"
+                f"    {self.hg_genos_fp}\n"
             )
 
 
