@@ -6,6 +6,8 @@ from collections import defaultdict, deque
 from operator import attrgetter
 from typing import Optional, Union
 
+import pandas as pd
+
 from yhaplo import node as node_module  # noqa F401
 from yhaplo import path as path_module  # noqa F401
 from yhaplo import sample as sample_module  # noqa F401
@@ -199,14 +201,19 @@ class Tree:
     def write_tree_table(self) -> None:
         """Write depth-first pre-order traversal in table format."""
 
-        tree_table_fp = self.config.tree_table_fp
-        header_list = "#index ycc_label label parent_index parent_label".split()
-        with open(tree_table_fp, "w") as tree_table_file:
-            tree_table_file.write("\t".join(header_list) + "\n")
-            for node in self.depth_first_node_list:
-                tree_table_file.write("\t".join(node.tree_table_data) + "\n")
+        tree_df = self.generate_tree_table()
+        tree_df.to_csv(self.config.tree_table_fp, sep="\t", index=False)
+        logger.info(f"Wrote tree table:\n    {self.config.tree_table_fp}\n")
 
-        logger.info(f"Wrote tree table:\n    {tree_table_fp}\n")
+    def generate_tree_table(self) -> pd.DataFrame:
+        """Generate tree table from depth-first pre-order traversal."""
+
+        tree_df = pd.DataFrame(
+            [node.tree_table_data for node in self.depth_first_node_list],
+            columns="#index ycc_label label parent_index parent_label".split(),
+        ).astype("string")
+
+        return tree_df
 
     def query_mrca(self, haplogroup1: str, haplogroup2: str) -> None:
         """Write MRCA of two haplogroups.

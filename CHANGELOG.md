@@ -3,15 +3,23 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
-## [2.1.10]
+## [2.1.11] - 2024-05-03
 
 ### Added
-- List SNPs associated with a given queried haplogroup
+- `Tree.generate_tree_table` method
+
+[2.1.11]: https://github.com/23andMe/yhaplo/compare/2.1.10..2.1.11
+
+
+## [2.1.10] - 2024-04-25
+
+### Added
+- List associated SNPs in `--haplogroup_query` output
 
 [2.1.10]: https://github.com/23andMe/yhaplo/compare/2.1.9..2.1.10
 
 
-## [2.1.9]
+## [2.1.9] - 2024-03-19
 
 ### Fixed
 - `Node.hg_snp` values of SNP-less intermediate branches now stable upon repeated `Tree` instantiation
@@ -19,7 +27,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 [2.1.9]: https://github.com/23andMe/yhaplo/compare/2.1.8..2.1.9
 
 
-## [2.1.8]
+## [2.1.8] - 2024-03-12
 
 ### Added
 - `--haplogroup_query` option
