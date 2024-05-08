@@ -77,8 +77,7 @@ norecursedirs = [
 
 [tool.ruff.lint]
 select = [
-    # TODO Configure Ruff import sorting.
-    # "I",  # isort
+    "I",    # isort
     "E",    # Flake8: pycodestyle (Error)
     "W",    # Flake8: pycodestyle (Warning)
     "F",    # Flake8: Pyflakes
