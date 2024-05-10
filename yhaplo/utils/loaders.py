@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataFile:
-    """Attributes of a yhaplo data file.
+    """Attributes of a Yhaplo data file.
 
     data_subdir : str
         Subpackage of DATA_SUBPACKAGE.
@@ -66,7 +66,7 @@ def load_data_lines(
     data_file: DataFile,
     log: bool = False,
 ) -> list[str]:
-    """Load yhaplo data file and split into lines."""
+    """Load Yhaplo data file and split into lines."""
 
     lines = load_data(data_file, log=log).strip().split("\n")
     return lines
@@ -76,7 +76,7 @@ def load_data(
     data_file: DataFile,
     log: bool = False,
 ) -> str:
-    """Load yhaplo data file as text.
+    """Load Yhaplo data file as text.
 
     Raises
     ------
@@ -106,7 +106,7 @@ def load_dataframe(
     header="infer",
     log: bool = False,
 ) -> pd.DataFrame:
-    """Load yhaplo data file as pandas DataFrame.
+    """Load Yhaplo data file as pandas DataFrame.
 
     Raises
     ------
@@ -186,7 +186,7 @@ def load_yhaplo_unique_snps(unique_fp: str) -> pd.DataFrame:
         names=SNP_TABLE_COL_NAMES,
     ).astype(SNP_TABLE_DTYPE_DICT)
 
-    log_prefix = f"{len(unique_df):7d} SNPs used by yhaplo:"
+    log_prefix = f"{len(unique_df):7d} SNPs used by Yhaplo:"
     logger.info(f"{log_prefix:32s}{unique_fp}")
 
     return unique_df

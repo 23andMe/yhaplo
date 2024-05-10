@@ -310,7 +310,7 @@ class Config:
         handlers, but we (conditionally) do so here since the log filepath
         is dynamically determined.
 
-        Open output files to which yhaplo will write in real time.
+        Open output files to which Yhaplo will write in real time.
 
         Parameters
         ----------
@@ -429,7 +429,7 @@ class Config:
         """Log welcome message."""
 
         logger.info(
-            f"\n{DASHED_LINE}   yhaplo {__version__} "
+            f"\n{DASHED_LINE}   Yhaplo {__version__} "
             "| Y-chromosome haplogroup caller"
         )
 
@@ -497,7 +497,7 @@ def check_example_data_availability(filepath: str) -> None:
         raise FileNotFoundError(
             f"Example input file not available: {filepath}\n\n"
             "There are two ways to run on example data:\n\n"
-            "- Clone the repo and install yhaplo as editable:\n\n"
+            "- Clone the repo and install Yhaplo as editable:\n\n"
             "      cd <path/to/repo>\n"
             "      pip install --editable .\n\n"
             "- Download fixture data from tests/fixtures/input and run:\n\n"

@@ -61,7 +61,7 @@ DEFAULT_INPUT_DICT = {
 #        ALL.chrY_10Mbp_mask.glia_freebayes_maxLikGT_siteQC.20130502.
 #        60555_biallelic_snps.vcf.gz
 # 2. Convert to BCF: 1000Y.all.bcf.
-# 3. Call haplogroups with yhaplo.
+# 3. Call haplogroups with Yhaplo.
 DATA_DIR = "data"
 KGP_BCF_FP = os.path.join(DATA_DIR, "1000Y.all.bcf")
 KGP_HAPLOGROUPS_FP = os.path.join(DATA_DIR, "haplogroups.1000Y.all.txt")

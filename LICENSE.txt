@@ -6,7 +6,7 @@ Redistribution and use in source and binary forms are permitted, provided that t
 above copyright notice and the License Agreement (LICENSE.txt, which is distributed
 with the source code) are duplicated in all such forms and that any documentation,
 advertising materials, and other materials related to such distribution and use
-acknowledge that the yhaplo™ Software was developed by 23andMe, Inc. The name of
+acknowledge that the Yhaplo™ Software was developed by 23andMe, Inc. The name of
 23andMe, Inc. may not be used to endorse or promote products derived from this
 software without specific prior written permission. THIS SOFTWARE IS PROVIDED "AS IS"
 AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION,
@@ -46,7 +46,7 @@ MATERIALS.
     b.  "Institution" means an academic or not-for-profit institution performing bona-
         fide non-commercial research on the field of biotechnology.
 
-    c.  "Licensed Materials" means the yhaplo™ Software, including the associated
+    c.  "Licensed Materials" means the Yhaplo™ Software, including the associated
         White Paper, Manual, and any additional documentation.
 
     d.  "Licensed Rights" means the non-exclusive rights to download, use, access,

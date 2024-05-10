@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # This script will:
-# 1. Run yhaplo with various input types and output options.
+# 1. Run Yhaplo with various input types and output options.
 # 2. Run other project scripts.
 # 3. Compare output to expected.
 #
