@@ -12,6 +12,7 @@ __pycache__/
 .minio.sys
 .mypy_cache
 .pytest_cache
+.ruff_cache
 
 # Distribution & packaging
 #----------------------------------
