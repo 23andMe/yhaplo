@@ -6,7 +6,7 @@ from importlib.resources import as_file, files
 
 import pandas as pd
 
-DATA_SUBPACKAGE = __package__.replace("utils", "data")
+DATA_SUBPACKAGE = __package__.replace("utils", "data")  # noqa
 
 SNP_TABLE_COL_NAMES = ["name", "haplogroup", "position", "mutation", "aliases"]
 SNP_TABLE_DTYPE_DICT = {

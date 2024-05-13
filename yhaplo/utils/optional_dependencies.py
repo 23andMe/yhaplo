@@ -1,6 +1,6 @@
 """Functions for checking whether optional dependencies are available."""
 
-ROOT_PACKAGE = __package__.removesuffix(".utils")
+ROOT_PACKAGE = __package__.removesuffix(".utils")  # noqa
 
 
 def check_vcf_dependencies():
