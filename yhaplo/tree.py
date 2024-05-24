@@ -738,7 +738,7 @@ class Tree:
                     snp_ser["position"],
                     snp_ser["mutation"],
                 ) == (haplogroup, int(position_str), mutation):
-                    name = snp_ser["name"]
+                    name = str(snp_ser["name"])
                     self.num_snps_corrected += 1
             except KeyError:
                 pass

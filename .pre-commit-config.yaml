@@ -2,14 +2,14 @@ default_stages: [commit, merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.4.3
+    rev: v0.4.7
     hooks:
       - id: ruff
         types_or: [ python, pyi, jupyter ]
         args: [ --fix, --unsafe-fixes ]
       - id: ruff-format
   - repo: git@github.com:pre-commit/pre-commit-hooks.git
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
         args: [--allow-multiple-documents]
@@ -19,7 +19,7 @@ repos:
       - id: trailing-whitespace
         exclude: tests/fixtures/output/haplogroups\..*\.txt|data/variants/isogg\.[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.txt
   - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.8.0
+    rev: v1.10.0
     hooks:
       - id: mypy
         additional_dependencies: [pandas-stubs,types-PyYAML,types-tabulate]
