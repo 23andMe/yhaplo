@@ -83,7 +83,7 @@ SNP_INDEX_RENAME_DICT = {
 assert list(SNP_INDEX_RENAME_DICT.values()) == SNP_TABLE_COL_NAMES
 SNP_TABLE_SORT_COLUMNS = ["haplogroup", "position"]
 BASES = ["A", "C", "G", "T"]
-MUTATIONS_SET = set([f"{anc}->{der}" for anc in BASES for der in BASES if anc != der])
+MUTATIONS_SET = {f"{anc}->{der}" for anc in BASES for der in BASES if anc != der}
 
 # Manual adjustments
 MANUAL_DO_NOT_CORRECT_NAMES = [

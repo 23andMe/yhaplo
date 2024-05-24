@@ -83,14 +83,14 @@ class Tree:
         self.args = self.config.args
 
         self.max_depth = 0
-        self.haplogroup_to_node: dict[str, "node_module.Node"] = {}
-        self.depth_first_node_list: list["node_module.Node"] = []
+        self.haplogroup_to_node: dict[str, node_module.Node] = {}
+        self.depth_first_node_list: list[node_module.Node] = []
 
         self.snp_dict: dict[
             Union[str, tuple[str, int], int],
-            "snp_module.SNP",
+            snp_module.SNP,
         ] = {}  # Possible keys: name, (haplogroup, position), position
-        self.snp_list: list["snp_module.SNP"] = []
+        self.snp_list: list[snp_module.SNP] = []
         self.snp_pos_set: set[int] = set()
         self.snp_name_set: set[str] = set()
         self.preferred_snp_name_set: set[str] = set()
@@ -145,7 +145,7 @@ class Tree:
     def set_depth_first_node_list(self) -> None:
         """Build Node list from depth-first pre-order traversal."""
 
-        self.depth_first_node_list = [node for node in self.root.iter_depth_first()]
+        self.depth_first_node_list = list(self.root.iter_depth_first())
         for dfs_rank, node in enumerate(self.depth_first_node_list):
             node.set_dfs_rank(dfs_rank)
 
@@ -995,7 +995,7 @@ class Tree:
 
         if not self.config.suppress_output and len(self.multiallelic_new_pos_set) > 0:
             with open(self.config.multiallelic_found_fp, "w") as out_file:
-                for position in sorted(list(self.multiallelic_new_pos_set)):
+                for position in sorted(self.multiallelic_new_pos_set):
                     out_file.write(f"{position:8d}\n")
 
             num_multiallelic = len(self.multiallelic_new_pos_set)

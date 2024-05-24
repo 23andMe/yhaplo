@@ -362,12 +362,10 @@ def load_platform_position_set(
         f"Platform {platform} SNP positions",
         ttam_only=True,
     )
-    pos_set = set(
-        map(
-            lambda line: int(line.strip().split()[0]),
-            load_data_lines(platform_pos_data_file, log=log_loader),
-        )
-    )
+    pos_set = {
+        int(line.strip().split()[0])
+        for line in load_data_lines(platform_pos_data_file, log=log_loader)
+    }
     logger.info(
         f"{platform}: {len(pos_set):5d} unique positions loaded: "
         f"{platform_pos_data_file.filename}"
