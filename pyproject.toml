@@ -7,27 +7,19 @@ name = "yhaplo"
 description = "Y-chromosome haplogroup caller"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {file = "LICENSE.txt"}
+license = { file = "LICENSE.txt" }
 authors = [
-    {name = "Population Genetics R&D"},
-    {email = "popgen.rd@23andme.com"},
+    { name = "Population Genetics R&D" },
+    { email = "popgen.rd@23andme.com" },
 ]
 
-dependencies = [
-    "numpy",
-    "pandas",
-    "pyyaml",
-]
+dependencies = ["numpy", "pandas", "pyyaml"]
 
 dynamic = ["version"]
 
 [project.optional-dependencies]
-vcf = [
-    "pysam",
-]
-plot = [
-    "biopython",
-]
+vcf = ["pysam"]
+plot = ["biopython"]
 dev = [
     "yhaplo[vcf,plot]",
     "ipykernel",
@@ -70,31 +62,32 @@ ignore = "D107,D202,D203,D213"
 match_dir = "(?!tests|\\.).*"
 
 [tool.pytest.ini_options]
-norecursedirs = [
-    ".*",
-    "build",
-]
+norecursedirs = [".*", "build"]
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
-    "I",    # isort
-    "E",    # Flake8: pycodestyle (Error)
-    "W",    # Flake8: pycodestyle (Warning)
-    "F",    # Flake8: Pyflakes
-    "B",    # Flake8: flake8-bugbear
-    "SIM",  # Flake8: flake8-simplify
-    "D",    # pydocstyle
-    "UP",   # pyupgrade
+    "I",   # isort
+    "E",   # Flake8: pycodestyle (Error)
+    "W",   # Flake8: pycodestyle (Warning)
+    "F",   # Flake8: Pyflakes
+    "B",   # Flake8: flake8-bugbear
+    "C4",  # Flake8: flake8-comprehensions
+    "SIM", # Flake8: flake8-simplify
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
 ]
 ignore = [
-    "D107",  # Missing docstring in __init__
-    "D202",  # No blank lines allowed after function docstring. Ignore for one-line docstrings.
-    "D203",  # 1 blank line required before class docstring. Conflicts with Black and D211.
-    "D213",  # Multi-line docstring summary should start at the second line. Contradicts D212.
+    "D107", # Missing docstring in __init__
+    "D202", # No blank lines allowed after function docstring. Ignore for one-line docstrings.
+    "D203", # 1 blank line required before class docstring. Conflicts with Black and D211.
+    "D213", # Multi-line docstring summary should start at the second line. Contradicts D212.
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D"]  # Ignore test-module docstrings
+"tests/**" = ["D"] # Ignore test-module docstrings
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

@@ -61,7 +61,7 @@ DEFAULT_INPUT_DICT = {
 #        ALL.chrY_10Mbp_mask.glia_freebayes_maxLikGT_siteQC.20130502.
 #        60555_biallelic_snps.vcf.gz
 # 2. Convert to BCF: 1000Y.all.bcf.
-# 3. Call haplogroups with yhaplo.
+# 3. Call haplogroups with Yhaplo.
 DATA_DIR = "data"
 KGP_BCF_FP = os.path.join(DATA_DIR, "1000Y.all.bcf")
 KGP_HAPLOGROUPS_FP = os.path.join(DATA_DIR, "haplogroups.1000Y.all.txt")
@@ -83,7 +83,7 @@ SNP_INDEX_RENAME_DICT = {
 assert list(SNP_INDEX_RENAME_DICT.values()) == SNP_TABLE_COL_NAMES
 SNP_TABLE_SORT_COLUMNS = ["haplogroup", "position"]
 BASES = ["A", "C", "G", "T"]
-MUTATIONS_SET = set([f"{anc}->{der}" for anc in BASES for der in BASES if anc != der])
+MUTATIONS_SET = {f"{anc}->{der}" for anc in BASES for der in BASES if anc != der}
 
 # Manual adjustments
 MANUAL_DO_NOT_CORRECT_NAMES = [

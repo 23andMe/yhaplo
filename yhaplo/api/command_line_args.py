@@ -37,7 +37,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "-v",
         "--version",
         action="version",
-        version=f"yhaplo {__version__}",
+        version=f"Yhaplo {__version__}",
     )
 
     group = parser.add_argument_group("Input")
@@ -71,14 +71,14 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "-ex-txt",
         "--example_text",
         action="store_true",
-        help="Run yhaplo on a subset of 1000 Genomes data\n"
+        help="Run Yhaplo on a subset of 1000 Genomes data\n"
         "and produce all auxiliary output",
     )
     group.add_argument(
         "-ex-vcf",
         "--example_vcf",
         action="store_true",
-        help="Run yhaplo on a single-sample 1000 Genomes VCF\n"
+        help="Run Yhaplo on a single-sample 1000 Genomes VCF\n"
         "and produce all auxiliary output",
     )
 

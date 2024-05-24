@@ -1,6 +1,6 @@
 """Functions for checking whether optional dependencies are available."""
 
-ROOT_PACKAGE = __package__.removesuffix(".utils")
+ROOT_PACKAGE = __package__.removesuffix(".utils")  # noqa
 
 
 def check_vcf_dependencies():
@@ -27,7 +27,7 @@ def optional_import_error_message(
 
     message = (
         f"\n\n{package_name} is required to {package_use}.\n"
-        f'Please re-install yhaplo with the "{optional_dep_category}" '
+        f'Please re-install Yhaplo with the "{optional_dep_category}" '
         "optional dependencies.\n"
         "For example:\n"
         f"    pip install {root_package}[{optional_dep_category}]\n"

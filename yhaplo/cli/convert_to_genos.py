@@ -1,4 +1,4 @@
-"""Convert data to .genos.txt format for yhaplo.
+"""Convert data to .genos.txt format for Yhaplo.
 
 Input format options:
 

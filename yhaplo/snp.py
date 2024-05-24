@@ -15,6 +15,7 @@ from collections.abc import Mapping, Sequence
 from operator import attrgetter
 from typing import TypeVar
 
+import pandas as pd
 import yaml
 
 from yhaplo import node as node_module  # noqa F401
@@ -323,59 +324,108 @@ def build_platform_to_pos_set() -> dict[str, set[int]]:
 
     platform_to_pos_set = {}
     for platform in Config.platforms:
-        platform_pos_data_file = DataFile(
-            Config.platform_pos_data_subdir,
-            Config.platform_pos_fn_tp.format(platform=platform),
-            f"Platform {platform} SNP positions",
-            ttam_only=True,
-        )
-        pos_set = load_position_set(platform_pos_data_file)
-
-        platform_pos_exclude_data_file = DataFile(
-            Config.platform_pos_data_subdir,
-            Config.platform_qc_exclude_fn_tp.format(platform=platform),
-            f"Platform {platform} SNP QC exclusions table",
-            ttam_only=True,
-        )
-        try:
-            exclude_df = load_dataframe(platform_pos_exclude_data_file)
-            exclude_pos_set = set(exclude_df["position"])
-            pos_set -= exclude_pos_set
-            logger.info(
-                f"{platform}: {len(exclude_df):5d} QC exclusions loaded: "
-                f"{platform_pos_exclude_data_file.filename}\n"
-                f"{platform}: {len(exclude_pos_set):5d} unique positions to exclude\n"
-                f"{platform}: {len(pos_set):5d} unique positions remain"
-            )
-        except FileNotFoundError:
-            pass
-
+        pos_set = load_platform_position_set(platform)
+        exclude_pos_set = load_platform_exclude_position_set(platform)
+        pos_set -= exclude_pos_set
         platform_to_pos_set[platform] = pos_set
+
+        if exclude_pos_set:
+            logger.info(f"{platform}: {len(pos_set):5d} unique positions remain")
 
     logger.info("")
 
     return platform_to_pos_set
 
 
-def load_position_set(
-    data_file: DataFile,
-    log: bool = False,
+def load_platform_position_set(
+    platform: str,
+    log_loader: bool = False,
 ) -> set[int]:
-    """Load set of positions from first column of Yhaplo data file."""
+    """Load physical positions of Y-chromosome SNPs on a 23andMe platform.
 
-    pos_set = set(
-        map(
-            lambda line: int(line.strip().split()[0]),
-            load_data_lines(data_file, log=log),
-        )
+    Parameters
+    ----------
+    platform : str
+        Platform name.
+    log_loader : bool, optional
+        Indicator to log loader activity.
+
+    Returns
+    -------
+    pos_set : set[int]
+        Set of physical positions.
+
+    """
+    platform_pos_data_file = DataFile(
+        Config.platform_pos_data_subdir,
+        Config.platform_pos_fn_tp.format(platform=platform),
+        f"Platform {platform} SNP positions",
+        ttam_only=True,
     )
-    platform = data_file.description.split()[1]
+    pos_set = {
+        int(line.strip().split()[0])
+        for line in load_data_lines(platform_pos_data_file, log=log_loader)
+    }
     logger.info(
         f"{platform}: {len(pos_set):5d} unique positions loaded: "
-        f"{data_file.filename}"
+        f"{platform_pos_data_file.filename}"
     )
 
     return pos_set
+
+
+def load_platform_exclude_position_set(platform: str) -> set[int]:
+    """Load physical positions of SNPs to exclude from a 23andMe platform.
+
+    Parameters
+    ----------
+    platform : str
+        Platform name.
+
+    Returns
+    -------
+    exclude_pos_set : set[int]
+        Set of physical positions to exclude.
+
+    """
+    try:
+        exclude_df = load_platform_exclude_table(platform)
+        exclude_pos_set = set(exclude_df["position"])
+        num_exclude_pos = len(exclude_pos_set)
+        logger.info(f"{platform}: {num_exclude_pos:5d} unique positions to exclude")
+    except FileNotFoundError:
+        exclude_pos_set = set()
+
+    return exclude_pos_set
+
+
+def load_platform_exclude_table(platform: str) -> pd.DataFrame:
+    """Load table of SNPs to exclude from a 23andMe platform.
+
+    Parameters
+    ----------
+    platform : str
+        Platform name.
+
+    Returns
+    -------
+    exclude_df : pd.DataFrame
+        Table of SNPs to exclude.
+
+    """
+    platform_pos_exclude_data_file = DataFile(
+        Config.platform_pos_data_subdir,
+        Config.platform_qc_exclude_fn_tp.format(platform=platform),
+        f"Platform {platform} SNP QC exclusions table",
+        ttam_only=True,
+    )
+    exclude_df = load_dataframe(platform_pos_exclude_data_file)
+    logger.info(
+        f"{platform}: {len(exclude_df):5d} QC exclusions loaded: "
+        f"{platform_pos_exclude_data_file.filename}"
+    )
+
+    return exclude_df
 
 
 class DroppedMarker:
