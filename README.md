@@ -36,6 +36,34 @@ To learn more about the software, please see the manual, [`yhaplo_manual.pdf`](
 For an overiew of command-line options, install the package and run `yhaplo --help`.
 
 
+## Contents
+
+* [Overview](#overview)
+* [Contents](#contents)
+* [Installation](#installation)
+  * [Basic installation](#basic-installation)
+  * [Optional dependencies](#optional-dependencies)
+* [Testing](#testing)
+  * [Running on example data](#running-on-example-data)
+  * [Unit tests](#unit-tests)
+* [Caveats](#caveats)
+* [Input](#input)
+* [Output](#output)
+* [API](#api)
+* [CLI](#cli)
+* [Implementation details](#implementation-details)
+  * [Package data](#package-data)
+    * [Tree](#tree)
+    * [Variants](#variants)
+  * [Classes](#classes)
+    * [Trees](#trees)
+    * [Nodes](#nodes)
+    * [SNPs](#snps)
+    * [Samples](#samples)
+    * [Paths](#paths)
+    * [Configuration](#configuration)
+
+
 ## Installation
 
 ### Basic installation
