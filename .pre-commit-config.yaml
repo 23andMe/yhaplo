@@ -2,7 +2,7 @@ default_stages: [commit, merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.4.7
+    rev: v0.4.8
     hooks:
       - id: ruff
         types_or: [ python, pyi, jupyter ]

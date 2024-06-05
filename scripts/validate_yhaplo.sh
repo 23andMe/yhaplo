@@ -27,14 +27,14 @@ tree_drawing_fp=${nwk_fp%.nwk}.drawing.txt
 # Colors
 BOLD_CYAN="\033[1;36m"
 GREEN="\033[0;32m"
-NO_COLOR="\033[0m"
+RESET_COLOR="\033[0m"
 
 
 rm -fr ${output_dir}
-echo -e "\n${BOLD_CYAN}Removed${NO_COLOR}: ${GREEN}${output_dir}\n\n${NO_COLOR}"
+echo -e "\n${BOLD_CYAN}Removed${RESET_COLOR}: ${GREEN}${output_dir}\n\n${RESET_COLOR}"
 
 
-echo -e "${BOLD_CYAN}Text Input${NO_COLOR}\n"
+echo -e "${BOLD_CYAN}Text Input${RESET_COLOR}\n"
 yhaplo --example_text \
     --hg_genos Q \
     --breadth_first \
@@ -46,12 +46,12 @@ yhaplo --example_text \
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Single-Sample VCF Input\n${NO_COLOR}"
+echo -e "${BOLD_CYAN}Single-Sample VCF Input\n${RESET_COLOR}"
 yhaplo --example_vcf --hg_genos Q
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Multi-Sample VCF Input\n${NO_COLOR}"
+echo -e "${BOLD_CYAN}Multi-Sample VCF Input\n${RESET_COLOR}"
 if [ ${INCLUDE_BIG_VCF:-""} ]; then
     if [ -e ${multi_sample_bcf_fp} ]; then
         yhaplo -i ${multi_sample_bcf_fp} --hg_genos Q
@@ -65,12 +65,12 @@ fi
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Tree Plotter\n${NO_COLOR}"
+echo -e "${BOLD_CYAN}Tree Plotter\n${RESET_COLOR}"
 yhaplo_plot_tree -n ${nwk_fp} | tee ${tree_drawing_fp}
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Format Converter\n${NO_COLOR}"
+echo -e "${BOLD_CYAN}Format Converter\n${RESET_COLOR}"
 if [ -e ${ttam_data_fp} ]; then
     yhaplo_convert_to_genos ${ttam_data_fp}
     mkdir -p ${output_dir}
@@ -82,7 +82,7 @@ fi
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Expected versus Observed\n${NO_COLOR}"
+echo -e "${BOLD_CYAN}Expected versus Observed\n${RESET_COLOR}"
 
 if [ -d ${expected_output_dir} ]; then
     for fn in $(comm -13 <(ls ${output_dir}/) <(ls ${expected_output_dir}/)); do
