@@ -33,9 +33,11 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	$(MAKE) init-hooks
 
 dev-install:  ## Install package as editable, with all optional dependencies
+	@printf "\n${BOLD_GREEN}Installing package as editable, with all optional dependencies${RESET_COLOR}...\n\n"
 	uv pip install --python=$(shell which python) --editable .[dev]
 
 dev-jupyter:  ## Add Jupyter kernel
+	@printf "\n${BOLD_GREEN}Installing Jupyter kernel${RESET_COLOR}...\n\n"
 	python -m ipykernel install --user --name $(ENV_NAME) --display-name $(PACKAGE_NAME)
 
 
@@ -44,9 +46,11 @@ dev-jupyter:  ## Add Jupyter kernel
 init-hooks: install-hooks update-hooks  ## Install and update hooks
 
 install-hooks:  ## Install hooks
+	@printf "\n${BOLD_GREEN}Installing pre-commit hooks${RESET_COLOR}...\n\n"
 	pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
 
 update-hooks:  ## Update hooks
+	@printf "\n${BOLD_GREEN}Upgrading pre-commit hooks${RESET_COLOR}...\n\n"
 	pre-commit autoupdate
 
 run-hooks:  ## Run hooks
