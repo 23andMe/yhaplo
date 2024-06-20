@@ -4,15 +4,15 @@ CYAN := \033[0;36m
 GREEN := \033[0;32m
 BOLD_CYAN := \033[1;36m
 BOLD_GREEN := \033[1;32m
-NO_COLOR := \033[0m
+RESET_COLOR := \033[0m
 
 
 ## General
 # ----------------------------------------------------------------------
 help:  ## Print this help message
 	@egrep -h '(\s|^)##\s' $(MAKEFILE_LIST) \
-	| sed -E "s/^## (.*)/\n$$(printf "${BOLD_GREEN}")\1$$(printf "${NO_COLOR}")/g" \
-	| awk 'BEGIN {FS = ":.*?## "}; {printf "${CYAN}%-25s${NO_COLOR} %s\n", $$1, $$2}'
+	| sed -E "s/^## (.*)/\n$$(printf "${BOLD_GREEN}")\1$$(printf "${RESET_COLOR}")/g" \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "${CYAN}%-25s${RESET_COLOR} %s\n", $$1, $$2}'
 	@echo
 
 
@@ -26,15 +26,20 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	pyenv local --unset
 	pyenv virtualenv $(ENV_NAME)
 	pyenv local $(ENV_NAME)
-	pip install --upgrade pip setuptools wheel
+	pip install --upgrade uv
+	uv pip install --python=$(shell which python) --upgrade pip setuptools wheel
 	$(MAKE) dev-install
 	$(MAKE) dev-jupyter
 	$(MAKE) init-hooks
 
 dev-install:  ## Install package as editable, with all optional dependencies
+	@printf "\n${BOLD_GREEN}Installing package as editable, with all optional dependencies${RESET_COLOR}...\n\n"
+	# TODO Figure out why uv is failing. For now, just use pip.
+	# uv pip install --python=$(shell which python) --editable .[dev]
 	pip install --editable .[dev]
 
 dev-jupyter:  ## Add Jupyter kernel
+	@printf "\n${BOLD_GREEN}Installing Jupyter kernel${RESET_COLOR}...\n\n"
 	python -m ipykernel install --user --name $(ENV_NAME) --display-name $(PACKAGE_NAME)
 
 
@@ -43,9 +48,11 @@ dev-jupyter:  ## Add Jupyter kernel
 init-hooks: install-hooks update-hooks  ## Install and update hooks
 
 install-hooks:  ## Install hooks
+	@printf "\n${BOLD_GREEN}Installing pre-commit hooks${RESET_COLOR}...\n\n"
 	pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
 
 update-hooks:  ## Update hooks
+	@printf "\n${BOLD_GREEN}Upgrading pre-commit hooks${RESET_COLOR}...\n\n"
 	pre-commit autoupdate
 
 run-hooks:  ## Run hooks
