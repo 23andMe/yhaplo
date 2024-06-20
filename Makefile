@@ -34,7 +34,9 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 
 dev-install:  ## Install package as editable, with all optional dependencies
 	@printf "\n${BOLD_GREEN}Installing package as editable, with all optional dependencies${RESET_COLOR}...\n\n"
-	uv pip install --python=$(shell which python) --editable .[dev]
+	# TODO Figure out why uv is failing. For now, just use pip.
+	# uv pip install --python=$(shell which python) --editable .[dev]
+	pip install --editable .[dev]
 
 dev-jupyter:  ## Add Jupyter kernel
 	@printf "\n${BOLD_GREEN}Installing Jupyter kernel${RESET_COLOR}...\n\n"
