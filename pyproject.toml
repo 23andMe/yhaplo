@@ -48,6 +48,8 @@ filter_files = true
 
 [tool.mypy]
 ignore_missing_imports = true
+install_types = true
+non_interactive = true
 
 [tool.pydocstyle]
 # D107 Missing docstring in __init__
