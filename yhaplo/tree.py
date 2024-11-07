@@ -1,10 +1,11 @@
 """Define Tree class."""
 
+from __future__ import annotations
+
 import logging
 import re
 from collections import defaultdict, deque
 from operator import attrgetter
-from typing import Optional, Union
 
 import pandas as pd
 
@@ -36,7 +37,7 @@ class Tree:
     max_depth : int
         Maximum depth of tree.
 
-    snp_dict : dict[Union[str, tuple[str, int], int], SNP]
+    snp_dict : dict[str | tuple[str, int] | int, SNP]
         Maps SNP names, positions, and (haplogroup, position) tuples to SNPs.
     snp_list : list[SNP]
         List of SNPs
@@ -69,7 +70,7 @@ class Tree:
 
     def __init__(
         self,
-        config: Optional[Config] = None,
+        config: Config | None = None,
     ):
         """Instantiate Tree.
 
@@ -87,7 +88,7 @@ class Tree:
         self.depth_first_node_list: list[node_module.Node] = []
 
         self.snp_dict: dict[
-            Union[str, tuple[str, int], int],
+            str | tuple[str, int] | int,
             snp_module.SNP,
         ] = {}  # Possible keys: name, (haplogroup, position), position
         self.snp_list: list[snp_module.SNP] = []
@@ -324,11 +325,11 @@ class Tree:
     # ----------------------------------------------------------------------
     def identify_phylogenetic_path(
         self,
-        sample: "sample_module.Sample",
+        sample: sample_module.Sample,
     ) -> tuple[
-        "path_module.Path",
-        list["snp_module.SNP"],
-        list[tuple["node_module.Node", int, int]],
+        path_module.Path,
+        list[snp_module.SNP],
+        list[tuple[node_module.Node, int, int]],
     ]:
         """Identify phylogenetic path for haplogroup call.
 
@@ -436,7 +437,7 @@ class Tree:
 
     # Build tree from Newick-formatted text file
     # ----------------------------------------------------------------------
-    def build_tree_from_newick(self) -> "node_module.Node":
+    def build_tree_from_newick(self) -> node_module.Node:
         """Read a Newick-formatted tree and build a Tree instance.
 
         Discard bootstrap values.
@@ -471,10 +472,10 @@ class Tree:
 
     def add_child_subtree_from_newick_deque(
         self,
-        parent: Optional["node_module.Node"],
+        parent: node_module.Node | None,
         tree_deque: deque[str],
         has_lengths: bool,
-    ) -> "node_module.Node":
+    ) -> node_module.Node:
         """Process a deque of Newick tokens to build a tree.
 
         Each call constructs one subtree and returns its root.
@@ -529,7 +530,7 @@ class Tree:
     @classmethod
     def process_newick_length(
         cls,
-        node: "node_module.Node",
+        node: node_module.Node,
         tree_deque: deque[str],
     ) -> None:
         """Set branch length from Newick tokens."""
@@ -836,7 +837,7 @@ class Tree:
 
     def add_dropped_markers_to_nodes(
         self,
-        dropped_marker_list: list["snp_module.DroppedMarker"],
+        dropped_marker_list: list[snp_module.DroppedMarker],
     ) -> None:
         """Add dropped markers to coresponding nodes."""
 
@@ -1006,7 +1007,7 @@ class Tree:
                 f" >> {self.config.isogg_multiallelic_data_file.filename}\n\n"
             )
 
-    def find_or_create_node(self, haplogroup: str) -> "node_module.Node":
+    def find_or_create_node(self, haplogroup: str) -> node_module.Node:
         """Return Node corresponding to a haplogroup, if it exists.
 
         If no Node corresponds to the haplogroup, serially split the
@@ -1044,7 +1045,7 @@ def verify_newick_token(observed: str, expected: str) -> None:
 def get_bounded_subtree(
     root_haplogroup: str,
     target_haplogroup: str,
-) -> "node_module.Node":
+) -> node_module.Node:
     """Generate a bounded subtree.
 
     Set the root node to correspond to `root_haplogroup`.
