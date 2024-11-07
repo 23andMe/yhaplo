@@ -3,6 +3,15 @@
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
+
+## [2.1.13] - 2024-11-07
+
+### Changed
+- Removed NumPy pin and indicated Python 3.13 support
+
+[2.1.13]: https://github.com/23andMe/yhaplo/compare/2.1.12..2.1.13
+
+
 ## [2.1.11] - 2024-05-03
 
 ### Added

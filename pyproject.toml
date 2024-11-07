@@ -13,7 +13,7 @@ authors = [
     { email = "popgen.rd@23andme.com" },
 ]
 
-dependencies = ["numpy<2", "pandas", "pyyaml"]
+dependencies = ["numpy", "pandas", "pyyaml"]
 
 dynamic = ["version"]
 

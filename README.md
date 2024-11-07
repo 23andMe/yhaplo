@@ -1,8 +1,7 @@
 # Yhaplo | Identifying Y-Chromosome Haplogroups
 
-[![python](
-https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](
-https://docs.python.org)
+![python](
+https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)
 
 David Poznik, 23andMe
 
