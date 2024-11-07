@@ -1,9 +1,10 @@
 """Call haplogroups."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 from collections.abc import Iterable, Mapping
-from typing import Optional, Union
 
 import pandas as pd
 
@@ -12,13 +13,13 @@ from yhaplo.sample import call_haplogroups_from_config
 
 
 def call_haplogroups(
-    command_line_args: Optional[argparse.Namespace] = None,
-    iid_to_ablock: Optional[Mapping[IID_TYPE, Union[bytes, ABLOCK_TYPE]]] = None,
-    iid_to_platforms: Optional[Mapping[IID_TYPE, Union[str, Iterable[str]]]] = None,
+    command_line_args: argparse.Namespace | None = None,
+    iid_to_ablock: Mapping[IID_TYPE, bytes | ABLOCK_TYPE] | None = None,
+    iid_to_platforms: Mapping[IID_TYPE, str | Iterable[str]] | None = None,
     suppress_output: bool = False,
-    out_dir: Optional[str] = None,
+    out_dir: str | None = None,
     all_aux_output: bool = False,
-    root_logger: Optional[logging.Logger] = None,
+    root_logger: logging.Logger | None = None,
 ) -> pd.DataFrame:
     """Configure run, build tree, and call haplogroups.
 

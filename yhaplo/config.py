@@ -1,11 +1,13 @@
 """Define Config class, which includes command-line arguments."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import os
 import sys
 from collections.abc import Iterable, Mapping
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -156,18 +158,13 @@ class Config:
 
     def __init__(
         self,
-        command_line_args: Optional[argparse.Namespace] = None,
-        iid_to_ablock: Optional[
-            Mapping[
-                IID_TYPE,
-                Union[bytes, NDArray[np.uint8]],
-            ]
-        ] = None,
-        iid_to_platforms: Optional[Mapping[IID_TYPE, Union[str, Iterable[str]]]] = None,
+        command_line_args: argparse.Namespace | None = None,
+        iid_to_ablock: Mapping[IID_TYPE, bytes | NDArray[np.uint8]] | None = None,
+        iid_to_platforms: Mapping[IID_TYPE, str | Iterable[str]] | None = None,
         suppress_output: bool = False,
-        out_dir: Optional[str] = None,
+        out_dir: str | None = None,
         all_aux_output: bool = False,
-        root_logger: Optional[logging.Logger] = None,
+        root_logger: logging.Logger | None = None,
     ):
         """Instantiate Config.
 
@@ -223,7 +220,7 @@ class Config:
 
     def set_params_general(
         self,
-        out_dir: Optional[str],
+        out_dir: str | None,
         all_aux_output: bool,
     ) -> None:
         """Set general parameters."""
@@ -301,7 +298,7 @@ class Config:
 
     def set_output_file_paths_and_open_some(
         self,
-        root_logger: Optional[logging.Logger] = None,
+        root_logger: logging.Logger | None = None,
     ) -> None:
         """Set log and output file paths.
 
