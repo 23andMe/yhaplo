@@ -692,7 +692,7 @@ class TextSample(Sample):
         geno_file = (
             open(cls.args.data_fp)  # noqa SIM115
             if os.path.splitext(cls.args.data_fp)[1] != ".gz"
-            else gzip.open(cls.args.data_fp, "rt")
+            else gzip.open(cls.args.data_fp, "rt")  # noqa SIM115
         )
         geno_reader = csv.reader(geno_file, delimiter="\t")
         cls.position_to_column_index = {
