@@ -227,7 +227,7 @@ class Node:
 
         return truncated_haplogroup_label
 
-    # Setters and mutaters
+    # Setters and mutators
     # ----------------------------------------------------------------------
     def set_label(self, label: str) -> None:
         """Set label, haplogroup, and hg_trunc.
@@ -278,7 +278,7 @@ class Node:
 
         First, sort SNP list (or dropped marker list) by priority ranking.
         Then, set reresentative-SNP-based label: self.hg_snp.
-        The standard form incudes the truncated haplogroup label
+        The standard form includes the truncated haplogroup label
         and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
 
         Also, add tree.haplogroup_to_node entry mapping hg_snp to node.
