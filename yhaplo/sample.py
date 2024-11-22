@@ -465,7 +465,7 @@ class Sample:
                 f"    {number_of_run_modes_selected} selected\n"
             )
 
-    # Class methods: class variable mutaters
+    # Class methods: class variable mutators
     # ----------------------------------------------------------------------
     @classmethod
     def sort_sample_list(cls) -> None:

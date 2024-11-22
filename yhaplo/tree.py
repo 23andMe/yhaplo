@@ -138,7 +138,7 @@ class Tree:
             else:
                 raise ValueError(
                     "Cannot start traversal "
-                    f"from non-existant haplogroup: {alternative_root_hg}\n"
+                    f"from non-existent haplogroup: {alternative_root_hg}\n"
                 )
         else:
             self.search_root = self.root
@@ -183,7 +183,7 @@ class Tree:
             for node in self.root.iter_breadth_first():
                 bf_tree_file.write(f"{node.str_dot_pipe_depth}\n")
 
-        logger.info(f"Wrote breadth-first tree traveral:\n    {bf_tree_fp}\n")
+        logger.info(f"Wrote breadth-first tree traversal:\n    {bf_tree_fp}\n")
 
     def write_depth_first_pre_order(self) -> None:
         """Write depth-first pre-order traversal in pipe/dot format."""
@@ -197,7 +197,7 @@ class Tree:
             for node in self.depth_first_node_list:
                 df_tree_file.write(f"{node.str_dot_pipe_depth}\n")
 
-        logger.info(f"Wrote depth-first tree traveral:\n    {df_tree_fp}\n")
+        logger.info(f"Wrote depth-first tree traversal:\n    {df_tree_fp}\n")
 
     def write_tree_table(self) -> None:
         """Write depth-first pre-order traversal in table format."""
@@ -487,7 +487,7 @@ class Tree:
                Return a simple leaf node.
         3. Following the first child subtree
                There will be an arbitrary number of sibling subtrees,
-               each preceeded by a comma.
+               each preceded by a comma.
                The function calls itself to add each in turn.
         4. The end of a subtree
                Signaled by a close paren.
@@ -839,7 +839,7 @@ class Tree:
         self,
         dropped_marker_list: list[snp_module.DroppedMarker],
     ) -> None:
-        """Add dropped markers to coresponding nodes."""
+        """Add dropped markers to corresponding nodes."""
 
         for dropped_marker in dropped_marker_list:
             dropped_marker.add_to_node()

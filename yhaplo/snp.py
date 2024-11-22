@@ -246,7 +246,7 @@ class SNP:
     def is_a_preferred_name(cls, name: str) -> bool:
         """Return True if a SNP name is in the set of preferred names.
 
-        Ignore extenstions like ".1".
+        Ignore extensions like ".1".
 
         """
         is_a_preferred_name = (
@@ -285,7 +285,7 @@ def parse_snp_label(
     """
     match = re.search(r"([a-zA-Z-]*)([0-9]*)", str(name))
     if match is None:
-        raise ValueError(f"SNP name unparseable: {name}")
+        raise ValueError(f"SNP name unparsable: {name}")
 
     label_letters, label_number = match.group(1), match.group(2)
     label_number = int(label_number) if len(label_number) > 0 else 0
