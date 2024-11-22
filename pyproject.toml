@@ -42,6 +42,9 @@ Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 
 [tool.setuptools_scm]
 
+[tool.codespell]
+skip = "*.genos.txt,*.gz,*.pdf,isogg.*.txt,requirements.txt"
+
 [tool.isort]
 profile = "black"
 filter_files = true
