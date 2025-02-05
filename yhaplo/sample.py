@@ -26,7 +26,9 @@ from yhaplo import node as node_module  # noqa F401
 from yhaplo import snp as snp_module  # noqa F401
 from yhaplo import tree as tree_module  # noqa F401
 from yhaplo.config import IID_TYPE, Config
-from yhaplo.utils.optional_dependencies import check_vcf_dependencies
+from yhaplo.utils.optional_dependencies import (
+    check_vcf_dependencies,
+)
 from yhaplo.utils.vcf import check_vcf_index
 
 with contextlib.suppress(ImportError):
@@ -781,8 +783,7 @@ class VCFSample(Sample):
                     cls(cls.args.single_sample_id)
                 else:
                     raise ValueError(
-                        f"{cls.args.single_sample_id} "
-                        f"not present in {cls.args.data_fp}"
+                        f"{cls.args.single_sample_id} not present in {cls.args.data_fp}"
                     )
 
             chromosome_set = set(variant_file.header.contigs.keys())

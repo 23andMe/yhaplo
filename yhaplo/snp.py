@@ -21,7 +21,12 @@ import yaml
 from yhaplo import node as node_module  # noqa F401
 from yhaplo import tree as tree_module  # noqa F401
 from yhaplo.config import Config
-from yhaplo.utils.loaders import DataFile, load_data, load_data_lines, load_dataframe
+from yhaplo.utils.loaders import (
+    DataFile,
+    load_data,
+    load_data_lines,
+    load_dataframe,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -211,8 +216,7 @@ class SNP:
         if type(self).is_a_preferred_name(self.label):
             if type(self).is_a_preferred_name(name):
                 logger.warning(
-                    "WARNING. Two preferred names for one SNP: "
-                    f"{name}, {self.label}\n"
+                    f"WARNING. Two preferred names for one SNP: {name}, {self.label}\n"
                 )
         elif type(self).is_a_preferred_name(name):
             self.set_label(name)

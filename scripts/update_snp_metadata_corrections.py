@@ -950,7 +950,7 @@ def check_seq_genotypes_of_discordants(
         "do_not_correct"
     ).index.to_list()
     manual_name_mutation_tuples = [
-        (cast(str, name), f'{row["ref"]}->{row["alt"]}')
+        (cast(str, name), f"{row['ref']}->{row['alt']}")
         for name, row in alleles_genos_unique_df.query("set_manually").iterrows()
     ]
 
@@ -1186,8 +1186,8 @@ def write_snp_table(
     with open(correction_fp, "w") as correction_file:
         for _, row in df.iterrows():
             correction_file.write(
-                f'{row["name"]:15} {row["haplogroup"]:25} {row["position"]:>8} '
-                f'{row["mutation"]}     {row["aliases"]}\n'
+                f"{row['name']:15} {row['haplogroup']:25} {row['position']:>8} "
+                f"{row['mutation']}     {row['aliases']}\n"
             )
 
     log_prefix = f"{len(df):7d} {target}s merged:"

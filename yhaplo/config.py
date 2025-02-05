@@ -426,8 +426,7 @@ class Config:
         """Log welcome message."""
 
         logger.info(
-            f"\n{DASHED_LINE}   Yhaplo {__version__} "
-            "| Y-chromosome haplogroup caller"
+            f"\n{DASHED_LINE}   Yhaplo {__version__} | Y-chromosome haplogroup caller"
         )
 
         if self.invoked_from_command_line:
