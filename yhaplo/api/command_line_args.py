@@ -145,7 +145,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "--anc_snps_detail",
         dest="write_anc_snps_detail",
         action="store_true",
-        help="Detailed information about each ancestral SNP\n" "encountered in search",
+        help="Detailed information about each ancestral SNP\nencountered in search",
     )
 
     group = parser.add_argument_group(
@@ -222,8 +222,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "--platform_trees",
         dest="write_platform_trees",
         action="store_true",
-        help="23andMe: Write trees whose branch lengths are numbers\n"
-        "of platform sites",
+        help="23andMe: Write trees whose branch lengths are numbers\nof platform sites",
     )
 
     group = parser.add_argument_group("Search parameters")

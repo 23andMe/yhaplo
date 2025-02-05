@@ -2,7 +2,7 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.8.0
+    rev: v0.9.4
     hooks:
       - id: ruff
         types_or: [python, pyi, jupyter]
@@ -19,12 +19,12 @@ repos:
       - id: trailing-whitespace
         exclude: tests/fixtures/output/haplogroups\..*\.txt|data/variants/isogg\.[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.txt
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies: [tomli] # Python < 3.11
         exclude: ".*\\.genos.txt$|.*\\.gz$|.*\\.pdf$|isogg.*.txt|requirements.txt"
   - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.13.0
+    rev: v1.15.0
     hooks:
       - id: mypy
