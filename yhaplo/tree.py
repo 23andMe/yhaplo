@@ -211,7 +211,7 @@ class Tree:
 
         tree_df = pd.DataFrame(
             [node.tree_table_data for node in self.depth_first_node_list],
-            columns="#index ycc_label label parent_index parent_label".split(),
+            columns=["#index", "ycc_label", "label", "parent_index", "parent_label"],
         ).astype("string")
 
         return tree_df
