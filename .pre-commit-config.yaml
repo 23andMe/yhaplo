@@ -4,8 +4,7 @@ repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
     rev: v0.12.2
     hooks:
-      - id: ruff
-        types_or: [python, pyi, jupyter]
+      - id: ruff-check
         args: [--fix, --unsafe-fixes]
       - id: ruff-format
   - repo: git@github.com:pre-commit/pre-commit-hooks.git
