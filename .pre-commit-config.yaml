@@ -2,7 +2,7 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.9.4
+    rev: v0.12.2
     hooks:
       - id: ruff
         types_or: [python, pyi, jupyter]
@@ -25,6 +25,6 @@ repos:
         additional_dependencies: [tomli] # Python < 3.11
         exclude: ".*\\.genos.txt$|.*\\.gz$|.*\\.pdf$|isogg.*.txt|requirements.txt"
   - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.15.0
+    rev: v1.16.1
     hooks:
       - id: mypy
