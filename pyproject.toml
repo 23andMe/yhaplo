@@ -7,7 +7,7 @@ name = "yhaplo"
 description = "Y-chromosome haplogroup caller"
 readme = "README.md"
 requires-python = ">= 3.9"
-license = { file = "LICENSE.txt" }
+license-files = ["LICENSE.txt"]
 authors = [
     { name = "Population Genetics R&D" },
     { email = "popgen.rd@23andme.com" },
