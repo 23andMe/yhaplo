@@ -1,16 +1,18 @@
 # Make variables
 #----------------------------------------------------------------------
-CYAN := \033[0;36m
 GREEN := \033[0;32m
-BOLD_CYAN := \033[1;36m
+CYAN := \033[0;36m
+BOLD_RED := \033[1;31m
 BOLD_GREEN := \033[1;32m
+BOLD_YELLOW := \033[1;33m
+BOLD_CYAN := \033[1;36m
 RESET_COLOR := \033[0m
 
 
 ## General
 # ----------------------------------------------------------------------
 help:  ## Print this help message
-	@grep -E '(\s|^)##\s' $(MAKEFILE_LIST) \
+	@grep -h -E '(\s|^)##\s' $(MAKEFILE_LIST) \
 	| sed -E "s/^## (.*)/\n$$(printf "${BOLD_GREEN}")\1$$(printf "${RESET_COLOR}")/g" \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "${CYAN}%-25s${RESET_COLOR} %s\n", $$1, $$2}'
 	@echo
