@@ -46,26 +46,10 @@ Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 ignore-words-list = "anc"
 skip = "*.genos.txt,*.gz,*.pdf,isogg.*.txt,requirements.txt"
 
-[tool.isort]
-profile = "black"
-filter_files = true
-
 [tool.mypy]
 ignore_missing_imports = true
 install_types = true
 non_interactive = true
-
-[tool.pydocstyle]
-# D107 Missing docstring in __init__
-# D202 No blank lines allowed after function docstring
-#      Ignoring allows blank lines after one-line docstrings.
-# D203 1 blank line required before class docstring
-#      Conflicts with Black and D211.
-# D213 Multi-line docstring summary should start at the second line
-#      Contradicts D212.
-#      https://github.com/PyCQA/pydocstyle/issues/242#issuecomment-288166773
-ignore = "D107,D202,D203,D213"
-match_dir = "(?!tests|\\.).*"
 
 [tool.pytest.ini_options]
 norecursedirs = [".*", "build"]
