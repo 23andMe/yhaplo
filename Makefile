@@ -59,7 +59,7 @@ run-hooks:  ## Run hooks
 	pre-commit run
 
 run-hooks-all:  ## Run hooks on all files
-	pre-commit run --all-files
+	pre-commit run --all-files --color always
 
 
 ## Linting
