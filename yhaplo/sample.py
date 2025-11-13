@@ -18,7 +18,7 @@ import os
 import re
 from collections import defaultdict
 from operator import attrgetter
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 
@@ -799,7 +799,7 @@ class VCFSample(Sample):
 
             for variant_record in variant_file.fetch(chromosome):
                 if variant_record.pos in cls.tree.snp_pos_set:
-                    for vcf_sample in cls.sample_list:
+                    for vcf_sample in cast(list[VCFSample], cls.sample_list):
                         alleles = variant_record.samples[vcf_sample.iid].alleles
                         if len(alleles) > 1:
                             raise ValueError(
@@ -811,5 +811,4 @@ class VCFSample(Sample):
 
                         genotype = alleles[0]
                         if genotype is not None:
-                            assert isinstance(vcf_sample, cls)
                             vcf_sample.put_genotype(variant_record.pos, genotype)

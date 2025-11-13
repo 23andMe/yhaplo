@@ -185,7 +185,7 @@ class Path:
             and self.num_anc_since_push_through > 0
             and self.num_der_since_push_through == 1
         ):
-            assert isinstance(self.node_when_pushed_through, node_module.Node)
+            assert self.node_when_pushed_through is not None
             self.node = self.node_when_pushed_through
             del self.der_snp_list[-1]
             self.most_derived_snp = self.most_derived_snp_when_pushed_through

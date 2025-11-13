@@ -1109,7 +1109,7 @@ def look_up_seq_genotypes(
                         "genotypes": "string",
                     },
                 )
-                .assign(name=name)
+                .assign(name=str(name))
                 .set_index("name")
             )
         else:
