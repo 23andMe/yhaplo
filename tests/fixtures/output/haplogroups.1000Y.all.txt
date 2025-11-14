@@ -388,7 +388,7 @@ HG02040  F-M89           F-M89           F
 NA20858  G-Z3313         G-Z3189         G1a1b                    
 NA20870  G-Z3313         G-Z3189         G1a1b                    
 HG03708  G-Z17775        G-Z17775        G2a1a2a                  
-HG02681  G-L166          G-L166          G2a2a1a2a1a              
+HG02681  G-Z6494         G-Z6494         G2a2a1a2a1a1             
 HG01311  G-Z6800         G-Z6800         G2a2a1a2a1b              
 NA20767  G-Z37368        G-Z37368        G2a2b1a1b1a              
 HG02224  G-CTS12570      G-CTS796        G2a2b2a1                 
@@ -447,8 +447,8 @@ NA21113  H-Z4542         H-Z4542         H1a1d2c2a
 HG04188  H-Z4469         H-Z4469         H1a2                     
 HG03812  H-Z4487         H-Z4487         H1a2a                    
 NA21093  H-Z4417         H-Z4417         H1a2a1                   
-NA21111  H-Z4540         H-Z14686        H1a2a1a                  
-NA21112  H-Z4540         H-Z14686        H1a2a1a                  
+NA21111  H-Z14686        H-Z14686        H1a2a1a                  
+NA21112  H-Z14686        H-Z14686        H1a2a1a                  
 HG04198  H-Apt           H-Apt           H1b1                     
 HG04222  H-Apt           H-Apt           H1b1                     
 HG03809  H-Z14258        H-Z14258        H1b2                     
