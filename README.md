@@ -26,8 +26,8 @@ tree for each individual, identifying the path of derived alleles leading to a
 haplogroup designation.
 
 `yhaplo` is available for non-commercial use pursuant to the terms of the non-exclusive
-license agreement, `LICENSE.txt`. To learn more about the algorithm, please see our
-bioRxiv [preprint](http://biorxiv.org/content/early/2016/11/19/088716):
+license agreement, [`LICENSE.txt`](./LICENSE.txt). To learn more about the algorithm,
+please see our bioRxiv [preprint](http://biorxiv.org/content/early/2016/11/19/088716):
 
     Poznik GD. 2016. Identifying Y-chromosome haplogroups in arbitrarily large samples
     of sequenced or genotyped men. bioRxiv doi: 10.1101/088716
@@ -123,6 +123,8 @@ To run unit tests:
 make test
 ```
 
+See [`tests/`](./tests/) for test implementations.
+
 
 ## Caveats
 
@@ -163,8 +165,6 @@ The following input file types are supported:
     * Cell (*i*, *j*): Genotype for individual *i* at position *j*.<br>
       Values include {"A", "C", "G", "T", "."}, with "." indicating an unobserved value.
 
-In addition, the API supports running on a mapping of individual identifiers to 23andMe ablocks.
-
 
 ## Output
 
@@ -186,7 +186,7 @@ Please see [`yhaplo_manual.pdf`](./yhaplo_manual.pdf) and `yhaplo --help` for de
 
 ## API
 
-See `yhaplo/api/call_haplogroups.py`.
+See [`yhaplo/api/call_haplogroups.py`](./yhaplo/api/call_haplogroups.py).
 
 
 ## CLI
@@ -204,11 +204,11 @@ Additional commands include:
 #### Tree
 
 The primary structure of the Y-chromosome tree is stored in
-`yhaplo/data/tree/y.tree.primary.DATE.nwk`.
+[`yhaplo/data/tree/`](./yhaplo/data/tree/).
 
 #### Variants
 
-Variant metadata are stored in `yhaplo/data/variants/`:
+Variant metadata are stored in [`yhaplo/data/variants/`](./yhaplo/data/variants/):
 * `isogg.DATE.txt` Phylogenetically informative SNPs scraped directly from the ISOGG website.<br>
   `yhaplo` resolves errors and formatting inconsistencies and emits cleaned versions:
   `isogg.snps.cleaned.DATE.txt`, `isogg.snps.unique.DATE.txt`.<br>
@@ -225,7 +225,7 @@ Variant metadata are stored in `yhaplo/data/variants/`:
 
 #### Trees
 
-The `Tree` class is defined in `tree.py`. It:
+The `Tree` class is defined in [`tree.py`](./yhaplo/tree.py). It:
 * Parses a Newick file to build primary tree
 * Parses ISOGG table to add SNPs to nodes and grow tree
 * Finds the derived path leading from the root to an individual
@@ -233,25 +233,26 @@ The `Tree` class is defined in `tree.py`. It:
 
 #### Nodes
 
-The `Node` class is defined in `node.py`. It:
+The `Node` class is defined in [`node.py`](./yhaplo/node.py). It:
 * Represents a phylogenetic branch
 * Knows parent, children, SNPs, etc.
 
 #### SNPs
 
-The `SNP` class and related classes are defined in `snp.py`:
+The `SNP` class and related classes are defined in [`snp.py`](./yhaplo/snp.py):
 * `SNP` Knows position, ancestral and derived alleles, node, etc.
 
 #### Samples
 
-The `Sample` class and its subclasses are defined in `sample.py`:
+The `Sample` class and its subclasses are defined in [`sample.py`](./yhaplo/sample.py):
 * `Sample` Knows genotypes and haplogroup of an individual
 * `TextSample` Subclass for sample-major text input
 * `VCFSample` Subclass for VCF/BCF input
 
 #### Paths
 
-The `Path` class is defined in `path.py`. It represents a ath through a tree and stores:
+The `Path` class is defined in [`path.py`](./yhaplo/path.py).
+It represents a path through a tree and stores:
 * The next node to visit
 * A list of SNPs observed in the derived state
 * The most derived SNP observed
@@ -259,5 +260,5 @@ The `Path` class is defined in `path.py`. It represents a ath through a tree and
 
 #### Configuration
 
-The `Config` class is defined in `config.py`.
+The `Config` class is defined in [`config.py`](./yhaplo/config.py).
 It is a container for parameters, command-line options, and filenames.

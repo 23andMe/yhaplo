@@ -9,7 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 - Support for diploid VCF/BCF input, treating heterozygous genotypes as missing data
 
-[2.1.14]: https://github.com/23andme-private/ancestry_composition/compare/2.1.13...2.1.14
+[2.1.14]: https://github.com/23andMe/yhaplo/compare/2.1.13...2.1.14
 
 
 ## [2.1.13] - 2024-11-07
