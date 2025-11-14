@@ -18,7 +18,7 @@ import os
 import re
 from collections import defaultdict
 from operator import attrgetter
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 
@@ -798,18 +798,14 @@ class VCFSample(Sample):
                 )
 
             for variant_record in variant_file.fetch(chromosome):
-                if variant_record.pos in cls.tree.snp_pos_set:
-                    for vcf_sample in cls.sample_list:
-                        alleles = variant_record.samples[vcf_sample.iid].alleles
-                        if len(alleles) > 1:
-                            raise ValueError(
-                                "More than one allele observed:\n"
-                                f"IID: {vcf_sample.iid}\n"
-                                f"Position: {variant_record.pos}\n"
-                                f"Alleles: {alleles}"
-                            )
+                if variant_record.pos not in cls.tree.snp_pos_set:
+                    continue
 
-                        genotype = alleles[0]
-                        if genotype is not None:
-                            assert isinstance(vcf_sample, cls)
-                            vcf_sample.put_genotype(variant_record.pos, genotype)
+                for vcf_sample in cast(list[VCFSample], cls.sample_list):
+                    variant_record_sample = variant_record.samples[vcf_sample.iid]
+                    unique_alleles_set = set(variant_record_sample.alleles) - {None}
+                    if len(unique_alleles_set) == 1:
+                        vcf_sample.put_genotype(
+                            variant_record.pos,
+                            unique_alleles_set.pop(),
+                        )

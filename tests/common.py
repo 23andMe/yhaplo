@@ -37,3 +37,7 @@ HAPLOGROUPS_1000Y_ONE_FP = os.path.join(
     FIXTURES_OUTPUT_DIR,
     "haplogroups.HG01938.txt",
 )
+HAPLOGROUPS_NO_DATA_FP = os.path.join(
+    FIXTURES_OUTPUT_DIR,
+    "haplogroups.no_data.txt",
+)

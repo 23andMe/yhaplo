@@ -23,6 +23,9 @@ repos:
       - id: codespell
         additional_dependencies: [tomli] # Python < 3.11
         exclude: ".*\\.genos.txt$|.*\\.gz$|.*\\.pdf$|isogg.*.txt|requirements.txt"
+      - id: codespell
+        name: codespell commit message
+        stages: [commit-msg]
   - repo: git@github.com:pre-commit/mirrors-mypy.git
     rev: v1.16.1
     hooks:
