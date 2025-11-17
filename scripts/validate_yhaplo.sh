@@ -15,12 +15,12 @@ set -o nounset -o pipefail
 if [ $# == 1 ] && [ "$1" == "-m" ]; then INCLUDE_BIG_VCF=1; fi
 
 # Input
-ttam_data_fp=data/example.23andMe.txt
-multi_sample_bcf_fp=data/1000Y.all.bcf  # See: tests/fixtures/generate_bcf_fixtures.sh
+ttam_data_fp=./data/example.23andMe.txt
+multi_sample_bcf_fp=./data/1000Y.all.bcf  # See: tests/fixtures/generate_bcf_fixtures.sh
 expected_output_dir=output.expected  # See: README.23andMe.txt
 
 # Output
-output_dir=output
+output_dir=./output
 nwk_fp=${output_dir}/y.tree.primary.aligned.ycc.2016.01.04.nwk
 tree_drawing_fp=${nwk_fp%.nwk}.drawing.txt
 

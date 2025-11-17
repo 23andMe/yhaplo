@@ -4,6 +4,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 
+## [2.1.16] - 2025-11-17
+
+### Added
+- Basic `rich` logging. Please reinstall to pick up the new dependency:
+  ```sh
+  pip install --editable .
+  ```
+
+[2.1.16]: https://github.com/23andMe/yhaplo/compare/2.1.15...2.1.16
+
+
 ## [2.1.15] - 2025-11-17
 
 ### Changed
