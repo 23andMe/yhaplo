@@ -124,7 +124,7 @@ class Config:
 
     # Output files
     # ----------------------------------------------------------------------
-    default_out_dir = "output"
+    default_out_dir = "./output"
 
     # Phylogenetic info
     aligned_primary_tree_fn = f"y.tree.primary.aligned.ycc.{isogg_date}.nwk"

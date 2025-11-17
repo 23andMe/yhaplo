@@ -7,6 +7,8 @@ For details, run:
 
 import logging
 
+from rich.logging import RichHandler
+
 from yhaplo.api.call_haplogroups import call_haplogroups
 from yhaplo.api.command_line_args import get_command_line_args
 
@@ -16,7 +18,18 @@ root_logger = logging.getLogger()
 def main() -> None:
     """Configure logging and call haplogroups."""
 
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s",
+        handlers=[
+            RichHandler(
+                markup=True,
+                show_time=False,
+                show_level=False,
+                show_path=False,
+            ),
+        ],
+    )
     command_line_args = get_command_line_args()
     call_haplogroups(
         command_line_args=command_line_args,
