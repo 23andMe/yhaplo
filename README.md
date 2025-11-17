@@ -193,8 +193,8 @@ See [`yhaplo/api/call_haplogroups.py`](./yhaplo/api/call_haplogroups.py).
 
 The main command-line entry-point is `yhaplo`.
 Additional commands include:
-* `yhaplo_convert_to_genos`
-* `yhaplo_plot_tree`
+* `yhaplo-convert-to-genos`
+* `yhaplo-plot-tree`
 
 
 ## Implementation details

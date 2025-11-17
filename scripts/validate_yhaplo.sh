@@ -66,13 +66,13 @@ echo -e "\n"
 
 
 echo -e "${BOLD_CYAN}Tree Plotter\n${RESET_COLOR}"
-yhaplo_plot_tree -n ${nwk_fp} | tee ${tree_drawing_fp}
+yhaplo-plot-tree -n ${nwk_fp} | tee ${tree_drawing_fp}
 echo -e "\n"
 
 
 echo -e "${BOLD_CYAN}Format Converter\n${RESET_COLOR}"
 if [ -e ${ttam_data_fp} ]; then
-    yhaplo_convert_to_genos ${ttam_data_fp}
+    yhaplo-convert-to-genos ${ttam_data_fp}
     mkdir -p ${output_dir}
     mv converted/* ${output_dir}/
     rmdir converted
