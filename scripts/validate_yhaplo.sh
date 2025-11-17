@@ -25,59 +25,100 @@ nwk_fp=${output_dir}/y.tree.primary.aligned.ycc.2016.01.04.nwk
 tree_drawing_fp=${nwk_fp%.nwk}.drawing.txt
 
 # Colors
-BOLD_CYAN="\033[1;36m"
+CYAN="\033[0;36m"
 GREEN="\033[0;32m"
+BOLD_CYAN="\033[1;36m"
+BOLD_GREEN="\033[1;32m"
 RESET_COLOR="\033[0m"
 
+# Helper functions
+function echo-run {
+    # Echo and run a command.
+    # Usage: echo-run "executable --options arguments"
 
-rm -fr ${output_dir}
-echo -e "\n${BOLD_CYAN}Removed${RESET_COLOR}: ${GREEN}${output_dir}\n\n${RESET_COLOR}"
+    local command="$1"
+
+    echo -e "\n${CYAN}$ ${RESET_COLOR}${command}"
+    eval "${command}"
+}
+function echo-split-run {
+    # Echo split version of command, then run.
+    # Usage: echo-split-run "VAR_NAME=value command --options <br> arguments"
+
+    local command="$1"
+    echo-split "${command}"
+    eval $(echo ${command} | sed 's|<br> ||g')
+    echo
+}
+function echo-split {
+    # Split a long command string across lines.
+    #
+    # 1. Compress spaces.
+    # 2. Postpend VAR_NAME=value instances with "\\n" (a backslash and a line break).
+    # 3. Prepend instances of {"--", "&&"} with "\\n    ".
+    # 4. Replace instances of "<br> " with "\\n    ".
+
+    local command="$1"
+    echo
+    echo "${command}" \
+    | tr -s ' ' \
+    | sed 's|[A-Z0-9_]=\S* |&\\\n|g' \
+    | sed 's/\(--\|&&\)/\\\n    &/g' \
+    | sed 's|<br> |\\\n    |g'
+    echo
+}
 
 
-echo -e "${BOLD_CYAN}Text Input${RESET_COLOR}\n"
-yhaplo --example_text \
+
+echo -e "\n${BOLD_GREEN}Validating Yhaplo${RESET_COLOR}\n"
+
+echo -e "${BOLD_CYAN}Clearing previous output${RESET_COLOR}..."
+echo-run "rm -fr ${output_dir}"
+
+
+echo -e "\n\n${BOLD_CYAN}Text Input${RESET_COLOR}"
+echo-split-run "yhaplo --example_text \
     --hg_genos Q \
     --breadth_first \
     --depth_first \
     --depth_first_table \
     --mrca Q-M3 R-V88 \
     --haplogroup_query E1b1,Q-M3,foo \
-    --snp_query L1335,S730,S530,foo
-echo -e "\n"
+    --snp_query L1335,S730,S530,foo"
 
 
-echo -e "${BOLD_CYAN}Single-Sample VCF Input\n${RESET_COLOR}"
-yhaplo --example_vcf --hg_genos Q
-echo -e "\n"
+echo -e "${BOLD_CYAN}Single-Sample VCF Input${RESET_COLOR}"
+echo-run "yhaplo --example_vcf --hg_genos Q"
+echo -e ""
 
 
-echo -e "${BOLD_CYAN}Multi-Sample VCF Input\n${RESET_COLOR}"
+echo -e "${BOLD_CYAN}Multi-Sample VCF Input${RESET_COLOR}"
 if [ ${INCLUDE_BIG_VCF:-""} ]; then
     if [ -e ${multi_sample_bcf_fp} ]; then
-        yhaplo -i ${multi_sample_bcf_fp} --hg_genos Q
+        echo-run "yhaplo --input ${multi_sample_bcf_fp} --hg_genos Q"
     else
-        echo "File not found: ${multi_sample_bcf_fp}"
+        echo -e "File not found: ${GREEN}${multi_sample_bcf_fp}${RESET_COLOR}"
         echo "See: tests/fixtures/generate_bcf_fixtures.sh"
     fi
 else
-    echo "Skipping. To test multi-sample VCF, use -m option."
+    echo -e "\nSkipping. To test multi-sample VCF, use -m option."
 fi
 echo -e "\n"
 
 
-echo -e "${BOLD_CYAN}Tree Plotter\n${RESET_COLOR}"
-yhaplo_plot_tree -n ${nwk_fp} | tee ${tree_drawing_fp}
+echo -e "${BOLD_CYAN}Tree Plotter${RESET_COLOR}"
+echo-run "yhaplo-plot-tree --newick_fp ${nwk_fp} | tee ${tree_drawing_fp}"
 echo -e "\n"
 
 
 echo -e "${BOLD_CYAN}Format Converter\n${RESET_COLOR}"
 if [ -e ${ttam_data_fp} ]; then
-    yhaplo_convert_to_genos ${ttam_data_fp}
-    mkdir -p ${output_dir}
-    mv converted/* ${output_dir}/
-    rmdir converted
+    echo-run "yhaplo-convert-to-genos ${ttam_data_fp}"
+    echo-run "mkdir -p ${output_dir}"
+    echo-run "mv converted/* ${output_dir}/"
+    echo-run "rmdir converted"
 else
-    echo "Skipping. File not found: ${ttam_data_fp}"
+    echo -e "Skipping. File not found: ${GREEN}${ttam_data_fp}${RESET_COLOR}"
 fi
 echo -e "\n"
 

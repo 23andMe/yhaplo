@@ -12,7 +12,7 @@ Input format options:
     Column 5: Allele 2 (if present)
 
 For details, run:
-    yhaplo_convert_to_genos --help
+    yhaplo-convert-to-genos --help
 
 """
 

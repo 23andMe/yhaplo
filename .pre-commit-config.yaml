@@ -2,13 +2,13 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.12.2
+    rev: v0.14.5
     hooks:
       - id: ruff-check
         args: [--fix, --unsafe-fixes]
       - id: ruff-format
   - repo: git@github.com:pre-commit/pre-commit-hooks.git
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
         args: [--allow-multiple-documents]
@@ -27,6 +27,6 @@ repos:
         name: codespell commit message
         stages: [commit-msg]
   - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.16.1
+    rev: v1.18.2
     hooks:
       - id: mypy

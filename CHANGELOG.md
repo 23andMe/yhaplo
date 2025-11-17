@@ -4,6 +4,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 
+## [2.1.15] - 2025-11-17
+
+### Changed
+- Renamed auxiliary commands to use hyphens rather than underscores:
+  - `yhaplo_convert_to_genos` → `yhaplo-convert-to-genos`
+  - `yhaplo_plot_tree` → `yhaplo-plot-tree`
+
+[2.1.15]: https://github.com/23andMe/yhaplo/compare/2.1.14...2.1.15
+
+
 ## [2.1.14] - 2025-11-13
 
 ### Added

@@ -1,7 +1,7 @@
 """Plot a Newick-formatted tree.
 
 For details, run:
-    yhaplo_plot_tree --help
+    yhaplo-plot-tree --help
 
 """
 

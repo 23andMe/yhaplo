@@ -31,8 +31,8 @@ dev = [
 
 [project.scripts]
 yhaplo = "yhaplo.cli.yhaplo:main"
-yhaplo_convert_to_genos = "yhaplo.cli.convert_to_genos:main"
-yhaplo_plot_tree = "yhaplo.cli.plot_tree:main"
+yhaplo-convert-to-genos = "yhaplo.cli.convert_to_genos:main"
+yhaplo-plot-tree = "yhaplo.cli.plot_tree:main"
 
 [project.urls]
 Homepage = "https://github.com/23andMe/yhaplo"
