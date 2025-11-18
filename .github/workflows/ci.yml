@@ -31,9 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
-        run: |
-          uv pip install --system --upgrade pip setuptools wheel
-          uv pip install --system --editable .[dev]
+        run: uv pip install --system --editable .[dev]
 
       - name: Run tests
         run: pytest --verbose --tb=short
@@ -52,13 +50,16 @@ jobs:
         with:
           python-version: "3.9"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Convert SSH URLs to HTTPS in pre-commit config
         run: |
           sed -i 's|git@github.com:|https://github.com/|g' .pre-commit-config.yaml
           sed -i 's|\.git||g' .pre-commit-config.yaml
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: uv pip install --system pre-commit
 
       - name: Run pre-commit
         run: pre-commit run --all-files
@@ -76,10 +77,11 @@ jobs:
         with:
           python-version: "3.9"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+        run: uv pip install --system build twine
 
       - name: Build package
         run: python -m build
