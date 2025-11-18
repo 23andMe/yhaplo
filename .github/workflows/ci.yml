@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for setuptools_scm
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -35,6 +37,9 @@ jobs:
 
       - name: Run tests
         run: pytest --verbose --tb=short
+
+      - name: Run CLI
+        run: yhaplo
 
   lint:
     name: Lint
@@ -64,8 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Fetch full history for setuptools_scm
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch all history for setuptools_scm
 
       - name: Set up Python
         uses: actions/setup-python@v5
