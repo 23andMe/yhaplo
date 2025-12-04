@@ -3,7 +3,7 @@
 ROOT_PACKAGE = __package__.removesuffix(".utils")  # noqa
 
 
-def check_vcf_dependencies():
+def check_vcf_dependencies() -> None:
     """Check that "vcf" dependencies are available."""
 
     try:
