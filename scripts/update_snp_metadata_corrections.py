@@ -190,9 +190,11 @@ def load_snp_index(
         .rename(columns=snp_index_rename_dict)
         .dropna(subset=col_names[:-1])  # OK if aliases are missing
         .loc[
-            lambda df: ~df["name"].str.startswith("[")
-            & ~df["position"].str.contains(r":|;|\.")
-            & df["mutation"].isin(MUTATIONS_SET)
+            lambda df: (
+                ~df["name"].str.startswith("[")
+                & ~df["position"].str.contains(r":|;|\.")
+                & df["mutation"].isin(MUTATIONS_SET)
+            )
         ]
         .filter(col_names, axis="columns")
         .astype(SNP_TABLE_DTYPE_DICT)
@@ -242,8 +244,10 @@ def load_snp_index_removed_items(
         .filter(list(rename_dict.values()), axis="columns")
         .dropna()
         .loc[
-            lambda df: ~df["position"].str.contains(r":|;|\.")
-            & df["mutation"].isin(MUTATIONS_SET)
+            lambda df: (
+                ~df["position"].str.contains(r":|;|\.")
+                & df["mutation"].isin(MUTATIONS_SET)
+            )
         ]
         .astype(col_name_to_dtype)
         .assign(
@@ -437,8 +441,9 @@ def detect_mutation_changes(
         der_old=lambda df: df["mutation_old"].str.split("->").str[1],
         anc_new=lambda df: df["mutation_new"].str.split("->").str[0],
         der_new=lambda df: df["mutation_new"].str.split("->").str[1],
-        flip=lambda df: (df["anc_old"] == df["der_new"])
-        & (df["anc_new"] == df["der_old"]),
+        flip=lambda df: (
+            (df["anc_old"] == df["der_new"]) & (df["anc_new"] == df["der_old"])
+        ),
     )
     write_table(mutation_change_df, "mutation", "update")
 
@@ -477,8 +482,10 @@ def detect_position_changes(
 
 
 is_roughly_same_clade = np.vectorize(
-    lambda haplogroup_old, haplogroup_new: (haplogroup_old[0] == haplogroup_new[0])
-    and (haplogroup_old[1].isalpha() == haplogroup_new[1].isalpha())
+    lambda haplogroup_old, haplogroup_new: (
+        (haplogroup_old[0] == haplogroup_new[0])
+        and (haplogroup_old[1].isalpha() == haplogroup_new[1].isalpha())
+    )
 )
 
 
@@ -928,9 +935,9 @@ def check_seq_genotypes_of_discordants(
             # For discordants, the observed alt allele is, presumably, derived.
             no_ref_obs=lambda df: ~df["genotypes"].str.contains("0"),
             prev_eq_bcf=lambda df: df["alleles_bcf"] == df["alleles_prev"],
-            do_not_correct=lambda df: df["prev_eq_bcf"]
-            & df["genotypes"].notna()
-            & df["no_ref_obs"],
+            do_not_correct=lambda df: (
+                df["prev_eq_bcf"] & df["genotypes"].notna() & df["no_ref_obs"]
+            ),
             set_manually=lambda df: ~df["prev_eq_bcf"],
             investigate=lambda df: ~(df["do_not_correct"] | df["set_manually"]),
         )
