@@ -2,7 +2,7 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.14.5
+    rev: v0.15.0
     hooks:
       - id: ruff-check
         args: [--fix, --unsafe-fixes]
@@ -25,6 +25,6 @@ repos:
         exclude: ".*\\.genos.txt$|.*\\.gz$|.*\\.pdf$|isogg.*.txt|requirements.txt"
         stages: [commit-msg, pre-commit, pre-merge-commit]
   - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
       - id: mypy
