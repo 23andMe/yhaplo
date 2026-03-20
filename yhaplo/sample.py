@@ -505,7 +505,7 @@ class Sample:
                 "- Sequencing coverage too low.\n"
                 "- Dataset does not include fixed reference sites.\n"
                 "  When calling variants, please emit all sites, or at least all\n"
-                "  those considered by Yhaplo. See REAMDME.md for details.\n"
+                "  those considered by Yhaplo. See README.md for details.\n"
                 "  It may be possible to work around this by re-running with an\n"
                 "  alternative root (e.g., with: `--root A0-T`), to skip branches\n"
                 "  along which most humans carry ancestral alleles.\n"
