@@ -4,6 +4,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 
+## [2.1.17] - 2026-03-19
+
+### Changed
+- Fleshed out root-haplogroup assignments warning
+
+[2.1.17]: https://github.com/23andMe/yhaplo/compare/2.1.16...2.1.17
+
+
 ## [2.1.16] - 2025-11-17
 
 ### Added
