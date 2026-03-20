@@ -25,7 +25,7 @@ import pandas as pd
 from yhaplo import node as node_module  # noqa F401
 from yhaplo import snp as snp_module  # noqa F401
 from yhaplo import tree as tree_module  # noqa F401
-from yhaplo.config import IID_TYPE, Config
+from yhaplo.config import DASHED_LINE, IID_TYPE, Config
 from yhaplo.utils.optional_dependencies import (
     check_vcf_dependencies,
 )
@@ -492,9 +492,24 @@ class Sample:
             f"{cls.tree.root.haplogroup}\n"
         )
         if cls.num_root_calls > 0:
+            s_if_plural = "s" if cls.num_root_calls > 1 else ""
             logger.warning(
-                "WARNING. If the dataset does not include fixed reference sites,\n"
-                "         re-run with alternative root (e.g., with: -r A0-T).\n\n\n"
+                f"{DASHED_LINE}"
+                "WARNING. "
+                f"{cls.num_root_calls} individual{s_if_plural} assigned "
+                "to the root haplogroup.\n\n"
+                "A root haplogroup assignment means we observed no derived alleles,\n"
+                "and that usually indicates a problem.\n\n"
+                "Common causes:\n"
+                "- Females in sample. Please re-run with male data only.\n"
+                "- Sequencing coverage too low.\n"
+                "- Dataset does not include fixed reference sites.\n"
+                "  When calling variants, please emit all sites, or at least all\n"
+                "  those considered by Yhaplo. See REAMDME.md for details.\n"
+                "  It may be possible to work around this by re-running with an\n"
+                "  alternative root (e.g., with: `--root A0-T`), to skip branches\n"
+                "  along which most humans carry ancestral alleles.\n"
+                f"{DASHED_LINE}"
             )
 
         if not cls.config.suppress_output:  # Use str(sample)
