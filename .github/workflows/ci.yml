@@ -2,10 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-    branches: [master]
-  workflow_dispatch: # Allow manual triggering
+    branches: [ master ]
+  workflow_dispatch:
+    # Allow manual triggering
 
 jobs:
   test:
@@ -14,8 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ ubuntu-latest, macos-latest ]
+        python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
       - uses: actions/checkout@v4
