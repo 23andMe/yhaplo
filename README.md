@@ -4,7 +4,7 @@
 https://github.com/23andMe/yhaplo/workflows/CI/badge.svg)](
 https://github.com/23andMe/yhaplo/actions)
 ![python](
-https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)
+https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)
 
 David Poznik, 23andMe
 
