@@ -122,15 +122,13 @@ def look_up_seq_genotypes(
     if iids:
         logger.info(f"{len(iids):7d} with a haplogroup in clade {haplogroup}\n")
         iids_str = ",".join(iids)
-        bcftools_cmd = " ".join(
-            [
-                "bcftools view",
-                f"--regions Y:{position}",
-                f"--samples {iids_str}",
-                bcf_fp,
-                "| bcftools query --format '%POS %REF %ALT [%GT]'",
-            ]
-        )
+        bcftools_cmd = " ".join([
+            "bcftools view",
+            f"--regions Y:{position}",
+            f"--samples {iids_str}",
+            bcf_fp,
+            "| bcftools query --format '%POS %REF %ALT [%GT]'",
+        ])
         logger.info(f"{bcftools_cmd}\n")
         bcftools_df = run_bcftools(
             bcftools_cmd,
@@ -143,7 +141,8 @@ def look_up_seq_genotypes(
         )
         if not bcftools_df.empty:
             genotypes_df = (
-                bcftools_df.set_index("position")
+                bcftools_df
+                .set_index("position")
                 .assign(
                     num_ref=lambda df: count_char(df["genotypes"], "0"),
                     num_alt=lambda df: count_char(df["genotypes"], "1"),

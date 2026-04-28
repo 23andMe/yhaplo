@@ -51,7 +51,7 @@ class Config:
     # Derived constants
     newick_semantic_token_set = set(newick_semantic_token_string)
     multi_char_hg_trunc_set = set(multi_char_hg_trunc_string.split())
-    multi_char_hg_trunc_max_len = max([len(elem) for elem in multi_char_hg_trunc_set])
+    multi_char_hg_trunc_max_len = max(len(elem) for elem in multi_char_hg_trunc_set)
     allele_set = set(alleles_string.split())
     homozygous_genotype_set = {f"{allele}{allele}" for allele in allele_set}
     snp_label_letters_rank_dict = {
