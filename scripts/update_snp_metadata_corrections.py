@@ -186,7 +186,8 @@ def load_snp_index(
     """
     col_names = list(snp_index_rename_dict.values())
     snp_index_df = (
-        pd.read_csv(snp_index_fp, skiprows=1)
+        pd
+        .read_csv(snp_index_fp, skiprows=1)
         .rename(columns=snp_index_rename_dict)
         .dropna(subset=col_names[:-1])  # OK if aliases are missing
         .loc[
@@ -239,7 +240,8 @@ def load_snp_index_removed_items(
         for col_name in rename_dict.values()
     }
     snp_index_removed_df = (
-        pd.read_csv(snp_index_removed_fp, skiprows=1)
+        pd
+        .read_csv(snp_index_removed_fp, skiprows=1)
         .rename(columns=rename_dict)
         .filter(list(rename_dict.values()), axis="columns")
         .dropna()
@@ -343,7 +345,8 @@ def update_metadata_corrections_file(
         extant_df, patch_df = resolve_extant_vs_patch(extant_df, patch_df, change_df)
 
     update_df = (
-        pd.concat([extant_df, patch_df])
+        pd
+        .concat([extant_df, patch_df])
         .sort_values(["haplogroup", "name"])
         .reset_index(drop=True)
     )
@@ -519,7 +522,8 @@ def detect_changes(
         raise ValueError(f"Invalid target column name: {target}")
 
     change_df = (
-        unique_df.merge(
+        unique_df
+        .merge(
             snp_index_df,
             how="left",
             on=["name", merge_on_col_name],
@@ -571,14 +575,16 @@ def resolve_extant_vs_patch(
 
     """
     overlap_names = (
-        extant_df.set_index("name")
+        extant_df
+        .set_index("name")
         .filter(patch_df["name"].to_list(), axis="index")
         .index.to_list()
     )
     logger.info(f"{len(overlap_names):7d} overlap names")
     if overlap_names:
         overlap_change_df = (
-            change_df.set_index("name")
+            change_df
+            .set_index("name")
             .loc[overlap_names]
             .assign(use_update=lambda df: df["der_new"] != df["anc_old"])
         )
@@ -656,9 +662,9 @@ def set_mutations_manually(
             df.loc[name_mask, "mutation"] = mutation
 
     if name_mutation_tuples:
-        name_mutation_str = ", ".join(
-            [f"{name} {mutation}" for name, mutation in name_mutation_tuples]
-        )
+        name_mutation_str = ", ".join([
+            f"{name} {mutation}" for name, mutation in name_mutation_tuples
+        ])
         logger.info(
             f"{len(name_mutation_tuples):7d} SNP mutations set manually: "
             f"{name_mutation_str}"
@@ -761,7 +767,8 @@ def compare_alleles_to_seq(
     )
     bcf_alleles_df = get_seq_alleles(positions, bcf_fp)
     snp_seq_df = (
-        snp_df.assign(alleles=lambda df: make_sorted_tuple(df["anc"], df["der"]))
+        snp_df
+        .assign(alleles=lambda df: make_sorted_tuple(df["anc"], df["der"]))
         .drop(["aliases"], axis="columns")
         .merge(
             bcf_alleles_df,
@@ -809,15 +816,13 @@ def get_seq_alleles(
 
     """
     regions_str = ",".join([f"Y:{position}" for position in positions])
-    bcftools_cmd = " ".join(
-        [
-            "bcftools view",
-            "--drop-genotypes",
-            f"--regions {regions_str}",
-            bcf_fp,
-            "| bcftools query -f '%POS %REF %ALT'",
-        ]
-    )
+    bcftools_cmd = " ".join([
+        "bcftools view",
+        "--drop-genotypes",
+        f"--regions {regions_str}",
+        bcf_fp,
+        "| bcftools query -f '%POS %REF %ALT'",
+    ])
     bcf_alleles_df = run_bcftools(
         bcftools_cmd,
         {"position": "Int64", "ref": "string", "alt": "string"},
@@ -911,7 +916,8 @@ def check_seq_genotypes_of_discordants(
         return pd.DataFrame(), [], []
 
     alleles_genos_unique_df = (
-        pd.merge(
+        pd
+        .merge(
             discordant_alleles_df.reset_index(),
             genotypes_df.drop(["ref", "alt"], axis="columns"),
             on="position",
@@ -919,7 +925,8 @@ def check_seq_genotypes_of_discordants(
         )
         .set_index("name")
         .join(
-            unique_df.set_index("name")
+            unique_df
+            .set_index("name")
             .rename(columns={"mutation": "mutation_prev"})
             .assign(
                 anc_prev=lambda df: df["mutation_prev"].str.split("->").str[0],
@@ -1000,7 +1007,8 @@ def check_seq_genotypes_of_concordants(
         log_bcftools_cmd=False,
     )
     alleles_genos_df = (
-        pd.merge(
+        pd
+        .merge(
             concordant_alleles_df.reset_index(),
             genotypes_df.drop(["ref", "alt"], axis="columns"),
             on="position",
@@ -1094,15 +1102,13 @@ def look_up_seq_genotypes(
         iids = haplogroup_df.loc[haplogroup_mask].index.to_list()
         if iids:
             iids_str = ",".join(iids)
-            bcftools_cmd = " ".join(
-                [
-                    "bcftools view",
-                    f"--regions Y:{position}",
-                    f"--samples {iids_str}",
-                    bcf_fp,
-                    "| bcftools query --format '%POS %REF %ALT [%GT]'",
-                ]
-            )
+            bcftools_cmd = " ".join([
+                "bcftools view",
+                f"--regions Y:{position}",
+                f"--samples {iids_str}",
+                bcf_fp,
+                "| bcftools query --format '%POS %REF %ALT [%GT]'",
+            ])
             if log_bcftools_cmd:
                 logger.info(bcftools_cmd)
 

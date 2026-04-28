@@ -360,9 +360,9 @@ class Node:
         elif align_tips:
             branch_length = 1
         elif platform:
-            branch_length = np.sum(
-                [snp.is_on_platform(platform) for snp in self.snp_list]
-            )
+            branch_length = np.sum([
+                snp.is_on_platform(platform) for snp in self.snp_list
+            ])
         else:
             branch_length = None
 
@@ -646,18 +646,16 @@ class Node:
         children_string = (
             (
                 "("
-                + ",".join(
-                    [
-                        child.build_newick_recursive(
-                            use_hg_snp_label=use_hg_snp_label,
-                            align_tips=align_tips,
-                            subtree_max_depth=subtree_max_depth,
-                            platform=platform,
-                            rotate=rotate,
-                        )
-                        for child in child_list
-                    ]
-                )
+                + ",".join([
+                    child.build_newick_recursive(
+                        use_hg_snp_label=use_hg_snp_label,
+                        align_tips=align_tips,
+                        subtree_max_depth=subtree_max_depth,
+                        platform=platform,
+                        rotate=rotate,
+                    )
+                    for child in child_list
+                ])
                 + ")"
             )
             if not self.is_leaf

@@ -899,14 +899,12 @@ class Tree:
         ]
 
         if not config.suppress_output:
-            log_text_list.extend(
-                [
-                    "Wrote summary tables:",
-                    f"- Dropped:  {config.dropped_isogg_fp}",
-                    f"- Retained: {config.cleaned_isogg_fp}",
-                    f"- Unique:   {config.unique_isogg_fp}\n",
-                ]
-            )
+            log_text_list.extend([
+                "Wrote summary tables:",
+                f"- Dropped:  {config.dropped_isogg_fp}",
+                f"- Retained: {config.cleaned_isogg_fp}",
+                f"- Unique:   {config.unique_isogg_fp}\n",
+            ])
 
         logger.info(("\n" + " " * 4).join(log_text_list))
 
