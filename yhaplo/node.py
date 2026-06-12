@@ -371,7 +371,7 @@ class Node:
     def back_trace_path(self) -> list[Node]:
         """Return a list of nodes from root to self."""
 
-        node_list = [self]
+        node_list: list[Node] = [self]
         parent = self.parent
         while parent is not None:
             node_list.append(parent)

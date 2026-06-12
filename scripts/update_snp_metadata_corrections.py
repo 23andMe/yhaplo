@@ -1167,7 +1167,7 @@ def write_table(
     output_fp = EXTRA_OUTPUT_FP_TP.format(target=target, label=label)
     with open(output_fp, "w") as output_file:
         table = tabulate(
-            df,  # type: ignore
+            df,
             tablefmt="plain",
             headers="keys",
             showindex=False,

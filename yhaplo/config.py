@@ -7,7 +7,6 @@ import logging
 import os
 import sys
 from collections.abc import Iterable, Mapping
-from typing import Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -17,7 +16,7 @@ from yhaplo.api.command_line_args import get_command_line_arg_defaults
 from yhaplo.utils.loaders import DataFile
 
 DASHED_LINE = "-" * 72 + "\n"
-IID_TYPE = Union[int, str]
+IID_TYPE = int | str
 ABLOCK_TYPE = NDArray[np.uint8]
 
 logger = logging.getLogger(__name__)
@@ -54,7 +53,7 @@ class Config:
     multi_char_hg_trunc_max_len = max(len(elem) for elem in multi_char_hg_trunc_set)
     allele_set = set(alleles_string.split())
     homozygous_genotype_set = {f"{allele}{allele}" for allele in allele_set}
-    snp_label_letters_rank_dict = {
+    snp_label_letters_rank_dict: dict[str, int] = {
         letters: rank
         for rank, letters in enumerate(snp_label_letters_rank_string.split())
     }

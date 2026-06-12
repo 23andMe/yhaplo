@@ -6,6 +6,7 @@ from importlib.resources import as_file, files
 
 import pandas as pd
 
+assert __package__ is not None
 DATA_SUBPACKAGE = __package__.replace("utils", "data")  # noqa
 
 SNP_TABLE_COL_NAMES = ["name", "haplogroup", "position", "mutation", "aliases"]

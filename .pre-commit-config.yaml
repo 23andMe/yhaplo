@@ -2,7 +2,7 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.15.0
+    rev: v0.15.17
     hooks:
       - id: ruff-check
         args: [--fix, --unsafe-fixes]
@@ -18,13 +18,30 @@ repos:
       - id: trailing-whitespace
         exclude: tests/fixtures/output/haplogroups\..*\.txt|data/variants/isogg\.[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.txt
   - repo: git@github.com:codespell-project/codespell.git
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies: [tomli] # Python < 3.11
         exclude: ".*\\.genos.txt$|.*\\.gz$|.*\\.pdf$|isogg.*.txt|requirements.txt"
         stages: [commit-msg, pre-commit, pre-merge-commit]
-  - repo: git@github.com:pre-commit/mirrors-mypy.git
-    rev: v1.19.1
+  # Use a local `ty` hook rather than `ty-pre-commit`, because the latter
+  # runs `ty` against a `uv`-managed `.venv`, conflicting with Pyenv virtualenv.
+  # `ty` is pinned in the "dev" optional dependencies section of `pyproject.toml`.
+  - repo: local
     hooks:
-      - id: mypy
+      - id: ty
+        name: ty
+        entry: |
+          bash -c '
+            if ! command -v ty > /dev/null; then
+              echo "ty not found on PATH." >&2
+              echo "Run make dev-install in your activated virtual environment." >&2
+              exit 1
+            fi
+
+            PYTHON_PREFIX=$(python -c "import sys; print(sys.prefix)")
+            ty check --python "${PYTHON_PREFIX}"
+          '
+        language: system
+        types: [python]
+        pass_filenames: false

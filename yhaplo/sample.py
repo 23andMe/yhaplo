@@ -812,13 +812,16 @@ class VCFSample(Sample):
                     f"Observed: {chromosome_set}"
                 )
 
-            for variant_record in variant_file.fetch(chromosome):
+            for variant_record in variant_file.fetch(str(chromosome)):
                 if variant_record.pos not in cls.tree.snp_pos_set:
                     continue
 
                 for vcf_sample in cast(list[VCFSample], cls.sample_list):
                     variant_record_sample = variant_record.samples[vcf_sample.iid]
-                    unique_alleles_set = set(variant_record_sample.alleles) - {None}
+                    alleles = variant_record_sample.alleles or ()
+                    unique_alleles_set = {
+                        allele for allele in alleles if allele is not None
+                    }
                     if len(unique_alleles_set) == 1:
                         vcf_sample.put_genotype(
                             variant_record.pos,
