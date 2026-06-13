@@ -6,14 +6,14 @@ build-backend = "setuptools.build_meta"
 name = "yhaplo"
 description = "Y-chromosome haplogroup caller"
 readme = "README.md"
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 license-files = ["LICENSE.txt"]
 authors = [
     { name = "Population Genetics R&D" },
     { email = "popgen.rd@23andme.com" },
 ]
 
-dependencies = ["numpy", "pandas", "pyyaml", "rich"]
+dependencies = ["click", "numpy", "pandas >= 2", "pyyaml", "rich"]
 
 dynamic = ["version"]
 
@@ -27,6 +27,7 @@ dev = [
     "pytest",
     "setuptools_scm",
     "tabulate",
+    "ty==0.0.48",
 ]
 
 [project.scripts]
@@ -46,10 +47,8 @@ Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 ignore-words-list = "anc"
 skip = "*.genos.txt,*.gz,*.pdf,isogg.*.txt,requirements.txt"
 
-[tool.mypy]
-ignore_missing_imports = true
-install_types = true
-non_interactive = true
+[tool.ty.src]
+exclude = ["tests/"]
 
 [tool.pytest.ini_options]
 norecursedirs = [".*", "build"]

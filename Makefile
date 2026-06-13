@@ -31,7 +31,6 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	pip install --upgrade uv
 	uv pip install --upgrade pip setuptools wheel
 	$(MAKE) dev-install
-	$(MAKE) dev-jupyter
 	$(MAKE) init-hooks
 
 dev-install:  ## Install package as editable, with all optional dependencies

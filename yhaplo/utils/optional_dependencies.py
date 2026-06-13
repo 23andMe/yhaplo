@@ -1,5 +1,6 @@
 """Functions for checking whether optional dependencies are available."""
 
+assert __package__ is not None
 ROOT_PACKAGE = __package__.removesuffix(".utils")  # noqa
 
 

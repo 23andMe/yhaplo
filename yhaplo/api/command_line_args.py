@@ -293,7 +293,7 @@ class RawTextWithDefaultsHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
     """
 
-    def _split_lines(self, text, _):
+    def _split_lines(self, text: str, width: int) -> list[str]:
         return text.splitlines()
 
     def _get_help_string(self, action):

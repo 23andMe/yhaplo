@@ -4,6 +4,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 
+## [Unreleased] - TBD
+
+### Added
+- Declared `click` as a dependency
+
+### Changed
+- Migrated type checking from `mypy` to `ty`
+
+### Removed
+- Dropped support for Python 3.9
+
+[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.17...HEAD
+
+
 ## [2.1.17] - 2026-03-19
 
 ### Changed
