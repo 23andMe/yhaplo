@@ -6,16 +6,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased] - TBD
 
+No unreleased changes.
+
+[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.18...HEAD
+
+
+## [2.1.18] - 2026-06-16
+
 ### Added
 - Declared `click` as a dependency
+- Indicated Python 3.14 support
 
 ### Changed
 - Migrated type checking from `mypy` to `ty`
+- Floored Pandas to `>= 2`
 
 ### Removed
 - Dropped support for Python 3.9
 
-[Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.17...HEAD
+[2.1.18]: https://github.com/23andMe/yhaplo/compare/2.1.17...2.1.18
 
 
 ## [2.1.17] - 2026-03-19
