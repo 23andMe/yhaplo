@@ -43,6 +43,14 @@ Changelog = "https://github.com/23andMe/yhaplo/blob/master/CHANGELOG.md"
 
 [tool.setuptools_scm]
 
+[tool.setuptools.packages.find]
+include = ["yhaplo*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"yhaplo.data.tree" = ["*"]
+"yhaplo.data.variants" = ["*"]
+
 [tool.codespell]
 ignore-words-list = "anc"
 skip = "*.genos.txt,*.gz,*.pdf,isogg.*.txt,requirements.txt"
