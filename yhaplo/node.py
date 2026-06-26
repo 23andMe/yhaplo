@@ -114,13 +114,13 @@ class Node:
 
     @property
     def str_simple(self) -> str:
-        """Return string representation with label and representative SNP."""
+        """String representation with label and representative SNP."""
 
         return f"{self.label:25s} {self.hg_snp}"
 
     @property
     def str_snp_list(self) -> str:
-        """Return string representation with label and list of snps."""
+        """String representation with label and list of snps."""
 
         snp_string = " ".join(snp.label for snp in self.snp_list)
         str_snp_list = f"{self.label:25s} {snp_string}"
@@ -129,7 +129,7 @@ class Node:
 
     @property
     def str_dot_pipe_depth(self) -> str:
-        """Return string representation indicating depth with dots and pipes."""
+        """String representation indicating depth with dots and pipes."""
 
         dot_list = list("." * (self.depth))
         for i in range(0, len(dot_list), 5):
@@ -156,13 +156,13 @@ class Node:
 
     @property
     def num_children(self) -> int:
-        """Return number of children."""
+        """Number of children."""
 
         return len(self.child_list)
 
     @property
     def tree_table_data(self) -> tuple[str, str, str, str, str]:
-        """Return a tuple of data summarizing the node.
+        """Tuple of data summarizing the node.
 
         Returns
         -------
@@ -190,13 +190,13 @@ class Node:
 
     @property
     def most_highly_ranked_snp(self) -> snp_module.SNP:
-        """Return the most highly ranked SNP."""
+        """Most highly ranked SNP."""
 
         return self.snp_list[0]
 
     @property
     def most_highly_ranked_dropped_marker(self) -> snp_module.DroppedMarker:
-        """Return the most highly ranked dropped marker."""
+        """Most highly ranked dropped marker."""
 
         return self.dropped_marker_list[0]
 

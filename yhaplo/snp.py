@@ -134,7 +134,7 @@ class SNP:
 
     @property
     def info(self) -> str:
-        """Return multiline summary of SNP."""
+        """Multiline summary of SNP."""
 
         names = [name for name in self.name_list if name != self.label]
         aliases_str = ", ".join(names) if names else "None"
@@ -149,7 +149,7 @@ class SNP:
 
     @property
     def str_with_all_names(self) -> str:
-        """Return long string representation.
+        """Long string representation.
 
         This includes the normal string representation,
         plus a comma-separated list of names.
@@ -161,20 +161,20 @@ class SNP:
 
     @property
     def str_short(self) -> str:
-        """Return short string representation: Node label and SNP label."""
+        """Short string representation: Node label and SNP label."""
 
         str_short = f"{self.node.label}:{self.label}"
         return str_short
 
     @property
     def dfs_rank(self) -> int:
-        """Return depth-first search rank."""
+        """Depth-first search rank."""
 
         return self.node.dfs_rank
 
     @property
     def hg_snp(self) -> str:
-        """Return string representation with truncated haplogroup label and SNP label.
+        """String representation with truncated haplogroup label and SNP label.
 
         Example: R-V88
 

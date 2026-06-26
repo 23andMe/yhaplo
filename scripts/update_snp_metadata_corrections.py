@@ -852,7 +852,7 @@ def run_bcftools(
 
     """
     try:
-        bcfools_output = subprocess.run(
+        bcftools_output = subprocess.run(
             bcftools_cmd,
             capture_output=True,
             text=True,
@@ -866,10 +866,10 @@ def run_bcftools(
             f"    Check bcftools installation and availability of BCF file."
         ) from error
 
-    if bcfools_output:
+    if bcftools_output:
         bcftools_df = pd.DataFrame(
-            [record.split() for record in bcfools_output.strip().split("\n")],
-            columns=list(col_name_to_dtype.keys()),
+            [record.split() for record in bcftools_output.strip().split("\n")],
+            columns=pd.Index(col_name_to_dtype.keys()),
         ).astype(col_name_to_dtype)
     else:
         logger.warning("WARNING. bcftools query returned no results.\n")
