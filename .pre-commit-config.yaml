@@ -2,7 +2,7 @@ default_stages: [pre-commit, pre-merge-commit]
 fail_fast: true
 repos:
   - repo: git@github.com:astral-sh/ruff-pre-commit.git
-    rev: v0.15.17
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         args: [--fix, --unsafe-fixes]

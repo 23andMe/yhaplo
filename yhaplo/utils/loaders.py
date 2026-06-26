@@ -44,7 +44,7 @@ class DataFile:
 
     @property
     def package(self):
-        """Return package name."""
+        """Package name."""
 
         return f"{DATA_SUBPACKAGE}.{self.data_subdir}"
 

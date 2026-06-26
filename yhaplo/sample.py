@@ -209,7 +209,7 @@ class Sample:
     # ----------------------------------------------------------------------
     @property
     def haplogroup(self) -> str:
-        """Return haplogroup using YCC nomenclature (e.g., "Q1a2a1a1")."""
+        """Haplogroup using YCC nomenclature (e.g., "Q1a2a1a1")."""
 
         if self.haplogroup_node is None:
             raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
@@ -218,7 +218,7 @@ class Sample:
 
     @property
     def hg_snp(self) -> str:
-        """Return haplogroup in representative-SNP form (e.g., "Q-M3")."""
+        """Haplogroup in representative-SNP form (e.g., "Q-M3")."""
 
         if self.haplogroup_node is None:
             raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
@@ -227,7 +227,7 @@ class Sample:
 
     @property
     def hg_trunc(self) -> str:
-        """Return haplogroup in truncated form (e.g., "Q")."""
+        """Haplogroup in truncated form (e.g., "Q")."""
 
         if self.haplogroup_node is None:
             raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
@@ -236,7 +236,7 @@ class Sample:
 
     @property
     def hg_snp_obs(self) -> str:
-        """Return haplogroup using a variant of representative-SNP form.
+        """Haplogroup using a variant of representative-SNP form.
 
         Rather than using one representative SNP per haplogroup,
         use the most highly ranked SNP this individual was observed to carry
@@ -257,7 +257,7 @@ class Sample:
 
     @property
     def haplogroup_dfs_rank(self) -> int:
-        """Return depth-first-search ranking of haplogroup node."""
+        """Depth-first-search ranking of haplogroup node."""
 
         if self.haplogroup_node is None:
             raise RuntimeError(f"Haplogroup not yet computed for {self.iid}")
@@ -267,7 +267,7 @@ class Sample:
 
     @property
     def haplogroup_dict(self) -> dict[str, str | int]:
-        """Return dictionary with various representations of the haplogroup call.
+        """Dictionary with various representations of the haplogroup call.
 
         Returns
         -------
@@ -295,20 +295,20 @@ class Sample:
     # ----------------------------------------------------------------------
     @property
     def str_compressed(self) -> str:
-        """Return compressed string representation."""
+        """Compressed string representation."""
 
         str_compressed = re.sub(r"\s+", " ", str(self))
         return str_compressed
 
     @property
     def str_simple(self) -> str:
-        """Return string representation with just iid, haplogroup, and hg_snp."""
+        """String representation with just iid, haplogroup, and hg_snp."""
 
         return f"{str(self.iid):8s} {self.haplogroup:25s} {self.hg_snp:15s}"
 
     @property
     def str_for_counts(self) -> str:
-        """Return string representation for ancestral/derived counts output."""
+        """String representation for ancestral/derived counts output."""
 
         left_part = f"{str(self.iid):8s} {self.haplogroup}"
         right_part = f"{self.hg_snp_obs} {self.hg_snp}"
@@ -392,7 +392,7 @@ class Sample:
                 (sample.iid, sample.hg_snp_obs, sample.hg_snp, sample.haplogroup)
                 for sample in cls.sample_list
             ],
-            columns=["iid", "hg_snp_obs", "hg_snp", "ycc_haplogroup"],
+            columns=pd.Index(["iid", "hg_snp_obs", "hg_snp", "ycc_haplogroup"]),
         ).set_index("iid")
 
         return haplogroup_df
