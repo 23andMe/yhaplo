@@ -230,7 +230,7 @@ class Path:
 
 
 def post_process_path_list_and_select_best(path_list: Sequence[Path]) -> Path:
-    """Post-processes each Path return the best."""
+    """Post-process each Path and return the best."""
 
     for path in path_list:
         path.revert_if_pushed_through_too_far()

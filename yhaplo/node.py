@@ -277,7 +277,7 @@ class Node:
         """Sort SNP list and set SNP-based haplogroup.
 
         First, sort SNP list (or dropped marker list) by priority ranking.
-        Then, set reresentative-SNP-based label: self.hg_snp.
+        Then, set representative-SNP-based label: self.hg_snp.
         The standard form includes the truncated haplogroup label
         and the label of a representative SNP, separated by a hyphen (e.g. R-V88).
 

@@ -175,7 +175,7 @@ def get_command_line_args(set_defaults: bool = False) -> argparse.Namespace:
         "--breadth_first",
         dest="traverse_bf",
         action="store_true",
-        help="Write bread-first traversal",
+        help="Write breadth-first traversal",
     )
     group.add_argument(
         "-d",

@@ -35,7 +35,7 @@ please see our bioRxiv [preprint](http://biorxiv.org/content/early/2016/11/19/08
 To learn more about the software, please see the manual, [`yhaplo_manual.pdf`](
 ./yhaplo_manual.pdf).
 
-For an overiew of command-line options, install the package and run `yhaplo --help`.
+For an overview of command-line options, install the package and run `yhaplo --help`.
 
 
 ## Contents
