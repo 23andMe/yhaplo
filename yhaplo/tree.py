@@ -172,7 +172,7 @@ class Tree:
                 self.query_snp_path(snp_name)
 
     def write_breadth_first(self) -> None:
-        """Write bread-first traversal in pipe/dot format."""
+        """Write breadth-first traversal in pipe/dot format."""
 
         bf_tree_fp = (
             self.config.bf_primary_tree_fp
@@ -460,7 +460,7 @@ class Tree:
         # Tokenization:
         # a. Strip out bootstraps: text within brackets.
         # b. Split on any semantic token.
-        # c. Group to retain retain tokens themselves.
+        # c. Group to retain tokens themselves.
         # d. Drop empty tokens from splitting adjacent semantic tokens.
         tree_string = re.subn(r"\[.*?\]", "", tree_string)[0]
         tree_list = re.split(
@@ -939,7 +939,7 @@ class Tree:
         -------
         record_is_bad : bool
             When True, do not use this marker for classification.
-        name_is_ok_to_represent_node : bool
+        marker_is_ok_to_represent_node : bool
             When True, if no SNPs are retained for the corresponding node,
             it is OK to use this marker name for the node's hg_snp representation.
 
@@ -996,7 +996,7 @@ class Tree:
         return False, True
 
     def check_multiallelics(self) -> None:
-        """Check for mutliallelic variants and write list to file."""
+        """Check for multiallelic variants and write list to file."""
 
         if not self.config.suppress_output and len(self.multiallelic_new_pos_set) > 0:
             with open(self.config.multiallelic_found_fp, "w") as out_file:
