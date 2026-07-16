@@ -22,7 +22,6 @@ vcf = ["pysam"]
 plot = ["biopython"]
 dev = [
     "yhaplo[vcf,plot]",
-    "ipykernel",
     "ipython",
     "pytest",
     "setuptools_scm",

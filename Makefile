@@ -38,8 +38,9 @@ dev-install:  ## Install package as editable, with all optional dependencies
 	@printf "\n${BOLD_GREEN}Installing package as editable, with all optional dependencies${RESET_COLOR}...\n\n"
 	uv pip install --python "$$(which python)" --editable '.[dev]'
 
-dev-jupyter:  ## Add Jupyter kernel
+dev-jupyter:  ## Install Jupyter kernel
 	@printf "\n${BOLD_GREEN}Installing Jupyter kernel${RESET_COLOR}...\n\n"
+	uv pip install --python "$$(which python)" ipykernel
 	python -m ipykernel install --user --name $(ENV_NAME) --display-name $(PACKAGE_NAME)
 
 
