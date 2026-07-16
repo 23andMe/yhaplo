@@ -29,16 +29,18 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	pyenv virtualenv $(ENV_NAME)
 	pyenv local $(ENV_NAME)
 	pip install --upgrade uv
+	pyenv rehash
 	uv pip install --upgrade pip setuptools wheel
 	$(MAKE) dev-install
 	$(MAKE) init-hooks
 
 dev-install:  ## Install package as editable, with all optional dependencies
 	@printf "\n${BOLD_GREEN}Installing package as editable, with all optional dependencies${RESET_COLOR}...\n\n"
-	uv pip install --editable .[dev]
+	uv pip install --python "$$(which python)" --editable '.[dev]'
 
-dev-jupyter:  ## Add Jupyter kernel
+dev-jupyter:  ## Install Jupyter kernel
 	@printf "\n${BOLD_GREEN}Installing Jupyter kernel${RESET_COLOR}...\n\n"
+	uv pip install --python "$$(which python)" ipykernel
 	python -m ipykernel install --user --name $(ENV_NAME) --display-name $(PACKAGE_NAME)
 
 
