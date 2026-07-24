@@ -21,6 +21,8 @@ import os
 import sys
 from typing import TextIO
 
+from yhaplo.utils.help_formatters import CapitalizedHelpFormatter
+
 CHROMOSOME_SET = {"24", "Y"}
 ALLELE_SET = set("ACGTDI")
 FN_ENDING_TO_FN_TYPE = {
@@ -183,7 +185,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter,
+        formatter_class=CapitalizedHelpFormatter,
     )
     parser.add_argument("in_fp", type=str, help="input file name")
     args = parser.parse_args()

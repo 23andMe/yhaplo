@@ -9,6 +9,7 @@ import argparse
 import os
 
 from yhaplo.config import Config
+from yhaplo.utils.help_formatters import CapitalizedHelpFormatter
 from yhaplo.utils.optional_dependencies import optional_import_error_message
 
 try:
@@ -38,7 +39,7 @@ def get_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter,
+        formatter_class=CapitalizedHelpFormatter,
     )
     parser.add_argument(
         "-d",
