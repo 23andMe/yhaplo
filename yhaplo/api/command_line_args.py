@@ -3,6 +3,7 @@
 import argparse
 
 from yhaplo import __version__
+from yhaplo.utils.help_formatters import CapitalizedHelpFormatter
 
 DESCRIPTION = """
 Yhaplo identifies the Y-chromosome haplogroup of each male in a sample of one
@@ -286,15 +287,14 @@ def get_command_line_arg_defaults() -> argparse.Namespace:
     return args
 
 
-class RawTextWithDefaultsHelpFormatter(argparse.RawDescriptionHelpFormatter):
+class RawTextWithDefaultsHelpFormatter(CapitalizedHelpFormatter):
     """Help message formatter that retains formatting and adds defaults.
 
-    Combines argparse.RawTextHelpFormatter and argparse.ArgumentDefaultsHelpFormatter.
+    Combines CapitalizedHelpFormatter, which retains raw formatting and
+    capitalizes the usage prefix and section headings, with the
+    default-appending behavior of argparse.ArgumentDefaultsHelpFormatter.
 
     """
-
-    def _split_lines(self, text: str, width: int) -> list[str]:
-        return text.splitlines()
 
     def _get_help_string(self, action):
         help_message = action.help
