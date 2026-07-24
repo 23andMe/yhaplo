@@ -6,7 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased] - TBD
 
-No unreleased changes.
+### Changed
+- Rendered command-line `--help` with `rich-click`
 
 [Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.18...HEAD
 

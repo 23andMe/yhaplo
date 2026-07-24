@@ -27,9 +27,9 @@ import os
 import subprocess
 from typing import Literal, cast
 
-import click
 import numpy as np
 import pandas as pd
+import rich_click as click
 from tabulate import tabulate
 
 from yhaplo.config import Config

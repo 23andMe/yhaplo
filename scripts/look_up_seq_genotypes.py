@@ -24,9 +24,9 @@ import logging
 import os
 import subprocess
 
-import click
 import numpy as np
 import pandas as pd
+import rich_click as click
 
 from yhaplo.utils.loaders import load_haplogroup_df
 
