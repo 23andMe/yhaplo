@@ -87,14 +87,14 @@ pip install --editable .  # Update version number
 ### Optional dependencies
 
 To include optional dependencies for various features:
-* `pip install --editable .[vcf]` Enables running on VCF/BCF input
-* `pip install --editable .[plot]` Enables tree plotting
-* `pip install --editable .[dev]` Includes all optional dependencies,
+* `pip install --editable ".[vcf]"` Enables running on VCF/BCF input
+* `pip install --editable ".[plot]"` Enables tree plotting
+* `pip install --editable ".[dev]"` Includes all optional dependencies,
   as well as development tools (e.g., `pytest`)
 
 To install multiple optional features, use a comma-separated list. For example:
 ```sh
-pip install --editable .[vcf,plot]
+pip install --editable ".[vcf,plot]"
 ```
 
 

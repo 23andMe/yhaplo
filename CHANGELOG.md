@@ -9,6 +9,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - Rendered command-line `--help` with `rich-click`
 
+### Fixed
+- Quoted the extras in the README install instructions, which failed under `zsh`
+
 [Unreleased]: https://github.com/23andMe/yhaplo/compare/2.1.18...HEAD
 
 

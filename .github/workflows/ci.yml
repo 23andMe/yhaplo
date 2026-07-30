@@ -32,7 +32,7 @@ jobs:
         run: pip install uv
 
       - name: Install dependencies
-        run: uv pip install --system --editable .[dev]
+        run: uv pip install --system --editable ".[dev]"
 
       - name: Run tests
         run: pytest --verbose --tb=short
