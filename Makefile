@@ -30,7 +30,7 @@ dev-pyenv-virtualenv:  ## Set up pyenv-virtual-env-based development environment
 	pyenv local $(ENV_NAME)
 	pip install --upgrade uv
 	pyenv rehash
-	uv pip install --upgrade pip setuptools wheel
+	uv pip install --upgrade pip setuptools
 	$(MAKE) dev-install
 	$(MAKE) init-hooks
 
