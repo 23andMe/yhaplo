@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased] - TBD
 
+### Added
+- Indicated Python 3.15 support
+
 ### Changed
 - Rendered command-line `--help` with `rich-click`
 
